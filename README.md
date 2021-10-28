@@ -45,7 +45,9 @@ so in order to setup Guest Network 4 (192.168.5.x) to access internet via wg12, 
 nano /jffs/addons/YazFi.d/userscripts.d/wg-yazfi.sh
 ```
 
-Now we need to add firewall rules to allow this guest network to create new connections out to the internet on this interface and also only accept replies to our packages back, nothing else. populate the file with:
+Now we need to add firewall rules to allow this guest network to create new connections out to the internet on this interface and also only accept replies to our packages back, nothing else. 
+
+populate the file with:
 ```sh
 #!/bin/sh
 iptables -I YazFiFORWARD -i wl1.1 -o wg12 -j ACCEPT
@@ -114,20 +116,22 @@ Thats it for scripting! now lets head into wgm:
 wgm
 ```
 
-Inside wgm we will setup the routing rules so that the guest network will be routed out wg12. however, there is a snag... the routing table used for wg12 (which we are about to redirect guest network packages to) does only contain routes to internet via wg12 and to our local/main network. this means that there are no information there back to our guest network for packages destined TO our guest networks. that leaves us with 2 options:
-* 1. Add routes for our guest network in that table
-* 2. redirect packages TO our guest network to main table.
+Inside wgm we will setup the routing rules so that the guest network will be routed out wg12. 
 
-I have choosen to use option 2 because it is easier. 
+however, there is a snag... the routing table used for wg12 (which we are about to redirect guest network packages to) does only contain routes to internet via wg12 and to our local/main network. this means that there are no information there back to our guest network for packages destined TO our guest networks. that leaves us with 2 options:
+* 1) Add routes for our guest network in that table
+* 2) redirect packages TO our guest network to main table.
+
+I have choosen to use option 2 because it is easier, since it does not require scripting. 
 
 so in wgm we issue (one by one):
 ```sh
+E:Option ==> peer wg12 rule add wan 0.0.0.0/0 192.168.5.1/24 comment ToGuest4UseMain
 E:Option ==> peer wg12 rule add vpn 192.168.5.1/24 comment Guest2VPN
-E:Option ==> peer wg12 rule add wan 0.0.0.0/0 192.168.5.1/24 comment ToGuestUseMain
 E:Option ==> peer wg12 auto=p
 E:Option ==> restart wg12
 ```
-This works because WAN routes have higher priority than VPN routes in wgm. The last line could be omitted if the peer is already in policy mode.
+This works because WAN rules have higher priority than VPN routes in wgm. The "auto=p" line could be omitted if the peer is already in policy mode.
 
 checking the rules in wg12:
 ```sh
@@ -135,7 +139,7 @@ E:Option ==> peer wg12
 ...
         Selective Routing RPDB rules
 ID  Peer  Interface  Source          Destination     Description
-1   wg12  WAN        0.0.0.0/0       192.168.5.1/24  ToGuestUseMain
+1   wg12  WAN        0.0.0.0/0       192.168.5.1/24  ToGuest4UseMain
 2   wg12  VPN        192.168.1.1/24  Any             Guest2VPN
 ```
 
@@ -150,7 +154,100 @@ Thats it! it should now be working... if the rules did not come out correct, del
 
 # Setup a reverse policy based routing
 why would anyone ever need to do this?
-- cooming soon
+
+well, for one thing, if you want/need ALL local processes on router to access internet via VPN. it could be that your specific program does not have the ability to bind to a specific socket/adress and does not use a specific port or anything else that could be used to identify and re-route the package and you really want/need this process to access internet via VPN, then using default routing is pretty much the only way. I would however recommend trying other solutions instead, since this is not very scalable.
+
+when should I not use this?
+
+since you need to handle everything manually, via scripting, it works best if you dont ever need to change it too much and there are not too many rules. prefferably only one interface or one ip adress that should go outside VPN.
+
+is has also been proven difficult to get a WG server working properly (since these packages want to go out VPN and not WAN as they should). I will however present a solution that should work, but has not been properly tested.
+
+ok, here we go... assuming the use of wg11 (set in auto=y, default mode), we create a wgm custom script:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+and populate the file with:
+```sh
+#!/bin/sh
+#
+#################################
+# Create ip table 117 without VPN
+#################################
+ip route flush table 117 2>/dev/null # Clear table 117
+ip route show table main | while read ROUTE # Copy all routes from main table to table 117 except wg11 routes
+do
+    {
+        if ! echo "$ROUTE" | grep 'wg11' ; then
+                ip route add table 117 $ROUTE
+        fi
+    } 1> /dev/null
+done
+###############################
+
+#################################
+# Add rules for which to use this table
+#################################
+ip rule add from 192.168.50.150 table 117 prio 9990 #Send single ip through WAN
+#ip rule add iif wl1.1 table 117 prio 9991 #Send guest wifi 4 through WAN (interface way)
+#ip rule add 192.168.5.1/24 table 117 prio 9992 #Send guest wifi 4 through WAN (ip way)
+#ip rule add fwmark 0x8000 table 117 prio 9993
+# More rules for ip's or ipset marks or interfaces could be added here if needed....
+#################################
+
+#################################
+# Clear route cache so routing will start over
+#################################
+ip route flush cache
+#################################
+```
+The comments in the scripts are quite self-explainatory. the first section makes a complete copy of the main routing table except for routes that contain wg11 (change this interface if you have set another wg interface to default routing).
+
+in the next section you will have to add rules for everything that should be using this new table (and access internet through WAN). follow the axample and create as many rules as needed.
+
+Save & Exit.
+
+Create a new file to delete all this when the wg client is brought down:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+Populate with:
+```sh
+#!/bin/sh
+
+# Delete rules:
+ip rule del prio 9990
+#ip rule del prio 9991
+#ip rule del prio 9992
+#ip rule del prio 9993
+#...
+
+# Delete table 117:
+ip route flush table 117 2>/dev/null
+```
+make the files executable
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+run the -up script once manually to apply changes immediately, it will run automatically from now on:
+```sh
+/jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+
+Thats it! now your system should be default route via VPN for everything except for what you have created rules for.
+
+now the problem with running a wg server, it should be possible by adding these rules:
+```sh
+iptables -t mangle -I OUTPUT -p udp --sport 51820 -j MARK --set-mark 0x8000
+ip rule add fwmark 0x8000 table 117 prio 9997
+echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
+```
+change the --sport to your wireguard server port. test by executing the commands directly at the prompt. if you find that they are working:
+
+add the commands to wg12-up.sh, make it executable.
+
+create wg12-down.sh where you remove the rules, make it executable.
 
 # Route WG Server to internet via WG Client
 - cooming soon
