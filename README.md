@@ -9,17 +9,24 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 # WGM tips and various instructions
 - cooming soon
 Import Client
-  add persistentKeepalive if not there.
-  change DNS/mtu if needed
-  check connection/import
-  ipv6
+
+add persistentKeepalive if not there.
+
+Change DNS/mtu if needed
+
+check connection/import
+
+ipv6
   
 Select Default of Policy routing?
-  why should I choose one or the other?
+
+why should I choose one or the other?
   
 Create rules in WGM
-  terminology/nomenclature
-  prioritization
+
+terminology/nomenclature
+
+prioritization
 
 
 # Using Yazfi and WGM to route different SSIDs to different VPNs
