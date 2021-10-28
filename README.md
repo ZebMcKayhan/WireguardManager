@@ -7,5 +7,30 @@ Wireguard Session Manager: https://www.snbforums.com/threads/session-manager-dis
 Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt-ac86u-gt-ac2900-rt-ax88u-rt-ax86u.46164/
 
 # WGM tips and various instructions
- - cooming soon
+- cooming soon
+Import Client
+  add persistentKeepalive if not there.
+  change DNS/mtu if needed
+  check connection/import
+  ipv6
+  
+Select Default of Policy routing?
+  why should I choose one or the other?
+  
+Create rules in WGM
+  terminology/nomenclature
+  prioritization
 
+
+# Using Yazfi and WGM to route different SSIDs to different VPNs
+- cooming soon
+
+# Setup a reverse policy based routing
+why would anyone ever need to do this?
+- cooming soon
+
+# Route WG Server to internet via WG Client
+- cooming soon
+
+# Setup Transmission and/or Unbound to use WG Client
+- cooming soon
