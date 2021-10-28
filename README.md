@@ -50,12 +50,12 @@ Now we need to add firewall rules to allow this guest network to create new conn
 #!/bin/sh
 iptables -I YazFiFORWARD -i wl1.1 -o wg12 -j ACCEPT
 iptables -I YazFiFORWARD -i wg12 -o wl1.1 -m state --state RELATED,ESTABLISHED -j ACCEPT
+#iptables -I YazFiINPUT -i wl1.1 -j ACCEPT #only needed for Guest network to access router itself(GUI or samba shares et.c.)
 ```
-Now, if you use 2 or more guest network to get access to wg12 just duplicate the 2 lines and change wlx.x and if you use another wg interface just replace wg12 with your wireguard interface.
-If you require your guest network to access the router itslef (like GUI, samba shares and such) then you will also need to add:
-```sh
-iptables -I YazFiINPUT -i wl1.1 -j ACCEPT
-```
+Now, if you use 2 or more guest network to get access to wg12 just duplicate the 3 lines and change wlx.x and if you use another wg interface just replace wg12 with your wireguard interface.
+
+If you require your guest network to access the router itslef (like GUI, samba shares and such) then you just remove the # on the last line.
+
 if you also want the guest network to have access to you local/main network, use the GUI for enable "2-way to guest"
 
 When you are done, save and exit.
