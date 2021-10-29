@@ -119,6 +119,11 @@ Thats it for scripting! now lets head into wgm:
 wgm
 ```
 
+YazFi has a tendency to restart the firewall when it starts after everything else has started. In order for wgm to copy with this we issue:
+```sh
+E:Option ==> firewallstart
+```
+
 Inside wgm we will setup the routing rules so that the guest network will be routed out wg12. 
 
 however, there is a snag... the routing table used for wg12 (which we are about to redirect guest network packages to) does only contain routes to internet via wg12 and to our local/main network. this means that there are no information there back to our guest network for packages destined TO our guest networks. that leaves us with 2 options:
