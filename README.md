@@ -248,9 +248,9 @@ echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 ```
 change the --sport to your wireguard server port. test by executing the commands directly at the prompt. if you find that they are working:
 
-add the commands to wg12-up.sh, make it executable.
+add the commands to wg21-up.sh, make it executable.
 
-create wg12-down.sh where you remove the rules, make it executable.
+create wg21-down.sh where you remove the rules, make it executable.
 
 # Route WG Server to internet via WG Client
 - cooming soon
