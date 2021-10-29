@@ -11,25 +11,25 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 # WGM tips and various instructions
 - cooming soon
 
-Import Client
+## Import Client
 
-add persistentKeepalive if not there.
+## add persistentKeepalive if not there.
 
-Change DNS/mtu if needed
+## Change DNS/mtu if needed
 
-check connection/import
+## check connection/import
 
-ipv6
+## ipv6
   
-Select Default of Policy routing?
+## Select Default of Policy routing?
 
-why should I choose one or the other?
+## why should I choose one or the other?
   
-Create rules in WGM
+## Create rules in WGM
 
-terminology/nomenclature
+## terminology/nomenclature
 
-prioritization
+## prioritization
 
 # Manage/Setup IPSETs for policy based routing
 - cooming soon
@@ -143,7 +143,7 @@ E:Option ==> peer wg12
         Selective Routing RPDB rules
 ID  Peer  Interface  Source          Destination     Description
 1   wg12  WAN        0.0.0.0/0       192.168.5.1/24  ToGuest4UseMain
-2   wg12  VPN        192.168.1.1/24  Any             Guest2VPN
+2   wg12  VPN        192.168.5.1/24  Any             Guest2VPN
 ```
 
 one last thing... the DNS used in YazFi for this network will for now on be overridden by wgm and the dns put into wg12 peer (or imported into). if you fore some reason are unhappy with using the DNS from your imported file, you could just change it (to 8.8.8.8 in this example):
