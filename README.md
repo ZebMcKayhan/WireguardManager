@@ -141,6 +141,12 @@ E:Option ==> restart wg12
 ```
 This works because WAN rules have higher priority than VPN routes in wgm. The "auto=p" line could be omitted if the peer is already in policy mode.
 
+If you need the guest network to access other subnets than your main network you might need to broaden the range of the "ToGuest4UseMain" rule. For example I used:
+```sh
+E:Option ==> peer wg12 rule add wan 0.0.0.0/0 192.168.1.1/16 comment ToLocalUseMain
+```
+Add more rules if you have more subnets.
+
 checking the rules in wg12:
 ```sh
 E:Option ==> peer wg12
