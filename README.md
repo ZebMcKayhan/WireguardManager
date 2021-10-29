@@ -90,7 +90,7 @@ Populate with
 ```sh
 #!/bin/sh
 
-iptables -t nat -I POSTROUTING -s 192.168.5.0/24 -o wg12 -j MASQUERADE
+iptables -t nat -I POSTROUTING -s 192.168.5.1/24 -o wg12 -j MASQUERADE
 ```
 Use your guest network ip range and change wg12 interface according to your needs. if you have more guest networks you can dublicate the line and change the ipadress accordingly.
 
@@ -109,7 +109,7 @@ Populate with:
 ```sh
 #!/bin/sh
 
-iptables -t nat -D POSTROUTING -s 192.168.5.0/24 -o wg12 -j MASQUERADE
+iptables -t nat -D POSTROUTING -s 192.168.5.1/24 -o wg12 -j MASQUERADE
 ```
 Again, you need to duplicate this line if you have more guest networks going out wg12. note that it needs to be the same as the lines put in wg12-up.sh with the only change that -I becomes -D
 
@@ -123,7 +123,7 @@ Thats it for scripting! now lets head into wgm:
 wgm
 ```
 
-YazFi has a tendency to restart the firewall when it starts after everything else has started. In order for wgm to copy with this we issue:
+YazFi has a tendency to restart the firewall when it starts after everything else has started. In order for wgm to cope with this we issue:
 ```sh
 E:Option ==> firewallstart
 ```
