@@ -149,6 +149,11 @@ If you need the guest network to access other subnets than your main network you
 ```sh
 E:Option ==> peer wg12 rule add wan 0.0.0.0/0 192.168.1.1/16 comment ToLocalUseMain
 ```
+If you have a wireguard server which shall be able to communicate with the guest network, replies from the guest network will need to find its way back. So then something like this may be needed:
+```sh
+E:Option ==> peer wg12 rule add wan 0.0.0.0/0 10.50.1.1/24 comment ToWg21UseMain
+```
+Ofcourse these rules will not provide any access to other subnets since we have not allowed anything in the firewall more than Guest 4 to wg12, but it will allow the packages to be routed but might still be BLOCKED by firewall.  
 Add more rules if you have more subnets.
 
 checking the rules in wg12:
