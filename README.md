@@ -8,16 +8,20 @@ Wireguard Session Manager: https://www.snbforums.com/threads/session-manager-dis
 
 Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt-ac86u-gt-ac2900-rt-ax88u-rt-ax86u.46164/
 
-# WGM tips and various instructions
-- cooming soon
+## Table of content
+[Setup wgm](#setup-wgm)  
+ -[Import Client](#import-client)  
+ -[Add PersistantKeepalive](add-persistentkeepalive)  
+
+# Setup wgm
 
 ## Import Client
 
-## add persistentKeepalive if not there.
+## add persistentKeepalive
 
-## Change DNS/mtu if needed
+## Change DNS/mtu
 
-## check connection/import
+## check connection
 
 ## ipv6
   
