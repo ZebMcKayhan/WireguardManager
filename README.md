@@ -16,6 +16,37 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 # Setup wgm
 
 ## Import Client
+First make sure to obtain a client file from your favorite wireguard vpn provided. Once you have obtained your .conf file, copy it to router here:
+```sh
+/opt/etc/wireguard.d/
+```
+You can name the file whatever you want but it needs to end with .conf. I will assume you name the file filename.conf  
+
+We could import this file in wgm, it is designed to work just that easy. 
+
+Depending om which version of wgm you are running the syntax could be abit different.  
+Starting with listing possible imports:
+```sh
+E:Option ==> import ?
+```
+In the filelist displayed by wgm hopefully our "filename.conf" is there. If not the file is either in the wrong directory or wrong filename.
+
+When you have manage to get wgm to display you file we could import it. There have been a couple of different command variations depending on which version you use:
+```sh
+E:Option ==> import filename name=wg11
+```
+Starting with version 4.12b2 there is no need to use name=wg11 since wgm will automatically import it to the first available client wg1x slot.
+
+You can force an arbitrary name instead of wg11, wg12 a.s.o but some function would not work correctly in wgm so I dont recommend it.
+
+Now you can use 2 command to look at your import:
+```sh
+E:Option ==> list
+```
+And
+```sh
+E:Option ==> peer
+```
 
 ## add persistentKeepalive
 
