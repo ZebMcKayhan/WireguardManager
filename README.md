@@ -47,10 +47,36 @@ And
 ```sh
 E:Option ==> peer
 ```
+And you can start the client peer:
+```sh
+E:Option ==> start wg11
+```
+Still however the client will not autostart... keep reading...
 
 ## add persistentKeepalive
+It is usually recommended to add some kind of pinging to keep the sockets from closing and keep conntrack happy and nat tunnels open. There are no support for this in wgm so:
+```sh
+E:Option ==> stop wg11
+E:Option ==> exit
+```
+Then edit the active config file:
+```sh
+nano /opt/etc/wireguard.d/wg11.conf
+```
+And add this in a new line at the end of the file:
+```sh
+PersistentKeepalive = 25
+```
+Save and exit
 
-## Change DNS/mtu
+Look at the client so it is working:
+```sh
+E:Option ==> start wg11
+E:Option ==> list
+```
+It should now say PeristentKeepalive 25.
+
+## Change DNS/mtu/name
 
 ## check connection
 
