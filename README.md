@@ -96,7 +96,7 @@ Mtu:
 ```sh
 E:Option ==> peer wg11 mtu=1420
 ```
-Name:
+Tag name/Annotate:
 ```sh
 E:Option ==> peer wg11 tag=My1stVPNClient
 ```
@@ -349,4 +349,23 @@ add the commands to wg21-up.sh, make it executable.
 create wg21-down.sh where you remove the rules, make it executable.
 
 # Setup Transmission and/or Unbound to use WG Client
+This is only needed in policy mode. 
+Lets Start with Transmission since this is easier. In order to select outgoing interface we need to bind the program to a specific source adress.
+
+Stop transmission
+Edit the config file:
+```sh
+nano /opt/etc/transmission/settings.json
+```
+Change this line to your router adress (assuming 192.168.1.1, change to your needs):
+```sh
+"bind-address-ipv4": "192.168.1.1"
+```
+Ideally this adress should be your wg11 adress but that would mean start/stop Transmission as wg client start/stop. Scraping current ip adress and change the config file automatically. Whilst very possible using router main adress is much easier and no direct implications.
+
+Depending on how your policy routes are setup we might add or delete rules. If you are a typical user were only a couple of single ips are routed out vpn then our main interface needs to be added:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.1.1 comment Transmission2vpn
+```
+
 - cooming soon
