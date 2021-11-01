@@ -11,16 +11,16 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 ## Table of content
 [Setup wgm](#setup-wgm)  
  -[Import Client](#import-client)  
- -[Add persistentKeepalive](add-persistentKeepalive)  
- -[Change DNS/mtu/name](change-dns/mtu/name)  
- -[Check connection](check-connection)  
- -[ipv6](ipv6)  
- -[Default or Policy routing](default-or-policy-routing)  
- -[Create rules in WGM](create-rules-in-wgm)  
- -[Manage/Setup IPSETs for policy based routing](manage/setup-ipsets-for-policy-based-routing)  
- -[Route WG Server to internet via WG Client](route-wg-server-to-internet-via-wg-client)  
-[Using Yazfi and WGM to route different SSIDs](using-yazfi-and-wgm-to-route-different-ssids)  
-[Setup Transmission and/or Unbound to use WG Client](setup-transmission-and/or-unbound-to-use-wg-client)  
+ -[Add persistentKeepalive](#add-persistentkeepalive)  
+ -[Change DNS/mtu/name](#change-dns/mtu/name)  
+ -[Check connection](#check-connection)  
+ -[ipv6](#ipv6)  
+ -[Default or Policy routing](#default-or-policy-routing)  
+ -[Create rules in WGM](#create-rules-in-wgm)  
+ -[Manage/Setup IPSETs for policy based routing](#manage/setup-ipsets-for-policy-based-routing)  
+ -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
+[Using Yazfi and WGM to route different SSIDs](#using-yazfi-and-wgm-to-route-different-ssids)  
+[Setup Transmission and/or Unbound to use WG Client](#setup-transmission-and/or-unbound-to-use-wg-client)  
 
 # Setup wgm
 
