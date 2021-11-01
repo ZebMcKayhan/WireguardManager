@@ -20,7 +20,8 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
  -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
  -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
 
-[Using Yazfi and WGM to route different SSIDs to different VPNs](using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
+[Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
+[Setup a reverse policy based routing](#setup-a-reverse-policy-based-routing)  
 [Setup Transmission and/or Unbound to use WG Client](#setup-transmission-andor-unbound-to-use-wg-client)  
 
 # Setup wgm
