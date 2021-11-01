@@ -88,6 +88,18 @@ E:Option ==> list
 It should now say PeristentKeepalive 25.
 
 ## Change DNS/mtu/name
+Dns:
+```sh
+E:Option ==> peer wg11 dns=8.8.8.8
+```
+Mtu:
+```sh
+E:Option ==> peer wg11 mtu=1420
+```
+Name:
+```sh
+E:Option ==> peer wg11 tag=My1stVPNClient
+```
 
 ## check connection
 
