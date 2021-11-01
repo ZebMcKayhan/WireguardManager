@@ -11,7 +11,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 ## Table of content
 [Setup wgm](#setup-wgm)  
  -[Import Client](#import-client)  
- -[Add PersistantKeepalive](add-persistentkeepalive)  
+ -[Add persistentKeepalive](add-persistentKeepalive)  
  -[Change DNS/mtu/name](change-dns/mtu/name)  
  -[Check connection](check-connection)  
  -[ipv6](ipv6)  
@@ -62,7 +62,7 @@ E:Option ==> start wg11
 ```
 Still however the client will not autostart... keep reading...
 
-## add persistentKeepalive
+## Add persistentKeepalive
 It is usually recommended to add some kind of pinging to keep the sockets from closing and keep conntrack happy and nat tunnels open. There are no support for this in wgm so:
 ```sh
 E:Option ==> stop wg11
