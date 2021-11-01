@@ -12,15 +12,16 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [Setup wgm](#setup-wgm)  
  -[Import Client](#import-client)  
  -[Add persistentKeepalive](#add-persistentkeepalive)  
- -[Change DNS/mtu/name](#change-dns/mtu/name)  
+ -[Change DNS/mtu/Name](#change-dnsmtuname)  
  -[Check connection](#check-connection)  
  -[ipv6](#ipv6)  
  -[Default or Policy routing](#default-or-policy-routing)  
  -[Create rules in WGM](#create-rules-in-wgm)  
- -[Manage/Setup IPSETs for policy based routing](#manage/setup-ipsets-for-policy-based-routing)  
+ -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
  -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
-[Using Yazfi and WGM to route different SSIDs](#using-yazfi-and-wgm-to-route-different-ssids)  
-[Setup Transmission and/or Unbound to use WG Client](#setup-transmission-and/or-unbound-to-use-wg-client)  
+
+[Using Yazfi and WGM to route different SSIDs to different VPNs](using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
+[Setup Transmission and/or Unbound to use WG Client](#setup-transmission-andor-unbound-to-use-wg-client)  
 
 # Setup wgm
 
@@ -97,6 +98,8 @@ It should now say PeristentKeepalive 25.
 
 ## Manage/Setup IPSETs for policy based routing
 - cooming soon
+
+## Route WG Server to internet via WG Client
 
 # Using Yazfi and WGM to route different SSIDs to different VPNs
 source: https://github.com/jackyaz/YazFi
