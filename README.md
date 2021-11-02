@@ -69,7 +69,7 @@ This mode will have your entire network accessing internet via VPN server.
 
 If you wish to have the client in this mode and autostart then issue:
 ```sh
-E:Option ==> peer wg11 auto=y
+E:Option ==> peer wg11 auto=Y
 ```
 
 ## Add persistentKeepalive
