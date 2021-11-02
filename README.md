@@ -57,13 +57,20 @@ E:Option ==> list
 ```
 And
 ```sh
-E:Option ==> peer
+E:Option ==> peer wg11
 ```
 And you can start the client peer:
 ```sh
 E:Option ==> start wg11
 ```
-Still however the client will not autostart... keep reading...
+Since the import the client default to "auto=N" which means it will only start if explicitly called to start and then in default mode.
+
+This mode will have your entire network accessing internet via VPN server.
+
+If you wish to have the client in this mode and autostart then issue:
+```sh
+E:Option ==> peer wg11 auto=y
+```
 
 ## Add persistentKeepalive
 It is usually recommended to add some kind of pinging to keep the sockets from closing and keep conntrack happy and nat tunnels open. There are no support for this in wgm so:
