@@ -51,7 +51,7 @@ Starting with version 4.12b2 there is no need to use name=wg11 since wgm will au
 
 You can force an arbitrary name instead of wg11, wg12 a.s.o but some function would not work correctly in wgm so I dont recommend it.
 
-Now you can use 2 command to look at your import:
+Now you can use several command to look at your import:
 ```sh
 E:Option ==> list
 ```
@@ -59,17 +59,28 @@ And
 ```sh
 E:Option ==> peer wg11
 ```
-And you can start the client peer:
+And
+```sh
+E:Option ==> peer wg11 config
+```
+Each giving different views.
+
+Since the import the client default to "auto=N" which means it will only start if explicitly called to start and then in default mode.
+This mode will have your entire network accessing internet via VPN.
+
+If you want to start the client peer:
 ```sh
 E:Option ==> start wg11
 ```
-Since the import the client default to "auto=N" which means it will only start if explicitly called to start and then in default mode.
 
-This mode will have your entire network accessing internet via VPN server.
-
-If you wish to have the client in this mode and autostart then issue:
+If you wish to have the client in this mode and autostart at boot, then issue:
 ```sh
 E:Option ==> peer wg11 auto=Y
+```
+
+If you want to stop the client peer:
+```sh
+E:Option ==> stop wg11
 ```
 
 ## Add persistentKeepalive
@@ -149,7 +160,7 @@ E:Option ==> peer wg11 mtu=1412
 ```
 Tag name/Annotate:
 ```sh
-E:Option ==> peer wg11 tag=My1stVPNClient
+E:Option ==> peer wg11 comment=My1stVPNClient
 ```
 
 ## check connection
