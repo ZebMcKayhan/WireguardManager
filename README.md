@@ -391,7 +391,11 @@ This is only needed in policy mode.
 Lets Start with Transmission since this is easier. In order to select outgoing interface we need to bind the program to a specific source adress.
 
 Please note before doing this. You will not be able to open ports if Transmission is communicating via VPN. Only proceed if this is acceptable.
-Stop transmission
+
+Stop transmission:
+```sh
+sh /opt/etc/init.d/S88transmission stop
+```
 
 Edit the config file:
 ```sh
