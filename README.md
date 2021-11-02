@@ -91,9 +91,16 @@ Save and exit
 Look at the client so it is working:
 ```sh
 E:Option ==> start wg11
-E:Option ==> list
+E:Option ==> exit
 ```
-It should now say PeristentKeepalive 25.
+We need to use the userspace tool to view this:
+```sh
+wg show
+```
+It should now say 
+```sh
+peristent keepalive every 25 seconds
+```
 
 ## Manage Killswitch
 The wgn vpn killswitch is a firewall rule to prevent access to WAN. This is handy if you rather have your connection broken than falling back to non-vpn.
@@ -138,7 +145,7 @@ E:Option ==> peer wg11 dns=8.8.8.8
 ```
 Mtu:
 ```sh
-E:Option ==> peer wg11 mtu=1420
+E:Option ==> peer wg11 mtu=1412
 ```
 Tag name/Annotate:
 ```sh
