@@ -12,6 +12,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [Setup wgm](#setup-wgm)  
  -[Import Client](#import-client)  
  -[Add persistentKeepalive](#add-persistentkeepalive)  
+ -[Manage Killswitch](#manage-killswitch)  
  -[Change DNS/mtu/Name](#change-dnsmtuname)  
  -[Check connection](#check-connection)  
  -[ipv6](#ipv6)  
@@ -86,6 +87,42 @@ E:Option ==> start wg11
 E:Option ==> list
 ```
 It should now say PeristentKeepalive 25.
+
+## Manage Killswitch
+The wgn vpn killswitch is a firewall rule to prevent access to WAN. This is handy if you rather have your connection broken than falling back to non-vpn.
+
+The killswitch is global so you can't use it in combination with policy based routing where you allow some clients to access internet via wan.
+You can temporary enable or disable this in wgm:
+```sh
+E:Option ==> killswitch on
+E:Option ==> killswitch off
+```
+Any changes will be valid until the next reboot. 
+
+To permanently change the killswitch, edit wgm configuration file::
+```sh
+E:Option ==> vx
+```
+Then disable the killswitch by adding a # in front of KILLSWITCH:
+```sh
+#KILLSWITCH
+```
+Or enable it by removing the hash:
+```sh
+KILLSWITCH
+```
+You can check killswitch function by:
+```sh
+E:Option ==> ?
+```
+You will get one of 4 messages:
+```sh
+[✔] WAN KILL-Switch is ENABLED
+[✔] WAN KILL-Switch is temporarily ENABLED
+[✖] WAN KILL-Switch is DISABLED
+[✖] WAN KILL-Switch is temporarily DISABLED
+```
+Temporarily means the status will change the next reboot.
 
 ## Change DNS/mtu/name
 Dns:
