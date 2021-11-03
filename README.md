@@ -419,6 +419,8 @@ Lets Start with Transmission since this is easier. In order to select outgoing i
 
 Please note before doing this. You will not be able to open ports if Transmission is communicating via VPN. Only proceed if this is acceptable.
 
+What we are going to do is to make Transmission request a specific source adress on its packages. the source adress choosen should be an ip-adress that is a part of the router. typically the most straight forward ip would be to use the br0 bridge ip which usually is 192.168.1.1 (but could be different on your router). If you already have an interface (like guest network 4 for example) routed out vpn then use this local ip instead (192.168.5.1).
+
 Stop transmission:
 ```sh
 sh /opt/etc/init.d/S88transmission stop
@@ -434,13 +436,20 @@ Change this line to your router adress (assuming 192.168.1.1, change to your nee
 ```
 Ideally this adress should be your wg11 adress but that would mean start/stop Transmission as wg client start/stop. Scraping current ip adress and change the config file automatically. Whilst very possible, using router main adress is much easier and no direct implications.
 
+then start transmission again:
+```sh
+sh /opt/etc/init.d/S88transmission start
+```
+
 Depending on how your policy routes are setup we might add or delete rules. If you are a typical user were only a couple of single ips are routed out vpn then our main interface needs to be added:
 ```sh
 E:Option ==> peer wg11 rule add vpn 192.168.1.1 comment Transmission2vpn
 ```
-If you already have an interface (like guest network 4 for example) routed out vpn then use this ip (192.168.5.1).
+if you already have a general rule like 192.168.1.1/24 already directed to VPN then this should already cover it.
 
-For Unbound is is pretty much the same. Start unbound manager and choose:
+note: access to Transmission GUI/Webpage might be affected by the fact that Transmission is now using a specific local interface. Replies from transmission GUI back to other subnets might need additional rules... se Unbound below to add these rules to redirect replies to other subnets to main table.
+
+For Unbound it is pretty much the same. Start unbound manager and choose:
 ```sh
 vx
 ```
