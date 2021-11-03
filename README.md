@@ -14,8 +14,8 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Add persistentKeepalive](#add-persistentkeepalive)  
   -[Manage Killswitch](#manage-killswitch)  
   -[Change DNS/mtu/Name](#change-dnsmtuname)  
-  -[Check connection](#check-connection)  
   -[ipv6](#ipv6)  
+  -[Check connection](#check-connection)  
   -[Default or Policy routing](#default-or-policy-routing)  
   -[Create rules in WGM](#create-rules-in-wgm)  
   -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
@@ -162,10 +162,8 @@ E:Option ==> peer wg11 mtu=1412
 ```
 Tag name/Annotate:
 ```sh
-E:Option ==> peer wg11 comment=My1stVPNClient
+E:Option ==> peer wg11 comment My 1st VPN Client
 ```
-
-## check connection
 
 ## ipv6
 Note: IPv6 is experimental in wgm. Im not aware of any reports were IPv6 have been successfully implemented.
@@ -187,7 +185,76 @@ If there is an IPv6 here and if this is working for you, then congratulations!
 If this was not intentional and/or not working properly you might want to delete this import and try again. 
 
 It has been reported that the import has got this wrong and if that is the case you might need to manually remove the IPv6 from the .conf file before import.
-  
+
+## check connection
+Checking connection is usually needed to find out why something is not working properly.
+There are a number of things that could be the cause of why a client is not working. To start with, check if there are any handshakes going on:
+```sh
+E:Option ==> list
+
+        interface: wg11         <MyWGServerIP:Port>                    IP/CIDR          # <comment>
+                peer: <ImportedPeerPublicKey>
+                 latest handshake: 1 minute, 20 seconds ago
+                 transfer: 184 B received, 616 B sent                   0 Days, 00:03:27 from 2021-11-03 18:57:03 >>>>>>
+
+        WireGuard ACTIVE Peer Status: Clients 1, Servers 0
+```
+looking at the transfer, my data above the peer was started alittle over 3min ago and there have been no user data so what we are seing are the handshakes and the pings. if you see atleast some bytes recieved and transmits it is a good sign! we can also look at the "latest handshake" as this timer gets reset at every successful handshake. Handshakes are usually alittle over 2 min so as long as this timer is reset every now and then the client is actually communicating with the server so the vpn tunnel is up!
+if your bytes are showing 00 and/or the handshake timer does not get reset, this means that the tunnel is NOT up. 
+
+If the tunnel is not up, then start by checking your config file in another system, like Android, Windows or whatever your preffered platform is. It has been reported that some of the manually generated conf files have very short lifespan and sometimes does not work at all. this means that you might need to generate acouple of files until you find one that is working. it also means that if you have been disconnected for some time, your config file might have been killed off, so you might need to generate a new one.  
+If indeed the conf file is working, we need to check the import.
+Start with checking so that wgm has not accidentally imported IPv6 according to instructions above.
+Further you might need manually check the .conf file:
+```sh
+nano /opt/etc/wireguard.d/filename.conf_imported
+
+[Interface]
+PrivateKey = FreakishlyLongPrivateKey
+Address = IPv4/CIDR, IPv6/CIDR
+DNS = IPv4DNS
+
+[Peer]
+Endpoint = EndpointIPHostName:Port
+PublicKey = FreakishlyLongPublicKey
+AllowedIPs = 0.0.0.0/0, ::/0
+PersistentKeepalive = 25
+```
+make sure there are no extra characters or other strange things going on. while editing, you could remove the IPv6 parts to make sure wgm does not import them by mistake.
+then try to import the peer again.
+
+if/when the peer is handshaking properly but you still cant seem to connecto to internet, next thing to check is if this is DNS related.  
+set the peer in Default (ALL) mode
+```sh
+wgm
+E:Option ==> peer wg11 auto=N
+E:Option ==> peer wg11 restart
+```
+then try to ping a known adress (like google.com):
+```sh
+ping 216.58.211.4
+ping 8.8.8.8
+```
+if you get a proper response, then you are successfully pinging data over the vpn tunnel, so this works. if not, that might indicate that the tunnel is still not really up and/or something is fishy with how the routing turned out or some firewall rule preventing access. 
+check your config in wgm by:
+```sh
+E:Option ==> diag
+```
+remove all sensitive data (private keys, public keys, public ip adresses a.s.o) and post on the snb forum links above to get some more assistance for your particular system.
+
+if you can ping ip adresses, try to ping a domain name:
+```sh
+ping www.google.com
+```
+if you get proper response then your system is online and connected and whatever problem you had before could be caused by policy routing rules gone wrong.
+
+if you dont get a responce, you are having problems resolving names but still have a working connection (this usually appears as no connection, since everything we do on internet is mostly based on these names.
+
+try changing the peer DNS in wgm. it should be noted though that some VPN supplier prohibit the use of other DNS than their own. if you look in the .conf file there are sometimes 2 DNS but wgm only imports the 1st. use the commands above to change the DNS to the other one to see if that works better.
+
+also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could also try to point it back to the router itself (192.168.1.1) then it will end up at the routers ordinary DNS handling and from that point you could try to change the DNS in the router GUI (WAN tab).
+
+
 ## Default or Policy routing?
   
 ## Create rules in WGM
