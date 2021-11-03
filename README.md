@@ -28,7 +28,9 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 # Setup wgm
 
 ## Import Client
-First make sure to obtain a client file from your favorite wireguard vpn provided. Once you have obtained your .conf file, copy it to router here:
+First make sure to obtain a client file from your favorite wireguard vpn provided. Once you have obtained your .conf file, it is a really good idea to test it on an android client (using wireguard app for Android) or windows or similar. it appears a common problem that config files have a short life and sometimes no life at all. it could spare you alot of trouble by making sure that this config file is working before proceeding with importing it into wgm.
+
+when you have concluded that your config file is working, stop the Android/windows/whatever client and copy the .conf file to router here:
 ```sh
 /opt/etc/wireguard.d/
 ```
