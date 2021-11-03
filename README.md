@@ -10,16 +10,16 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 
 ## Table of content
 [Setup wgm](#setup-wgm)  
- -[Import Client](#import-client)  
- -[Add persistentKeepalive](#add-persistentkeepalive)  
- -[Manage Killswitch](#manage-killswitch)  
- -[Change DNS/mtu/Name](#change-dnsmtuname)  
- -[Check connection](#check-connection)  
- -[ipv6](#ipv6)  
- -[Default or Policy routing](#default-or-policy-routing)  
- -[Create rules in WGM](#create-rules-in-wgm)  
- -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
- -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
+  -[Import Client](#import-client)  
+  -[Add persistentKeepalive](#add-persistentkeepalive)  
+  -[Manage Killswitch](#manage-killswitch)  
+  -[Change DNS/mtu/Name](#change-dnsmtuname)  
+  -[Check connection](#check-connection)  
+  -[ipv6](#ipv6)  
+  -[Default or Policy routing](#default-or-policy-routing)  
+  -[Create rules in WGM](#create-rules-in-wgm)  
+  -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
+  -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
 
 [Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
 [Setup a reverse policy based routing](#setup-a-reverse-policy-based-routing)  
@@ -168,6 +168,25 @@ E:Option ==> peer wg11 comment=My1stVPNClient
 ## check connection
 
 ## ipv6
+Note: IPv6 is experimental in wgm. Im not aware of any reports were IPv6 have been successfully implemented.
+In wgm this is determined when a peer is imported. if IPv6 is determined enabled on the router, then the IPv6 will be imported.
+
+to check which has been imported in your case you could issue:
+```sh
+E:Option ==> peer wg11
+
+        Peers (Auto=P - Policy, Auto=X - External i.e. Cell/Mobile)
+
+Client  Auto  IP              Endpoint                   DNS          MTU   Public                                        Private                                       Annotate
+wg11    P     10.0.69.214/24  <importedEndpoint:port>    192.168.1.1  1412  <FrekishlyLongKeyWithRandomLetters>           <AnotherFrekishlyLongKeyWithRandomLetters>    <Peer Name>
+```
+The values above might differ, but the important thing to look at is the IP. If this is an IPv4 as in the picture above, then this peer has been imported as IPv4.
+
+If there is an IPv6 here and if this is working for you, then congratulations!
+
+If this was not intentional and/or not working properly you might want to delete this import and try again. 
+
+It has been reported that the import has got this wrong and if that is the case you might need to manually remove the IPv6 from the .conf file before import.
   
 ## Default or Policy routing?
   
