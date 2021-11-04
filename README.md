@@ -202,7 +202,15 @@ E:Option ==> list
         WireGuard ACTIVE Peer Status: Clients 1, Servers 0
 ```
 looking at the transfer, my data above the peer was started alittle over 3min ago and there have been no user data so what we are seing are the handshakes and the pings. if you see atleast some bytes recieved and transmits it is a good sign! we can also look at the "latest handshake" as this timer gets reset at every successful handshake. Handshakes are usually alittle over 2 min so as long as this timer is reset every now and then the client is actually communicating with the server so the vpn tunnel is up!
-if your bytes are showing 00 and/or the handshake timer does not get reset, this means that the tunnel is NOT up. 
+
+If your bytes are showing 00 and/or the handshake timer does not get reset, this means that the tunnel is NOT up. looking like this is a bad sign (Thanks to snb forum member @chongnt for creating this):
+```sh
+E:Option ==> list
+
+        interface: wg11         <MyWGServerIP:Port>                       <IP/CIDR>             # <comment>
+                peer: FreakishlyLongKey
+                 transfer: 0 B received, 5.20 KiB sent                  0 Days, 00:03:01 from 2021-11-04 19:17:28 >>>>>>
+```
 
 If the tunnel is not up, then start by checking your config file in another system, like Android, Windows or whatever your preffered platform is. It has been reported that some of the manually generated conf files have very short lifespan and sometimes does not work at all. this means that you might need to generate acouple of files until you find one that is working. it also means that if you have been disconnected for some time, your config file might have been killed off, so you might need to generate a new one.  
 If indeed the conf file is working, we need to check the import.
