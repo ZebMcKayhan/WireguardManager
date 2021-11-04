@@ -329,6 +329,7 @@ E:Option ==> peer wg11 rule add vpn 10.23.50.189 comment LocalIP
 E:Option ==> peer wg11 rule add wan 8.8.8.8 comment RemoteIP
 ```
 and the result is:
+```sh
 E:Option ==> peer wg11
 <snip>
         Selective Routing RPDB rules
