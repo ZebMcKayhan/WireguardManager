@@ -267,18 +267,156 @@ also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could als
 
 
 ## Default or Policy routing?
-  
-## Create rules in WGM
+Default routing is the most common way and basically what you will get if using stock ASUS firmware. this means everything will be routed out your client peer. Even the router itself will access internet via a wg client set in default mode and this could really be the key point. if you are using Transmission, or any other programs on the router itself in Default mode ALL local functions on the router will naturally access the internet via your vpn client. the drawback with this mode is that it is very troublesome to run multiple clients and/or even to run a wg server (basically because the server will also connect via vpn where you cant open ports). it is however possible to exclude some clients by using reverse policy routing (see section) but you will end up managing everything via scripting. so if you just want your entire network to access internet via VPN then this might be your solution. also if you really need router local programs to access internet via VPN then this might also be worth looking into.
 
+In Policy mode the default routing is still done over WAN. then you need to setup rules for which IP, IPRange or IPSETs that should be routed out this specific VPN. you can ofcource put your entire network on a single rule, but the router itself will access internet via WAN. some programs, like Unbound and Transmission can be bound to a specific source adress thus making it possible to have them to obey the policy rules and access internet via VPN (see section) but this is only on case-by-case basis and not all programs can be bound like this.
+Because of the natural routing (for ip's not matching any rules) is via WAN it is really easy to add several VPN clients and have some IPs to use one and some use the other. also to combine VPN clients with VPN servers. This is by far the most flexible mode. The main drawback is that local router program access internet via WAN and this is difficult to work around. 
+
+## Create rules in WGM
+if you have decided that policy (P) mode is what you want, we need to setup rules.  
+you will get some terminology help inside wgm:
+```sh
+E:Option ==> peer help
+
+        peer help                                                               - This text
+        peer                                                                    - Show ALL Peers in database
+        peer peer_name                                                          - Show Peer in database or for details e.g peer wg21 config
+        peer peer_name {cmd {options} }                                         - Action the command against the Peer
+        peer peer_name del                                                      - Delete the Peer from the database and all of its files *.conf, *.key
+        peer peer_name ip=xxx.xxx.xxx.xxx                                       - Change the Peer VPN Pool IP
+        peer category                                                           - Show Peer categories in database
+        peer peer_name category [category_name {del | add peer_name[...]} ]     - Create a new category with 3 Peers e.g. peer category GroupA add wg17 wg99 wg11
+        peer new [peer_name [options]]                                          - Create new server Peer e.g. peer new wg27 ip=10.50.99.1/24 port=12345
+        peer peer_name [del|add] ipset {ipset_name[...]}                        - Selectively Route IPSets e.g. peer wg13 add ipset NetFlix Hulu
+        peer peer_name {rule [del {id_num} |add [wan] rule_def]}                - Manage Policy rules e.g. peer wg13 rule add 172.16.1.0/24 comment All LAN
+                                                                                                           peer wg13 rule add wan 52.97.133.162 comment smtp.office365.com
+                                                                                                           peer wg13 rule add wan 172.16.1.100 9.9.9.9 comment Quad9 DNS
+```
+as stated before, we need to create rules for everything that needs to go out VPN. any IPs not matching any rule will go out WAN. so why would we ever need to create WAN rules you might ask? because sometimes we create a rule for VPN but needs exceptions. for this purpus WAN rules is always set to a higher priority than VPN rules, regardless of the order in wgm.
+
+so to create a rule that will send a specific ip, say 192.168.1.38 to wg11:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.1.38 comment My Computer To VPN
+```
+and the result will be:
+```sh
+E:Option ==> peer wg11
+<snip>
+        Selective Routing RPDB rules
+ID  Peer  Interface  Source          Destination     Description
+1   wg11  VPN        192.168.1.38    Any             My Computer To VPN
+```
+if we want to remove the rule, we use the ID:
+```sh
+E:Option ==> peer wg11 rule del 1
+```
+and the rule will be removed.
+
+in my system I create one rule for my entire Guest network 4:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.5.1/24 comment Guest To VPN
+```
+but since the policy routing table is not as complete as the main routing table I need to make exceptions. like if the router needs to contact this subnet it wont find any route to it in this table, so we need to make an exception:
+```sh
+E:Option ==> peer wg11 rule add wan 0.0.0.0/0 192.168.5.1/24 comment To Guest Use Main
+```
+this works brilliantly since the WAN rules have higher priority so any packets going TO this network will be using the main routing table and this is very ok, since the reason for redirect the subnet is for packages going out internet and these packages are not. Packages to internet will not have these adresses as destination so they will be sent to vpn.
+
+wgm uses smart categorizing when only one ip adress is given. if this ip belongs to a local ip adress (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) then it will be considered a source adress. if it does not it will be considered a destination adress.  
+i.e.
+```sh
+E:Option ==> peer wg11 rule add vpn 10.23.50.189 comment LocalIP
+E:Option ==> peer wg11 rule add wan 8.8.8.8 comment RemoteIP
+```
+and the result is:
+E:Option ==> peer wg11
+<snip>
+        Selective Routing RPDB rules
+ID  Peer  Interface  Source          Destination     Description
+1   wg11  VPN        10.23.50.189    Any             LocalIP
+1   wg11  VPN        Any             8.8.8.8         RemoteIP
+```
+to avoid this the author recommends using src= and dst= to work around this, which should look like:
+```sh
+E:Option ==> peer wg11 rule add vpn dst=10.23.50.189 comment LocalIP
+```
+but currently there is a bug in wgm causing the destination to be ANY in some cases, and until this is resolved we will have to resort to adding the dummy 0.0.0.0/0 (which is any) as in the example above.
+  
+a typical use case could be that we want the entire network to go out VPN except a single computer:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.1.1/24 comment All LAN to VPN
+E:Option ==> peer wg11 rule add wan 192.168.1.38 comment Except This Computer
+```
+this works just fine, with one exception. sadly this conputer will still use wg DNS (because vpn rules gets a dns redirection rule but wan rules does not). so in this case it could be better to devide your network in 2 parts, like restrict the DHCP to only give out ip adresses 192.168.1.32 - 192.168.1.255 and manually assign the numbers below 32 and create rules for these ranges separately:
+192.168.1.0/27 #0 - 31 (no rule needed for this)
+192.168.1.32/27 #32-63 (wgm VPN rule)
+192.168.1.64/26 #64-127 (wgm VPN rule)
+192.168.1.128/25 #128-255 (wgm VPN rule)
+
+so in wgm:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.1.128/25 comment 128-255
+E:Option ==> peer wg11 rule add vpn 192.168.1.64/26 comment 64-127
+E:Option ==> peer wg11 rule add vpn 192.168.1.32/27 comment 32-63
+```
+no rules are needed for the 0-31 range since the above rules dont cover them so it will naturally go out WAN.
+now, every computer you manually assign an ip in the range 192.168.1.2 - 192.168.1.31 will go out WAN and the rest will go out VPN.
+  
 ## Create categories
 
 ## Geo-location
+This tool is handly to i.e. change the location of a specific client. This only works for peers in policy (P) mode.  
+if you have multiple vpn connections wich outputs in different countries, say something like this:
+```sh
+E:Option ==> peer
+
+        Peers (Auto=P - Policy, Auto=X - External i.e. Cell/Mobile)
+
+Client  Auto  IP              Endpoint                      DNS          MTU   Annotate
+wg11    P     10.0.69.214/24  <ip:port>                     8.8.8.8      1412  # Output Italy
+wg12    P     10.0.93.103/24  <ip:port                      9.9.9.9      1412  # Output USA
+```
+we could use the jump | geo | livin to change where a source ip gets routed "on-the-fly" IOW without restarting any peers (which also means any config will get reset on the next reboot)
+
+basic terminology is:
+```sh
+jump|geo|livin { @home | * | {[*tag* | wg1x]} {LAN device}
+```
+so if I have a client ip on the local network, 192.168.1.38, I could change this computer geo-location instantly by:
+```sh
+E:Option ==> livin wg11 192.168.1.38
+```
+or, with same result:
+```sh
+E:Option ==> livin Italy 192.168.1.38
+```
+what is happening is that a high-priority rule is created for this ip to be routed out the matching wg1x interface, and also an entry to shift the DNS to the target wg DNS.
+
+further we could change the same IP to:
+```sh
+E:Option ==> livin USA 192.168.1.38
+```
+and 192.168.1.38 will be re-assigned to wg12 and finally:
+```sh
+E:Option ==> livin @home 192.168.1.38
+```
+will delete the rule so this ip will return to be routed to whatever the policy routing rules tell it.
+
+this could also be used with CIDR notation:
+```sh
+E:Option ==> livin Italy 192.168.1.1/24
+```
+but in order to remove the rule, the same ip/CIDR needs to be used:
+```sh
+E:Option ==> livin @home 192.168.1.1/24
+```
+This is really handy if you want to change the location of a specific computer rapidly, but it requires you to continously work with wgm over SSH. 
 
 ## Manage/Setup IPSETs for policy based routing
 - cooming soon
 
 ## Route WG Server to internet via WG Client
-
+- cooming soon
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
