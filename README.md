@@ -18,6 +18,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Check connection](#check-connection)  
   -[Default or Policy routing](#default-or-policy-routing)  
   -[Create rules in WGM](#create-rules-in-wgm)  
+  -[Create categories](#create-categories)  
   -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
   -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
   
@@ -260,10 +261,13 @@ also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could als
   
 ## Create rules in WGM
 
+## Create categories
+
 ## Manage/Setup IPSETs for policy based routing
 - cooming soon
 
 ## Route WG Server to internet via WG Client
+
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
