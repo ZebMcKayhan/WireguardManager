@@ -20,7 +20,8 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Create rules in WGM](#create-rules-in-wgm)  
   -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
   -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
-
+  
+[Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
 [Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
 [Setup a reverse policy based routing](#setup-a-reverse-policy-based-routing)  
 [Setup Transmission and/or Unbound to use WG Client](#setup-transmission-andor-unbound-to-use-wg-client)  
@@ -263,6 +264,18 @@ also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could als
 - cooming soon
 
 ## Route WG Server to internet via WG Client
+
+# Why is Diversion not working for WG Clients
+Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
+in order to make this work we will need to reset the WG DNS back to the router. 
+
+There are some precautions though. This will mean that wg clients are using the same DNS as the rest of your system (as specified in the router GUI) and it is not all VPN providers that allow access to other DNS than their specified. also putting wg DNS in the router GUI might not work since dnsmasq is not accessing internet via VPN and these DNS are typically not accessable from outside VPN. however, not all VPN suppliers are this strict.  
+A popular combination is to use Unbound together with WG. since Unbound setup dnsmasq to forward requests to Unbound we will still benefit from Diversion and IPSET autopopulation. 
+
+to change the wg DNS to use dnsmasq, simply issue:
+```sh
+E:Option ==> peer wg11 dns=192.168.1.1
+```
 
 # Using Yazfi and WGM to route different SSIDs to different VPNs
 source: https://github.com/jackyaz/YazFi
@@ -535,7 +548,12 @@ if you already have a general rule like 192.168.1.1/24 already directed to VPN t
 
 note: access to Transmission GUI/Webpage might be affected by the fact that Transmission is now using a specific local interface. Replies from transmission GUI back to other subnets might need additional rules... se Unbound below to add these rules to redirect replies to other subnets to main table.
 
-For Unbound it is pretty much the same. Start unbound manager and choose:
+For Unbound it is pretty much the same. first of all, for Wireguard clients to use unbound we need to set the wireguard DNS to use the router
+```sh
+E:Option ==> peer wg11 dns=192.168.1.1
+```
+
+Start unbound manager and choose:
 ```sh
 vx
 ```
