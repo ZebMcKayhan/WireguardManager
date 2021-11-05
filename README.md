@@ -169,7 +169,7 @@ E:Option ==> peer wg11 comment My 1st VPN Client
 ```
 
 ## ipv6
-Note: IPv6 is experimental in wgm. Im not aware of any reports were IPv6 have been successfully implemented.
+Note: IPv6 is experimental in wgm. Im not aware of any reports where IPv6 have been successfully implemented.
 In wgm this is determined when a peer is imported. if IPv6 is determined enabled on the router, then the IPv6 will be imported.
 
 to check which has been imported in your case you could issue:
@@ -292,7 +292,7 @@ E:Option ==> peer help
                                                                                                            peer wg13 rule add wan 52.97.133.162 comment smtp.office365.com
                                                                                                            peer wg13 rule add wan 172.16.1.100 9.9.9.9 comment Quad9 DNS
 ```
-as stated before, we need to create rules for everything that needs to go out VPN. any IPs not matching any rule will go out WAN. so why would we ever need to create WAN rules you might ask? because sometimes we create a rule for VPN but needs exceptions. for this purpus WAN rules is always set to a higher priority than VPN rules, regardless of the order in wgm.
+as stated before, we need to create rules for everything that needs to go out VPN. any IPs not matching any rule will go out WAN. so why would we ever need to create WAN rules you might ask? because sometimes we create a rule for VPN but needs exceptions. for this purpose WAN rules is always set to a higher priority than VPN rules, regardless of the order in wgm.
 
 so to create a rule that will send a specific ip, say 192.168.1.38 to wg11:
 ```sh
@@ -579,7 +579,7 @@ when should I not use this?
 
 since you need to handle everything manually, via scripting, it works best if you dont ever need to change it too much and there are not too many rules. prefferably only one interface or one ip adress that should go outside VPN.
 
-is has also been proven difficult to get a WG server working properly (since these packages want to go out VPN and not WAN as they should). I will however present a solution that should work, but has not been properly tested.
+it has also been proven difficult to get a WG server working properly (since these packages want to go out VPN and not WAN as they should). I will however present a solution that should work, but has not been properly tested.
 
 ok, here we go... assuming the use of wg11 (set in auto=y, default mode), we create a wgm custom script:
 ```sh
