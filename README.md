@@ -413,6 +413,8 @@ E:Option ==> livin @home 192.168.1.1/24
 ```
 This is really handy if you want to change the location of a specific computer rapidly, but it requires you to continously work with wgm over SSH. 
 
+Note: if you already have rules explicit for this IP setup in policy rules, there is a risk that this rule might be temporarily removed when issuing @home. this command should only be issued against IPs which does not have any explicit rules (Thanks to SNB Forum member @chongnt for finding this).
+
 ## Manage/Setup IPSETs for policy based routing
 - cooming soon
 
