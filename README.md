@@ -579,10 +579,56 @@ if we were to use the original fwmark to route out matches wg12, then we wouldnt
 echo 2 > /proc/sys/net/ipv4/conf/wg12/rp_filter
 ```
 
+in my case I have 2 country outputs, and one of the purpose is to be able to watch streaming content from a different continent, which means I want to limit the fwmark to only apply to certain subnets, in my case the rule is:
+```sh
+ip rule add from 192.168.1.1/24 fwmark 0x8000 table main prio 9900
+```
+so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any fwmark set.
+
 there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
 
 ## Route WG Server to internet via WG Client
-- cooming soon
+This is a brand new feature (included in 4.12b4). I cannot test this as Im not running any server. the point would be if you only have 1 client and will be able to connect home over the internet to access your LAN and also to surf the internet via your VPN client... in this case you should use the wgm "passthru" command.
+when clients are connected in policy mode then of no rules are setup then server clients will access the internet via WAN. sadly it is not enough to just add the ips to the policy routing table. we also need to handle access rights in the firewall and setup masquarading. wgm handles till all for you in a single command!
+
+some information:
+```sh
+E:Option ==> peer help
+
+        peer help                                                               - This text
+        peer                                                                    - Show ALL Peers in database
+        peer peer_name                                                          - Show Peer in database or for details e.g peer wg21 config
+        peer peer_name {cmd {options} }                                         - Action the command against the Peer
+        peer peer_name del                                                      - Delete the Peer from the database and all of its files *.conf, *.key
+        peer peer_name ip=xxx.xxx.xxx.xxx                                       - Change the Peer VPN Pool IP
+        peer category                                                           - Show Peer categories in database
+        peer peer_name category [category_name {del | add peer_name[...]} ]     - Create a new category with 3 Peers e.g. peer category GroupA add wg17 wg99 wg11
+        peer new [peer_name [options]]                                          - Create new server Peer e.g. peer new wg27 ip=10.50.99.1/24 port=12345
+        peer peer_name [del|add] ipset {ipset_name[...]}                        - Selectively Route IPSets e.g. peer wg13 add ipset NetFlix Hulu
+        peer peer_name {rule [del {id_num} |add [wan] rule_def]}                - Manage Policy rules e.g. peer wg13 rule add 172.16.1.0/24 comment All LAN
+                                                                                                           peer wg13 rule add wan 52.97.133.162 comment smtp.office365.com
+                                                                                                           peer wg13 rule add wan 172.16.1.100 9.9.9.9 comment Quad9 DNS
+        peer serv_peer_name {passthru client_peer {[add|del] [device|IP/CIDR]}} - Manage passthu' rules for inbound 'server' peer devices/IPs/CIDR outbound via 'client' peer tunnel
+                                                                                                           peer wg21 passthru add wg11 SGS8
+                                                                                                           peer wg21 passthru add wg15 all
+                                                                                                           peer wg21 passthru add wg12 10.100.100.0/27
+```
+
+interpreting the help above would give, the device SGS8 connected to wg21 should be routed out wg11 for internet access.
+```sh
+E:Option ==> peer wg21 passthru add wg11 SGS8
+```
+
+similarely to route ALL devices connected on wg21 out wg11
+```sh
+E:Option ==> peer wg21 passthru add wg11 all
+```
+
+and finally to only allow a single ip or group of ips to be routed out out wg11:
+```sh
+E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32
+```
+
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
