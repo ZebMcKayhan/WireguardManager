@@ -457,7 +457,7 @@ wgm creates the ability to manage your IPSETs. it does not however, by any means
 ofcource there is nothing stopping you from plainly create these yourself, for any purpose. an IPSET is just a list with IPAdresses which you can add or delete adresses as you wish. you can read about it here:  
 [ipset man page](https://linux.die.net/man/8/ipset)  
 
-one purpose, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. this ofcource requires you to actually use dnsmasq (see section about Diverion).
+one purpose, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. this ofcource requires you to actually use dnsmasq (see section about Diversion).
 
 wgm offers some assistance in managing these IPSETs.
 
