@@ -364,6 +364,42 @@ no rules are needed for the 0-31 range since the above rules dont cover them so 
 now, every computer you manually assign an ip in the range 192.168.1.2 - 192.168.1.31 will go out WAN and the rest will go out VPN.
   
 ## Create categories
+Categories is a way of grouping clients and servers under a category name and allows you to start or stop entire categories.
+
+you can create a category by adding peers to it directly (in this case adding wg11 and wg12 to a category named My1stCategory:
+```sh
+E:Option ==> peer category My1stCategory add wg11 wg12
+
+
+        'Peer category 'My1stCategory' created
+
+```
+you can now check so it got created properly:
+```sh
+E:Option ==> peer category
+
+        Peer categories
+
+My1stCategory=wg11 wg12
+```
+
+now you can issue start and stop commands to this category:
+```sh
+E:Option ==> start My1stCategory
+```
+or even directly from the shell:
+```sh
+wgm start My1stCategory
+```
+
+at present day you cannot add or delete a single peer to the category, instead you delete it and create a new.
+
+if you wish to remove a category:
+```sh
+E:Option ==> peer category My1stCategory del
+
+        'Peer category 'My1stCategory' Deleted
+```
 
 ## Geo-location
 This tool is handly to i.e. change the location of a specific client. This only works for peers in policy (P) mode.  
@@ -416,7 +452,134 @@ This is really handy if you want to change the location of a specific computer r
 Note: if you already have rules explicit for this IP setup in policy rules, there is a risk that this rule might be temporarily removed when issuing @home. this command should only be issued against IPs which does not have any explicit rules (Thanks to SNB Forum member @chongnt for finding this).
 
 ## Manage/Setup IPSETs for policy based routing
-- cooming soon
+wgm creates the ability to manage your IPSETs. it does not however, by any means, help you in the creation of IPSETs. depending on what you want to do, there are other tools for that. if you for example wish that NETFLIX and similar streaming sites should bypass VPN since these sites block connection from VPN then "x3mrouting" is just what you need. altough x3mrouting is not really compatible with routing wireguard it does a good job of creating/managing the IPSETs for you.
+
+ofcource there is nothing stopping you from plainly create these yourself, for any purpose. an IPSET is just a list with IPAdresses which you can add or delete adresses as you wish. you can read about it here:  
+[ipset man page](https://linux.die.net/man/8/ipset)  
+
+one purpose, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. this ofcource requires you to actually use dnsmasq (see section about Diverion).
+
+wgm offers some assistance in managing these IPSETs.
+
+A couple of things need to happen for IPSET based routing to work:
+1. a rule in the firewall is setup to mark packages with a destination or source adress matching an IP in IPSET. The mark is set based on where you wish to route matching IPs.
+2. a routing rule is setup to direct packages with a specific mark to a specific routing table.
+3. rp_filter needs to be disabled (or set to loose) for interfaces where IPSETs are routed out.
+
+wgm will handle number 1 completally, so you dont have to worry about that. it will partally handle 2 and 3 but not for all use cases.
+
+we can take a look at which mark is used to route where:
+```sh
+E:Option ==> ipset
+
+        Table:ipset Summary
+
+FWMark  Interface
+0x1000  wg11
+0x2000  wg12
+0x4000  wg13
+0x7000  wg14
+0x3000  wg15
+0x8000  wan
+```
+
+these are the preffered marks.  
+an IPSET could be added to any peer. it does not however mean that it has to be routed out THAT peer it just mean that the rules gets added and deleted as the peer is started stopped.
+
+so, lets say we have an IPSET named NETFLIX_DNS that we want to add to wg12 for matching destination IPs to be routed out WAN:
+```sh
+E:Option ==> peer wg12 add ipset NETFLIX_DNS
+        [✔] Ipset 'NETFLIX_DNS' Selective Routing added wg12
+<snip>
+IPSet        Enable  Peer  FWMark  DST/SRC
+NETFLIX_DNS  Y       wg12  0x2000  dst
+```
+
+now we can see that the result was that it will use match IPs for destination and mark them with FWMark 0x2000 which means they will be routed out wg12. this was really not what we entended, clearly we wanted destinations to go out WAN instead, so we could just change the MARK accordingly: 
+```sh
+E:Option ==> peer wg12 upd ipset NETFLIX_DNS fwmark 0x8000
+        [✔] Updated IPSet Selective Routing FWMARK for wg12
+```
+and we can check to see that it all looks good:
+```sh
+E:Option ==> peer wg12
+<snip>
+IPSet        Enable  Peer  FWMark  DST/SRC
+NETFLIX_DNS  Y       wg12  0x8000  dst
+```
+
+if this IPSET was infact a set of source adresses which we wanted to route out WAN instead, we need to change "dst" to be "src" instead:
+```sh
+E:Option ==> peer wg12 upd ipset NETFLIX_DNS dstsrc src
+
+        [✔] Updated IPSet DST/SRC for wg12
+
+E:Option ==> peer wg12
+<snip>
+IPSet        Enable  Peer  FWMark  DST/SRC
+NETFLIX_DNS  Y       wg12  0x8000  src
+```
+
+and if we want to delete it:
+```sh
+E:Option ==> peer wg12 del ipset NETFLIX_DNS
+        [✔] Ipset 'NETFLIX_DNS' Selective Routing deleted wg12
+```
+
+the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packages i different route we will need to disable this.  
+"reverse path filter" is a very simple protection that many now days consider obsolete. whenever a packages comes in on i.e. WAN it will change place on Destination and Source and run it trough the routing table to see if a reply to this package would be routed out the same way. it understands most rules but it will not understand that some packages will recieve a mark and be routed differently. so in this case we need to disable the rp_filter on WAN, otherwise answers from WAN will not be accepted. there are 3 values for rp_filter. 0 means "Disabled", 1 means "Enabled, strict", 2 means "Enabled loose". loose means that it does not check routing explicitly, but will accept if there are any routing ways back this interface. 2 is sufficient for us.
+
+specifically for WAN this could be handled in wgm by:
+```sh
+E:Option ==> rp_filter disable
+         [✔] Reverse Path Filtering DISABLED (2)
+```
+however, Im not sure that this will survive a reboot. if not, please put a 
+```sh
+echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
+```
+(assuming eth0 is your WAN interface) in wg12-up.sh for example (see further down).
+
+ok, so this is how we handle IPSETs in wgm.
+
+wgm will setup rules for marks going out wg1x interfaces but not for the WAN interface (as it is not linked to any peer). so here we need to make a custom script:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg12-up.sh
+```
+populate this with your mark rule and disable the rp_filter:
+```sh
+#!/bin/sh
+ip rule add from all fwmark 0x8000 table main prio 9900
+echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
+```
+save and exit.  
+you will also need to make a script to delete the rule as the peer is stopped:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg12-down.sh
+```
+populate with:
+```sh
+#!/bin/sh
+ip rule del prio 9900
+```
+save and exit
+
+make both files executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg12-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg12-down.sh
+```
+
+now you can go into wgm and restart the peer and our rules should kick in!
+```sh
+E:Option ==> restart wg12
+```
+if we were to use the original fwmark to route out matches wg12, then we wouldnt need to crate the "ip rule..." in wg12-up.sh. but we would need to add the rp_filter:
+```sh
+echo 2 > /proc/sys/net/ipv4/conf/wg12/rp_filter
+```
+
+there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
 
 ## Route WG Server to internet via WG Client
 - cooming soon
