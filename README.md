@@ -335,7 +335,7 @@ E:Option ==> peer wg11
         Selective Routing RPDB rules
 ID  Peer  Interface  Source          Destination     Description
 1   wg11  VPN        10.23.50.189    Any             LocalIP
-1   wg11  VPN        Any             8.8.8.8         RemoteIP
+1   wg11  WAN        Any             8.8.8.8         RemoteIP
 ```
 to avoid this the author recommends using src= and dst= to work around this, which should look like:
 ```sh
