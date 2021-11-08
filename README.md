@@ -649,6 +649,8 @@ E:Option ==> peer wg11 dns=192.168.1.1
 # Using Yazfi and WGM to route different SSIDs to different VPNs
 source: https://github.com/jackyaz/YazFi
 
+Note: Below instructions are ONE way of doing this. It is not the only way and may not even be the best way for your setup.
+
 Yazfi is an extremely useful tool to manage guestnetworks on asuswrt-merlin. It allows you to setup 6 different SSIDs where each SSID typically gets its own subnet and you get to individually control their DNS. 
 
 Prerequsites: Having YazFi installed and the wireguard client you want to use imported (and working) in wgm.
@@ -881,6 +883,9 @@ add the commands to wg21-up.sh, make it executable.
 create wg21-down.sh where you remove the rules, make it executable.
 
 # Setup Transmission and/or Unbound to use WG Client
+
+Note: Below instructions are ONE way of doing this. It is not the only way and may not even be the best way for your setup.
+
 This is only needed in policy mode. 
 
 Lets Start with Transmission since this is easier. In order to select outgoing interface we need to bind the program to a specific source adress.
