@@ -487,7 +487,7 @@ FWMark  Interface
 0x8000  wan
 ```
 
-these are the preffered marks.  
+these are the preffered marks. I do not recommend changing them altough it is possible. The point is that marking a package with 0x3000 would mean that we want this package to be routed out wg15.  
 an IPSET could be added to any peer. it does not however mean that it has to be routed out THAT peer it just mean that the rules gets added and deleted as the peer is started stopped.
 
 so, lets say we have an IPSET named NETFLIX_DNS that we want to add to wg12 for matching destination IPs to be routed out WAN:
@@ -498,8 +498,8 @@ E:Option ==> peer wg12 add ipset NETFLIX_DNS
 IPSet        Enable  Peer  FWMark  DST/SRC
 NETFLIX_DNS  Y       wg12  0x2000  dst
 ```
-
-now we can see that the result was that it will use match IPs for destination and mark them with FWMark 0x2000 which means they will be routed out wg12. this was really not what we entended, clearly we wanted destinations to go out WAN instead, so we could just change the MARK accordingly: 
+What is happening now is that wgm will create a firewall rule to mark packages with destination matching any ip in our ipset with mark 0x2000. It will also create a rule to route packages marked with 0x2000 out wg12.  
+this was really not what we entended, clearly we wanted destinations to go out WAN instead, so we could just change the MARK accordingly: 
 ```sh
 E:Option ==> peer wg12 upd ipset NETFLIX_DNS fwmark 0x8000
         [✔] Updated IPSet Selective Routing FWMARK for wg12
@@ -511,7 +511,7 @@ E:Option ==> peer wg12
 IPSet        Enable  Peer  FWMark  DST/SRC
 NETFLIX_DNS  Y       wg12  0x8000  dst
 ```
-
+The firewall rule is now Updated to mark matching packages with 0x8000 instead.
 if this IPSET was infact a set of source adresses which we wanted to route out WAN instead, we need to change "dst" to be "src" instead:
 ```sh
 E:Option ==> peer wg12 upd ipset NETFLIX_DNS dstsrc src
