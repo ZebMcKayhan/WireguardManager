@@ -488,7 +488,7 @@ FWMark  Interface
 ```
 
 these are the preffered marks. I do not recommend changing them altough it is possible. The point is that marking a package with 0x3000 would mean that we want this package to be routed out wg15.  
-an IPSET could be added to any peer. it does not however mean that it has to be routed out THAT peer it just mean that the rules gets added and deleted as the peer is started stopped.
+an IPSET could be added to any peer. it does not however mean that it has to be routed out THAT peer it just mean that the rules gets added and deleted as the peer is started stopped. It will also create routing rule and disable rp_filter for that peer.
 
 so, lets say we have an IPSET named NETFLIX_DNS that we want to add to wg12 for matching destination IPs to be routed out WAN:
 ```sh
@@ -498,7 +498,7 @@ E:Option ==> peer wg12 add ipset NETFLIX_DNS
 IPSet        Enable  Peer  FWMark  DST/SRC
 NETFLIX_DNS  Y       wg12  0x2000  dst
 ```
-What is happening now is that wgm will create a firewall rule to mark packages with destination matching any ip in our ipset with mark 0x2000. It will also create a rule to route packages marked with 0x2000 out wg12.  
+What is happening now is that wgm will create a firewall rule to mark packages with destination matching any ip in our ipset with mark 0x2000. It will also create a rule to route packages marked with 0x2000 out wg12. Since wg12 now contain ipsets then wgm also disables wg12 rp_filter.  
 this was really not what we entended, clearly we wanted destinations to go out WAN instead, so we could just change the MARK accordingly: 
 ```sh
 E:Option ==> peer wg12 upd ipset NETFLIX_DNS fwmark 0x8000
@@ -538,7 +538,7 @@ specifically for WAN this could be handled in wgm by:
 E:Option ==> rp_filter disable
          [✔] Reverse Path Filtering DISABLED (2)
 ```
-however, Im not sure that this will survive a reboot. if not, please put a 
+however, Im pretty sure that this will survive a reboot. Se we better put a 
 ```sh
 echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 ```
@@ -578,16 +578,12 @@ now you can go into wgm and restart the peer and our rules should kick in!
 ```sh
 E:Option ==> restart wg12
 ```
-if we were to use the original fwmark to route out matches wg12, then we wouldnt need to crate the "ip rule..." in wg12-up.sh. but we would need to add the rp_filter:
-```sh
-echo 2 > /proc/sys/net/ipv4/conf/wg12/rp_filter
-```
-
+if we were to use the original fwmark to route out matches wg12, then we wouldnt need to create anything in wg12-up.sh. both routing rule and rp_filter is taken care of by wgm.  
 in my case I have 2 country outputs, and one of the purpose is to be able to watch streaming content from a different continent, which means I want to limit the fwmark to only apply to certain subnets, in my case the rule is:
 ```sh
 ip rule add from 192.168.1.1/24 fwmark 0x8000 table main prio 9900
 ```
-so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any fwmark set.
+so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any 0x8000 fwmark set.
 
 there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
 
