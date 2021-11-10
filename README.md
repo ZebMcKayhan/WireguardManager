@@ -538,7 +538,7 @@ specifically for WAN this could be handled in wgm by:
 E:Option ==> rp_filter disable
          [✔] Reverse Path Filtering DISABLED (2)
 ```
-however, Im pretty sure that this will survive a reboot. Se we better put a 
+however, Im pretty sure that this wont survive a reboot. Se we better put a 
 ```sh
 echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 ```
