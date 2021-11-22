@@ -269,8 +269,19 @@ also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could als
 ## Default or Policy routing?
 Default routing is the most common way and basically what you will get if using stock ASUS firmware. this means everything will be routed out your client peer. Even the router itself will access internet via a wg client set in default mode and this could really be the key point. if you are using Transmission, or any other programs on the router itself in Default mode ALL local functions on the router will naturally access the internet via your vpn client. the drawback with this mode is that it is very troublesome to run multiple clients and/or even to run a wg server (basically because the server will also connect via vpn where you cant open ports). it is however possible to exclude some clients by using reverse policy routing (see section) but you will end up managing everything via scripting. so if you just want your entire network to access internet via VPN then this might be your solution. also if you really need router local programs to access internet via VPN then this might also be worth looking into.
 
+To set the peer to autostart in default mode:
+```sh
+E:Option ==> peer wg11 auto=Y
+```  
+  
 In Policy mode the default routing is still done over WAN. then you need to setup rules for which IP, IPRange or IPSETs that should be routed out this specific VPN. you can ofcource put your entire network on a single rule, but the router itself will access internet via WAN. some programs, like Unbound and Transmission can be bound to a specific source adress thus making it possible to have them to obey the policy rules and access internet via VPN (see section) but this is only on case-by-case basis and not all programs can be bound like this.
 Because of the natural routing (for ip's not matching any rules) is via WAN it is really easy to add several VPN clients and have some IPs to use one and some use the other. also to combine VPN clients with VPN servers. This is by far the most flexible mode. The main drawback is that local router program access internet via WAN and this is difficult to work around. 
+
+```sh
+E:Option ==> peer wg11 auto=P
+```
+However, this will not work until you have put in atleast one rule for the peer (see section)
+
 
 ## Create rules in WGM
 if you have decided that policy (P) mode is what you want, we need to setup rules.  
@@ -362,6 +373,11 @@ E:Option ==> peer wg11 rule add vpn 192.168.1.32/27 comment 32-63
 ```
 no rules are needed for the 0-31 range since the above rules dont cover them so it will naturally go out WAN.
 now, every computer you manually assign an ip in the range 192.168.1.2 - 192.168.1.31 will go out WAN and the rest will go out VPN.
+
+Whenever you are satisfied with your rules, you can put the peer in policy mode:
+```sh
+E:Option ==> peer wg11 auto=P
+```
   
 ## Create categories
 Categories is a way of grouping clients and servers under a category name and allows you to start or stop entire categories.
