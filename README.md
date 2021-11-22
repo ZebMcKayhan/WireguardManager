@@ -274,9 +274,10 @@ To set the peer to autostart in default mode:
 E:Option ==> peer wg11 auto=Y
 ```  
   
+  
 In Policy mode the default routing is still done over WAN. then you need to setup rules for which IP, IPRange or IPSETs that should be routed out this specific VPN. you can ofcource put your entire network on a single rule, but the router itself will access internet via WAN. some programs, like Unbound and Transmission can be bound to a specific source adress thus making it possible to have them to obey the policy rules and access internet via VPN (see section) but this is only on case-by-case basis and not all programs can be bound like this.
 Because of the natural routing (for ip's not matching any rules) is via WAN it is really easy to add several VPN clients and have some IPs to use one and some use the other. also to combine VPN clients with VPN servers. This is by far the most flexible mode. The main drawback is that local router program access internet via WAN and this is difficult to work around. 
-
+To set the peer to autostart in policy mode:
 ```sh
 E:Option ==> peer wg11 auto=P
 ```
