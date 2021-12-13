@@ -972,3 +972,53 @@ If you plan to serve dns replies to clients connected to your wireguard vpn serv
 E:Option ==> peer wg11 rule add wan 0.0.0.0/0 10.50.1.1/24 comment ToWg21UseMain
 ```
 You might need to further adjust this for your system.
+
+# I cant access my nas/samba share over vpn
+It is common that some devices have build in protection, since they are designed to be used within a single network. This could be because higher end devices pays alot of attention to access control, to make it work from a different subnet you may need to change several settings in several different places. some devices could be just impossible to seem to get it to work from a different subnet.  
+
+first of all, access control to i.e. NAS will not work by trying to access the share name. niether will the share pop up by itself since advertisement dont work over VPN. you will need to access the NAS "blindly" by using it's local ip-adress (like 192.168.1.20).  
+
+whenever you feel like you reach the end of the line, and have checked that you can access everything on your local network except this specific resource, the last resort could be to masquarade your vpn communication so the NAS "thinks" the request comes from it's own subnet.  
+
+why is this a last resort? because it actually does not solve the root cause. it will add complexity to your system while at the same time limit your ability to further control and monitor access to your NAS from VPN (as all access via VPN appears to come from the router)
+
+lets say my stubborn share is at 192.168.1.20 and router itself has 192.168.1.1 and I have trouble accessing it from wg21, 10.50.1.x. try enter a rule in the router ssh, at the prompt:
+```sh
+iptables -t nat -I POSTROUTING -s 10.50.1.0/24 -d 192.168.1.20 -j SNAT --to-source 192.168.1.1 -m comment --comment "WireGuard 'server'"
+```
+the rule matches packets from 10.50.1.X (wg21 clients) to 192.168.1.20 (my NAS) and when packets are matches, the source adress of the packet is changed to 192.168.1.1 (and any reply is changed back). This way we have masquaraded our packages so the NAS think they come from the router itself which is on the same subnet so we are affectively bypassing whatever security measures that we never managed to get to the setting. 
+this type of adress translation happens over the internet all the time without us even knowing about it. try to use 8.8.8.8 as your dns for example and do a dnsleak test. you will not see any 8.8.8.8 there because your packets were re-directed to multiple other sources (DNAT - Destination Network Adress Translation). In this case we are basically using the same technique as your router is already doing to hide your LAN ip (192.168.1.x) from the internet, so it appears as your entire LAN has one single internet adress.
+
+if you found the rule not to be working, or you made some type, just enter the exact same rule again and just change the -I to -D to delete it:
+```sh
+iptables -t nat -D POSTROUTING -s 10.50.1.0/24 -d 192.168.1.20 -j SNAT --to-source 192.168.1.1 -m comment --comment "WireGuard 'server'"
+```
+
+if you are successful and wish to keep the rule, lets add it to the wg21 autostart scripts:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg21-up.sh
+```
+and populate the file with:
+```sh
+#!/bin/sh
+iptables -t nat -I POSTROUTING -s 10.50.1.0/24 -d 192.168.1.20 -j SNAT --to-source 192.168.1.1 -m comment --comment "WireGuard 'server'"
+```
+Save & Exit 
+
+Create a new file to delete this when the wg server is brought down:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg21-down.sh
+```
+Populate with:
+```sh
+#!/bin/sh
+iptables -t nat -D POSTROUTING -s 10.50.1.0/24 -d 192.168.1.20 -j SNAT --to-source 192.168.1.1 -m comment --comment "WireGuard 'server'"
+```
+
+make the files executable
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg21-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg21-down.sh
+```
+
+there, your rule shall now be applied when wg21 starts (including at boot) and the rule is deleted if you stop your server peer.
