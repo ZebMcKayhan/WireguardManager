@@ -979,6 +979,43 @@ It is common that some devices have build in protection, since they are designed
 
 first of all, access control to i.e. NAS will not work by trying to access the share name. niether will the share pop up by itself since advertisement dont work over VPN. you will need to access the NAS "blindly" by using it's local ip-adress (like 192.168.1.20).  
 
+some NAS uses netmask to control access, so ips within the netmask are allowed to access it, but nothing else. the netmask setting is usually under GUI, LAN --> LAN IP and usually set to 255.255.255.0. this is the same as CIDR notation /24 and means that NAS IP must match the first 3 numbers, so if NAS has 192.168.1.20 then it will accept 192.168.1.X ips to access.  
+
+but wg server uses 10.50.1.X and therin lies our problem. in order for this to work we would have to set the netmask to 0.0.0.0 to allow all, but this is not at all recommended nor is it allowed by the GUI.  
+
+but what if we could set our wg server to give out 192.168.2.x? Then we could adjust the netmask slightly to (255.255.252.0) /22 which would then include 192.168.0.X - 192.168.3.X. this might collide with YazFi gust networks, but they are easaly moved to some other ip's via the GUI tab.  
+
+ofcource we could change the network mask to 255.255.0.0 and give our wg server any 192.168.X.Y ip, but it is considered good practice to limit as much access as possible. The router still prevents access, so there are no real security risks, but typically more layers of security gives better protection.
+
+Disconnect all clients from the server and stop it:
+```sh
+E:Option ==> stop wg21
+```
+
+now you likely need to remove all device peers from the server:
+```sh
+E:Option ==> peer Device1 delX
+E:Option ==> peer Device2 delX
+E:Option ==> peer Device3 delX
+...
+```
+
+now change wg21 ip pool:
+```sh
+E:Option ==> peer wg21 ip=192.168.2.0/24
+```
+
+Recreate your device peers, and start the server. make sure they get the new ip adresses.
+
+update your netmask in the GUI (LAN --> LAN IP) to 255.255.252.0
+
+reboot of router after all this to make sure everything got a clean start.
+
+check if NAS accepts the new network mask, otherwise you might need to change the network mask inside the NAS configuration.
+
+now, hopefully you will be able to access your NAS via wg VPN.
+
+as an alternate way:
 whenever you feel like you reach the end of the line, and have checked that you can access everything on your local network except this specific resource, the last resort could be to masquarade your vpn communication so the NAS "thinks" the request comes from it's own subnet.  
 
 why is this a last resort? because it actually does not solve the root cause. it will add complexity to your system while at the same time limit your ability to further control and monitor access to your NAS from VPN (as all access via VPN appears to come from the router)
