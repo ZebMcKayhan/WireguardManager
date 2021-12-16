@@ -1009,7 +1009,7 @@ E:Option ==> peer wg21 ip=192.168.2.0/24
 
 if you create the server for the first time, you could include this ip from the beginning:
 ```sh
-E:Option ==> peer new wg21 ip=192.168.50.0/24
+E:Option ==> peer new wg21 ip=192.168.2.0/24
 ```
 
 Recreate your device peers
