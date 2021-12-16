@@ -1036,6 +1036,8 @@ check if NAS accepts the new network mask, otherwise you might need to change th
 
 now, hopefully you will be able to access your NAS via wg VPN.
 
+a variation of this could be to use a netmask of /17 (255.255.127.0) which will include 192.168.1.X - 192.168.126.X but still block access 192.168.127.X - 192.168.255.X so you could assign <= 126 subnet to trusted network and >= 127 subnets to less trusted networks (like guest network, IoT a.s.o.)
+
 as an alternate way:  
 whenever you feel like you reach the end of the line, and have checked that you can access everything on your local network except this specific resource, the last resort could be to masquarade your vpn communication so the NAS "thinks" the request comes from it's own subnet.  
 
