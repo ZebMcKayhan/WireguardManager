@@ -1017,7 +1017,7 @@ check if NAS accepts the new network mask, otherwise you might need to change th
 
 now, hopefully you will be able to access your NAS via wg VPN.
 
-as an alternate way:
+as an alternate way:  
 whenever you feel like you reach the end of the line, and have checked that you can access everything on your local network except this specific resource, the last resort could be to masquarade your vpn communication so the NAS "thinks" the request comes from it's own subnet.  
 
 why is this a last resort? because it actually does not solve the root cause. it will add complexity to your system while at the same time limit your ability to further control and monitor access to your NAS from VPN (as all access via VPN appears to come from the router)
