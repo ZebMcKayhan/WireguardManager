@@ -1007,7 +1007,26 @@ now change wg21 ip pool:
 E:Option ==> peer wg21 ip=192.168.2.0/24
 ```
 
-Recreate your device peers, and start the server. make sure they get the new ip adresses.
+if you create the server for the first time, you could include this ip from the beginning:
+```sh
+E:Option ==> peer new wg21 ip=192.168.50.0/24
+```
+
+Recreate your device peers
+```sh
+E:Option ==> create Device1
+...
+E:Option ==> create Device2
+...
+E:Option ==> create Device3
+...
+```
+
+Set your server in auto mode and start it:
+```sh
+E:Option ==> peer wg21 auto=Y
+E:Option ==> start wg21
+```
 
 update your netmask in the GUI (LAN --> LAN IP) to 255.255.252.0
 
