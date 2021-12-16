@@ -975,6 +975,8 @@ E:Option ==> peer wg11 rule add wan 0.0.0.0/0 10.50.1.1/24 comment ToWg21UseMain
 You might need to further adjust this for your system.
 
 # I cant access my nas/samba share over vpn
+ - Thanks for SNB forum member @mgear1981 for testing and elaborating to get this together.
+
 It is common that some devices have build in protection, since they are designed to be used within a single network. This could be because higher end devices pays alot of attention to access control, to make it work from a different subnet you may need to change several settings in several different places. some devices could be just impossible to seem to get it to work from a different subnet.  
 
 first of all, access control to i.e. NAS will not work by trying to access the share name. niether will the share pop up by itself since advertisement dont work over VPN. you will need to access the NAS "blindly" by using it's local ip-adress (like 192.168.1.20).  
