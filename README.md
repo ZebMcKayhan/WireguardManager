@@ -28,6 +28,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [Setup a reverse policy based routing](#setup-a-reverse-policy-based-routing)  
 [Setup Transmission and/or Unbound to use WG Client](#setup-transmission-andor-unbound-to-use-wg-client)  
 [I cant access my nas/samba share over vpn](#i-cant-access-my-nassamba-share-over-vpn)
+[Why is my SMB share slow over vpn](#why-is-my-smb-share-slow-over-vpn)
 
 # Setup wgm
 
@@ -354,14 +355,13 @@ to avoid this the author recommends using src= and dst= to work around this, whi
 ```sh
 E:Option ==> peer wg11 rule add vpn dst=10.23.50.189 comment LocalIP
 ```
-but currently there is a bug in wgm causing the destination to be ANY in some cases, and until this is resolved we will have to resort to adding the dummy 0.0.0.0/0 (which is any) as in the example above.
   
 a typical use case could be that we want the entire network to go out VPN except a single computer:
 ```sh
 E:Option ==> peer wg11 rule add vpn 192.168.1.1/24 comment All LAN to VPN
 E:Option ==> peer wg11 rule add wan 192.168.1.38 comment Except This Computer
 ```
-this works just fine, with one exception. sadly this conputer will still use wg DNS (because vpn rules gets a dns redirection rule but wan rules does not). so in this case it could be better to devide your network in 2 parts, like restrict the DHCP to only give out ip adresses 192.168.1.32 - 192.168.1.255 and manually assign the numbers below 32 and create rules for these ranges separately:
+this works just fine, with one exception. sadly this computer will still use wg DNS (because vpn rules gets a dns redirection rule but wan rules does not). so in this case it could be better to devide your network in 2 parts, like restrict the DHCP to only give out ip adresses 192.168.1.32 - 192.168.1.255 and manually assign the numbers below 32 and create rules for these ranges separately:
 192.168.1.0/27 #0 - 31 (no rule needed for this)
 192.168.1.32/27 #32-63 (wgm VPN rule)
 192.168.1.64/26 #64-127 (wgm VPN rule)
@@ -471,15 +471,13 @@ This is really handy if you want to change the location of a specific computer r
 
 Note: if you already have rules explicit for this IP setup in policy rules, there is a risk that this rule might be temporarily removed when issuing @home. this command should only be issued against IPs which does not have any explicit rules (Thanks to SNB Forum member @chongnt for finding this).
 
-Note: dnat rules is not deleted properly @home so using this feature might cause your dns to be different from what you intended.
-
 ## Manage/Setup IPSETs for policy based routing
 wgm creates the ability to manage your IPSETs. it does not however, by any means, help you in the creation of IPSETs. depending on what you want to do, there are other tools for that. if you for example wish that NETFLIX and similar streaming sites should bypass VPN since these sites block connection from VPN then "x3mrouting" is just what you need. altough x3mrouting is not really compatible with routing wireguard it does a good job of creating/managing the IPSETs for you.
 
 ofcource there is nothing stopping you from plainly create these yourself, for any purpose. an IPSET is just a list with IPAdresses which you can add or delete adresses as you wish. you can read about it here:  
 [ipset man page](https://linux.die.net/man/8/ipset)  
 
-one purpose, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. this ofcource requires you to actually use dnsmasq (see section about Diversion).
+one methode, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. this ofcource requires you to actually use dnsmasq (see section about Diversion).
 
 wgm offers some assistance in managing these IPSETs.
 
@@ -548,7 +546,7 @@ E:Option ==> peer wg12 del ipset NETFLIX_DNS
         [✔] Ipset 'NETFLIX_DNS' Selective Routing deleted wg12
 ```
 
-the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packages i different route we will need to disable this.  
+the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packages to different route we will need to disable this.  
 "reverse path filter" is a very simple protection that many now days consider obsolete. whenever a packages comes in on i.e. WAN it will change place on Destination and Source and run it trough the routing table to see if a reply to this package would be routed out the same way. it understands most rules but it will not understand that some packages will recieve a mark and be routed differently. so in this case we need to disable the rp_filter on WAN, otherwise answers from WAN will not be accepted. there are 3 values for rp_filter. 0 means "Disabled", 1 means "Enabled, strict", 2 means "Enabled loose". loose means that it does not check routing explicitly, but will accept if there are any routing ways back this interface. 2 is sufficient for us.
 
 specifically for WAN this could be handled in wgm by:
@@ -562,7 +560,7 @@ echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 ```
 (assuming eth0 is your WAN interface) in wg12-up.sh for example (see further down).
 
-ok, so this is how we handle IPSETs in wgm.
+ok, so this is how we setup IPSETs in wgm.
 
 wgm will setup rules for marks going out wg1x interfaces but not for the WAN interface (as it is not linked to any peer). so here we need to make a custom script:
 ```sh
@@ -762,7 +760,7 @@ I have choosen to use option 2 because it is easier, since it does not require s
 
 so in wgm we issue (one by one):
 ```sh
-E:Option ==> peer wg12 rule add wan 0.0.0.0/0 192.168.5.1/24 comment ToGuest4UseMain
+E:Option ==> peer wg12 rule add wan dst=192.168.5.1/24 comment ToGuest4UseMain
 E:Option ==> peer wg12 rule add vpn 192.168.5.1/24 comment Guest2VPN
 E:Option ==> peer wg12 auto=p
 E:Option ==> restart wg12
@@ -771,11 +769,11 @@ This works because WAN rules have higher priority than VPN routes in wgm. The "a
 
 If you need the guest network to access other subnets than your main network you might need to broaden the range of the "ToGuest4UseMain" rule. For example I used:
 ```sh
-E:Option ==> peer wg12 rule add wan 0.0.0.0/0 192.168.1.1/16 comment ToLocalUseMain
+E:Option ==> peer wg12 rule add wan dst=192.168.1.1/16 comment ToLocalUseMain
 ```
 If you have a wireguard server which shall be able to communicate with the guest network, replies from the guest network will need to find its way back. So then something like this may be needed:
 ```sh
-E:Option ==> peer wg12 rule add wan 0.0.0.0/0 10.50.1.1/24 comment ToWg21UseMain
+E:Option ==> peer wg12 rule add wan dst=10.50.1.1/24 comment ToWg21UseMain
 ```
 Ofcourse these rules will not provide any access to other subnets since we have not allowed anything in the firewall more than Guest 4 to wg12, but it will allow the packages to be routed but might still be BLOCKED by firewall.  
 Add more rules if you have more subnets.
@@ -786,11 +784,11 @@ E:Option ==> peer wg12
 ...
         Selective Routing RPDB rules
 ID  Peer  Interface  Source          Destination     Description
-1   wg12  WAN        0.0.0.0/0       192.168.5.1/24  ToGuest4UseMain
+1   wg12  WAN        Any             192.168.5.1/24  ToGuest4UseMain
 2   wg12  VPN        192.168.5.1/24  Any             Guest2VPN
 ```
 
-one last thing... the DNS used in YazFi for this network will for now on be overridden by wgm and the dns put into wg12 peer (or imported into). if you fore some reason are unhappy with using the DNS from your imported file, you could just change it (to 8.8.8.8 in this example):
+one last thing... the DNS used in YazFi for this network will for now on be overridden by wgm and the dns put into wg12 peer (or imported into). if you for some reason are unhappy with using the DNS from your imported file, you could just change it (to 8.8.8.8 in this example):
 ```sh
 E:Option ==> peer wg12 dns=8.8.8.8
 E:Option ==> restart wg12
@@ -961,7 +959,7 @@ Basically because Unbound does not only talk to internet to resolve name it also
 We will handle this by redirecting ToLocal packages to main routing table.
 In wgm:
 ```sh
-E:Option ==> peer wg11 rule add wan 0.0.0.0/0 192.168.1.1/16 comment ToLocalUseMain
+E:Option ==> peer wg11 rule add wan dst=192.168.1.1/16 comment ToLocalUseMain
 E:Option ==> peer wg11 rule add vpn 192.168.1.1 comment Unbound2VPN
 E:Option ==> peer wg11 auto=p
 E:Option ==> restart wg11
@@ -970,7 +968,7 @@ The first line redirect packages TO 192.168.x.x to the main routing table since 
 
 If you plan to serve dns replies to clients connected to your wireguard vpn server you might also need something like:
 ```sh
-E:Option ==> peer wg11 rule add wan 0.0.0.0/0 10.50.1.1/24 comment ToWg21UseMain
+E:Option ==> peer wg11 rule add wan dst=10.50.1.1/24 comment ToWg21UseMain
 ```
 You might need to further adjust this for your system.
 
@@ -1083,3 +1081,13 @@ chmod +x /jffs/addons/wireguard/Scripts/wg21-down.sh
 ```
 
 there, your rule shall now be applied when wg21 starts (including at boot) and the rule is deleted if you stop your server peer.
+
+# Why is my SMB share slow over vpn
+This is basically a problem with TCP and/or the way it is used by SMB. it has been miltigated over the years with SMD2 and SMB3 but SMB was never meant to be used on the internet.  
+The speed killer for SMD is infact latency, which is partly caused by physical distance (i.e. speed of light) and partly by more equipment handling each packet.  
+we cant do much about the speed of light, it is what it is. but we can do what we can to make sure out package does not need to be mangled more than bare minimum. Less handling of the package means lower latency. The typical mangling that happens is that packages which are too big for a certain interface gets cut into 2 packages and then re-assembled.  
+Ones the package leaves your router on it's way over the internet there is nothing we can do about it. if your ISP has high latency out on the internet even for non-mangled packages, there is little we can do about it, and your speed will always be slow.
+
+it has been shown that proper setting will atleast give you read/write speeds in the 20-30MB/s range.  
+
+More detailed info about this will be provided soon.
