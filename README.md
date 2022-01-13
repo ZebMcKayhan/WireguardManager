@@ -14,6 +14,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Add persistentKeepalive](#add-persistentkeepalive)  
   -[Manage Killswitch](#manage-killswitch)  
   -[Change DNS/mtu/Name](#change-dnsmtuname)  
+  -[Terminal Options](#terminal-options)  
   -[ipv6](#ipv6)  
   -[Check connection](#check-connection)  
   -[Default or Policy routing](#default-or-policy-routing)  
@@ -177,7 +178,8 @@ Tag name/Annotate:
 E:Option ==> peer wg11 comment My 1st VPN Client
 ```
 
-## Terminal Options
+
+
 Wireguard Session Manager was designed to operate properaly with XSHELL 7 with Delete Key = VT220 and Backspace = Backspace. if you are using other terminal programs (like Putty) there is a risk you will have problems with backspace not really looking like it is deleting anything altough it is.
 the reason for this was that Wireguard Session Manager was designed to use "command buffert" to use "PG-UP" to get to older commands.
 This does not always work well with other terminal programs. 
