@@ -177,6 +177,29 @@ Tag name/Annotate:
 E:Option ==> peer wg11 comment My 1st VPN Client
 ```
 
+## Terminal Options
+Wireguard Session Manager was designed to operate properaly with XSHELL 7 with Delete Key = VT220 and Backspace = Backspace. if you are using other terminal programs (like Putty) there is a risk you will have problems with backspace not really looking like it is deleting anything altough it is.
+the reason for this was that Wireguard Session Manager was designed to use "command buffert" to use "PG-UP" to get to older commands.
+This does not always work well with other terminal programs. 
+
+if you experience problems and wish to revert to "Basic" then you could issue:
+```sh
+E:Option ==> pgupkey off
+```
+
+if you wish to keep this setting:
+```sh
+E:Option ==> vx
+```
+and change
+```sh
+#NOPG_UP
+```
+to
+```sh
+NOPG_UP
+```
+
 ## ipv6
 Note: IPv6 is experimental in wgm. Im not aware of any reports where IPv6 have been successfully implemented.
 In wgm this is determined when a peer is imported. if IPv6 is determined enabled on the router, then the IPv6 will be imported.
