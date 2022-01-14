@@ -222,9 +222,14 @@ if you have a dual-stack wireguard .conf then you actually have the possibility 
 
 prerequisites for this is atleast to have firmware 386.4 since before this the ipv6 NAT table was not enabled in the kernel.
 
-if you dont have an ipv6 WAN connection and still want to use IPv6, get yourself a ULA prefix (kind of like 192.168.x.y). Google yourself to an ipv6 ULA generator of your choice. Mine became "fdff:a37f:fa75::/48". The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "fdff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPV6 and set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "fdff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
+if you dont have an ipv6 WAN connection and still want to use IPv6, get yourself a ULA prefix (kind of like 192.168.x.y). Google yourself to an ipv6 ULA generator of your choice. Mine became "fdff:a37f:fa75::/48". The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "fdff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "fdff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
 
 I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with state-ful.
+
+if you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. be sure to put this in wireguard user config (like /jffs/addons/wireguard/Scripts/wg11-up.sh). see further down were I added them in .conf file.
+```sh
+ip -6 route add ::/0 dev wg11
+```
 
 in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
 
@@ -242,6 +247,34 @@ wg11    N     <WgIpv4>/24,<WgIpv6>/64                   wireguard.net:48574     
 
 the most important thing to check here is that your IP is both ipv4 and ipv6. not all .conf file includes an ipv6 DNS
 
+ip6tables rules set by firmware are not completally matching the ipv4 variant, and atleast on my system br0 does not have any access to wireguard interfaces which they do in IPv4 since the firewall has a rule for br0 to access eveywere. if you have the same problem, lets make custom config files for wgm (change to match your wireguard interface):
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+populate this with your firewall rule:
+```sh
+#!/bin/sh
+ip6tables -t filter -I FORWARD -i br0 -o wg11 -j ACCEPT
+#ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
+```
+save and exit.  
+you will also need to make a script to delete the rule as the peer is stopped:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+populate with:
+```sh
+#!/bin/sh
+ip6tables -t filter -D FORWARD -i br0 -o wg11 -j ACCEPT
+#ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
+```
+save and exit
+
+make both files executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
 starting this peer will now get both your ipv4 and ipv6 to be routed out VPN so you wont get any data-leakage.
 
 if you want/need to run this peer in policy mode you will need to add rules for ipv4 and ipv6, which is the same procedure (see section). mine looks like:
@@ -253,7 +286,7 @@ ID  Peer  Interface  Source                 Destination          Description
 5   wg11  VPN        fdff:a37f:fa75:1::/64  Any                  LAN to VPN
 3   wg11  VPN        192.168.1.1/24         Any                  LAN to VPN
 ```
-This basically routes my entire LAN subnet out VPN. It should be noted that the policy routing table may not contain a route even to your own subnet, which means it is very important to redirect TO the same destination to your WAN.
+This basically routes my entire LAN subnet out VPN. It should be noted that the policy routing table may not contain a route even to your own subnet, which means it is very important to redirect TO the same destination to your WAN. this could prefferably be a very generic rule covering your entire network. this would be my rule 2 and 6 above.
 
 If you did not get an ipv6 DNS with your import, you could add one to your existing (you need to add both)(read disclamer first):
 ```sh
