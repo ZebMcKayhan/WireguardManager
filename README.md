@@ -277,16 +277,7 @@ chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
 ```
 starting this peer will now get both your ipv4 and ipv6 to be routed out VPN so you wont get any data-leakage.
 
-if you want/need to run this peer in policy mode you will need to add rules for ipv4 and ipv6, which is the same procedure (see section). mine looks like:
-```sh
-        Selective Routing RPDB rules
-ID  Peer  Interface  Source                 Destination          Description
-6   wg11  WAN        Any                    fdff:a37f:fa75::/48  To ipv6Lan
-2   wg11  WAN        Any                    192.168.1.1/16       local WAN
-5   wg11  VPN        fdff:a37f:fa75:1::/64  Any                  LAN to VPN
-3   wg11  VPN        192.168.1.1/24         Any                  LAN to VPN
-```
-This basically routes my entire LAN subnet out VPN. It should be noted that the policy routing table may not contain a route even to your own subnet, which means it is very important to redirect TO the same destination to your WAN. this could prefferably be a very generic rule covering your entire network. this would be my rule 2 and 6 above.
+if you want/need to run this peer in policy mode you will need to add rules for ipv4 and ipv6, which is the same procedure (see section).
 
 If you did not get an ipv6 DNS with your import, you could add one to your existing (you need to add both)(read disclamer first):
 ```sh
@@ -304,17 +295,9 @@ from here on your network should be on both ipv4/ipv6 regardless wheither you ha
 
 one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
 
-Note that IPSETs is only IPv4 OR IPv6, never both. wgm will autodetect which is added but you will need to add an IPSET for each (see section), like:
+wgm would not import IPv6 info if IPv6 is not enabled in the router. and even if you had it enabled when importing it and later diasabled it, it would not attempt to setup the IPv6 part if IPv6 is not enabled.
 
-```sh
-IPSet         Enable  Peer  FWMark  DST/SRC
-NETFLIX-DNS   Y       wg11  0x8000  dst
-MYIP          Y       wg11  0x8000  dst
-NETFLIX-DNS6  Y       wg11  0x8000  dst
-MYIP6         Y       wg11  0x8000  dst
-```
-
-if you are on a Ipv4 system and really dont want VPN over IPV6, you could disable it in wgm config:
+however, if you are on a Ipv6 system and really dont want VPN over IPV6, you could disable it in wgm config:
 ```sh
 E:Option ==> vx
 ```
@@ -327,6 +310,12 @@ to
 NOIPV6
 ```
 Then regardless how your peer was imported it will be forced to ipv4 only.
+
+see rules section for how to add rules for ipv6
+
+see IPSET section for manage ipv6 IPSET's
+
+see Yazfi section for setting up YazFi for ipv6
 
 ## check connection
 Checking connection is usually needed to find out why something is not working properly.
@@ -513,6 +502,23 @@ E:Option ==> peer wg11 rule add vpn 192.168.1.32/27 comment 32-63
 no rules are needed for the 0-31 range since the above rules dont cover them so it will naturally go out WAN.
 now, every computer you manually assign an ip in the range 192.168.1.2 - 192.168.1.31 will go out WAN and the rest will go out VPN.
 
+for ipv6 the rules are added in the same way as ipv4, but with an ipv6 adress/prefix instead.
+for example, I have added:
+```sh
+E:Option ==> peer wg11 rule add vpn src=fdff:a37f:fa75:1::/64 comment LAN to VPN
+E:Option ==> peer wg11 rule add wan dst=fdff:a37f:fa75:1::/48 comment To ipv6Lan
+```
+and the result is:
+```sh
+        Selective Routing RPDB rules
+ID  Peer  Interface  Source                 Destination          Description
+6   wg11  WAN        Any                    fdff:a37f:fa75::/48  To ipv6Lan
+2   wg11  WAN        Any                    192.168.1.1/16       local WAN
+5   wg11  VPN        fdff:a37f:fa75:1::/64  Any                  LAN to VPN
+3   wg11  VPN        192.168.1.1/24         Any                  LAN to VPN
+```
+This basically routes my entire LAN subnet out VPN (both IPv6 and IPv4). It should be noted that the policy routing table for IPv6 may not contain a route even to your own subnet, which means it is very important to redirect TO the same destination to your WAN. this could prefferably be a very generic rule covering your entire network. this would be my rule 2 and 6 above.
+
 Whenever you are satisfied with your rules, you can put the peer in policy mode:
 ```sh
 E:Option ==> peer wg11 auto=P
@@ -682,6 +688,16 @@ and if we want to delete it:
 E:Option ==> peer wg12 del ipset NETFLIX_DNS
         [✔] Ipset 'NETFLIX_DNS' Selective Routing deleted wg12
 ```
+Since IPSETs are only IPv4 OR IPv6, never both. wgm will autodetect which is added and put it in the correct firewall, but you will need to add an IPSET for each, like:
+```sh
+IPSet         Enable  Peer  FWMark  DST/SRC
+NETFLIX-DNS   Y       wg11  0x8000  dst
+MYIP          Y       wg11  0x8000  dst
+NETFLIX-DNS6  Y       wg11  0x8000  dst
+MYIP6         Y       wg11  0x8000  dst
+```
+in this case [MYIP] and [NETFLIX-DNS] are IPv4 IPSETs so they will be enabled for IPv4 firewall and routing rules. [MYIP6] and [NETFLIX-DNS6] are IPv6 IPSETs so they will be enabled in IPv6 firewall and routing rules. this selection is handled automatically by wgm. you add IPv6 IPSETs exactly the same way as for IPv4.
+
 
 the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packages to different route we will need to disable this.  
 "reverse path filter" is a very simple protection that many now days consider obsolete. whenever a packages comes in on i.e. WAN it will change place on Destination and Source and run it trough the routing table to see if a reply to this package would be routed out the same way. it understands most rules but it will not understand that some packages will recieve a mark and be routed differently. so in this case we need to disable the rp_filter on WAN, otherwise answers from WAN will not be accepted. there are 3 values for rp_filter. 0 means "Disabled", 1 means "Enabled, strict", 2 means "Enabled loose". loose means that it does not check routing explicitly, but will accept if there are any routing ways back this interface. 2 is sufficient for us.
@@ -707,6 +723,7 @@ populate this with your mark rule and disable the rp_filter:
 ```sh
 #!/bin/sh
 ip rule add from all fwmark 0x8000 table main prio 9900
+#ip -6 rule add from all fwmark 0x8000 table main prio 9900 # For IPv6 IPSETs only
 echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 ```
 save and exit.  
@@ -718,6 +735,7 @@ populate with:
 ```sh
 #!/bin/sh
 ip rule del prio 9900
+#ip -6 rule del prio 9900 # For IPv6 IPSETs only
 ```
 save and exit
 
@@ -735,6 +753,7 @@ if we were to use the original fwmark to route out matches wg12, then we wouldnt
 in my case I have 2 country outputs, and one of the purpose is to be able to watch streaming content from a different continent, which means I want to limit the fwmark to only apply to certain subnets, in my case the rule is:
 ```sh
 ip rule add from 192.168.1.1/24 fwmark 0x8000 table main prio 9900
+ip -6 rule add from fdff:a37f:fa75:1::/64 fwmark 0x8000 table main prio 9900
 ```
 so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any 0x8000 fwmark set.
 
