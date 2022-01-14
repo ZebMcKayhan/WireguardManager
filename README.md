@@ -814,8 +814,14 @@ to change the wg DNS to use dnsmasq, simply issue:
 E:Option ==> peer wg11 dns=192.168.1.1
 ```
 
+if you are using IPv6 DNS you will need to change that too, i.e.:
+```sh
+E:Option ==> peer wg11 dns=192.168.1.1,fdff:a37f:fa75:1::1
+```
+replace all local addresses with the one you have.
+
 # Using Yazfi and WGM to route different SSIDs to different VPNs
-source: https://github.com/jackyaz/YazFi
+script source: https://github.com/jackyaz/YazFi
 
 Note: Below instructions are ONE way of doing this. It is not the only way and may not even be the best way for your setup.
 
@@ -952,6 +958,134 @@ E:Option ==> restart wg12
 
 Thats it! it should now be working... if the rules did not come out correct, delete them and add them again.
 
+# Setup YazFi for IPv6 subnet to route out WG VPN
+YazFi was not designed for IPv6 and does not provide any IPs, DNS or firewall rules. when enabling IPv6 you will see that all YazFi clients will get br0 ipaddress, so the same subnet as your LAN. this is because YazFi puts the guest network inside br0 bridge, thus they will have access to your entire LAN.
+
+in order to be able to distinguish each guest network in our policy rules, we would need to assign these a specific prefix. if you use ULA addresses you will typically have some to spare as we are required to provide a /64 subnet to device and the ULA's are usually /48. in my case I got:  
+fdff:a37f:fa75::/48  
+which I then devided into one subnet to my LAN:  
+fdff:a37f:fa75:1::/64  
+and one subnet for my guest wifi:
+fdff:a37f:fa75:6::/64
+
+Prevent access to br0 could ofcource be prevented by putting in the appropriate firewall rules, but instead I suggest we move them outside the br0 bridge. I have not found any way of keeping them in br0 bridge and prevent them from getting LAN IPv6 addresses.
+however, there have been reports of problems with the wireless network, so you might want to run these commands manually from the shell first, so if you have problems, you could just reboot. run each one of your guest wifi interfaces:
+```sh
+brctl delif wl0.1
+brctl delif wl1.1
+brctl delif wl1.2
+# a.s.o
+service restart_dnsmasq
+```
+if you find that your guest networks still works fine, proceed. we will make everything autostart later.
+
+if you connect to your guest networks now you will see that it only gets a link-local address. all firewall rules that YazFi puts in for IPv4 will still apply, since they are all refered to by the interface names. since these interfaces now are stand-alone interfaces they will not have access anywere which is not explicitly allowed by the firewall.
+
+YazFi has already assigned IPv4 to these interfaces, now we need to assign IPv6 to them, so we execute:
+```sh
+ip -6 address add dev wl1.2 fdff:a37f:fa75:6::1/64
+ip link set up dev wl1.2
+```
+now we need to setup dnsmasq to provide state-less prefix assignement and DNS:
+
+```sh
+nano /jffs/configs/dnsmasq.conf.add
+```
+and put in somewere in the file:
+```sh
+### wl1.2 ipv6 config ###
+interface=wl1.2
+ra-param=wl1.2,10,600 #set ra-interval, lifetime
+dhcp-range=wl1.2,::,constructor:wl1.2,ra-stateless,64,600 # set stateless based on interface
+dhcp-option=wl1.2,option6:23,[2620:fe::fe],[2620:fe::9] #set dns
+### end wl1.2 ipv6 config
+```
+this is basically a copy of what the router itself setup for br0 stateless configuration. here you will need to edit the interface to match your guest wifi you are setting up. and also change the DNS you send out (I used QUAD 9 here). the assignement will be based on wl1.2 ipv6 ip address which is why we put it there first.
+
+save and exit when you are done.
+
+to apply these settings, restart dnsmasq (but dont disconnect from the wifi!)
+```sh
+service restart_dnsmasq
+```
+before disconnecting your wifi to test your new guest network. head into the router GUI to check the sys-log. make sure the are no dnsmasq errors there. if there are errors then dnsmasq will not start and wont hand out ip addresses, so you wont be able to connect again without setting your computer to static ip which is unessisary. take as a routine to always check the syslog after changing anything in dnsmasq before changing network, it could save you alot of time.
+
+repeat this for all your guest networks you wish to assign a separate subnet.
+
+if all went well, connect to your guest network and check so that you have got your new IP (and no br0 ip)
+
+if you find that your guest networks works fine, put the above commands to autoexecute at boot:
+```sh
+nano /jffs/scripts/firewall-start
+```
+populate with (somewere after YazFi perhaps):
+```sh
+### Yazfi ipv6 fix
+ip -6 address add dev wl1.2 fdff:a37f:fa75:6::1/64 2>/dev/null
+ip link set up dev wl1.2 2>/dev/null
+# add more ipv6 address to guest interfaces here
+
+brctl delif br0 wl0.1 2>/dev/null 
+brctl delif br0 wl1.1 2>/dev/null 
+brctl delif br0 wl1.2 2>/dev/null 
+# put in more lines for each interface you wish to remove 
+
+# end with restarting dnsmasq:
+service restart_dnsmasq 
+### YazFi ipv6 fix end
+```
+
+to fix the firewall rules for IPv6, edit YazFi custom config file:
+```sh
+nano /jffs/addons/YazFi.d/userscripts.d/wg-yazfi.sh 
+```
+Ive put in as example (only showing IPv6 parts):
+```sh
+#!/bin/sh
+
+#allow guest wifi 2 to access VPN wg12
+ip6tables -I FORWARD -i wl0.2 -o wg12 -j ACCEPT
+ip6tables -I FORWARD -i wl1.2 -o wg12 -j ACCEPT
+
+#2-way br0 to guest 2
+ip6tables -I FORWARD -i wl1.2 -o br0 -j ACCEPT
+ip6tables -I FORWARD -i br0 -o wl1.2 -j ACCEPT
+ip6tables -I FORWARD -i wl0.2 -o br0 -j ACCEPT
+ip6tables -I FORWARD -i br0 -o wl0.2 -j ACCEPT
+
+#allow guest wifi 2 to access local services
+ip6tables -I INPUT -i wl0.2 -j ACCEPT
+ip6tables -I INPUT -i wl1.2 -j ACCEPT
+
+#prevent all guest 1 ipv6 access everywere:
+ip6tables -I FORWARD -i wl0.1 -j DROP
+ip6tables -I INPUT -i wl0.1 -j DROP
+ip6tables -I OUTPUT -o wl0.1 -j DROP
+
+ip6tables -I FORWARD -i wl1.1 -j DROP
+ip6tables -I INPUT -i wl1.1 -j DROP
+ip6tables -I OUTPUT -o wl0.1 -j DROP
+```
+run the config file manually to get the rules applied immediately.
+
+now we need to head into wgm custom config files:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg12-up.sh
+```
+and add:
+```sh
+ip6tables -t nat -I POSTROUTING -s fdff:a37f:fa75:6::/64 -o wg12 -j MASQUERADE -m comment --comment "WireGuard 'client'"
+```
+and also remove the same rule in wg12-down.sh (just change -I to -D) same as for IPv4 (see section).
+
+so now just add the rules in wgm:
+```sh
+E:Options ==> peer wg12 add wan dst=fdff:a37f:fa75:6::/64 comment ToGuestToMain
+E:Options ==> peer wg12 add vpn src=fdff:a37f:fa75:6::/64 comment GuestToVPN
+E:Options ==> restart wg12
+```
+
+and now it should work!
 
 # Setup a reverse policy based routing
 why would anyone ever need to do this?
@@ -1107,6 +1241,11 @@ To
 ```sh
 outgoing-interface: 192.168.1.1 # v1.08 Martineau Use VPN tunnel to hide Root server queries from ISP (or force WAN ONLY)
 ```
+And/Or if you are using both IPv4 and IPv6, you need to put in both:
+```sh
+outgoing-interface: 192.168.1.1 # v1.08 Martineau Use VPN tunnel to hide Root server queries from ISP (or force WAN ONLY)
+outgoing-interface: fdff:a37f:fa75:1::1 # v1.08 Martineau Use VPN tunnel to hide Root server queries from ISP (or force WAN ONLY)
+```
 Save and Exit.
 
 Ok, so what is more problematic with this then Transmission?
@@ -1120,6 +1259,7 @@ E:Option ==> peer wg11 rule add vpn 192.168.1.1 comment Unbound2VPN
 E:Option ==> peer wg11 auto=p
 E:Option ==> restart wg11
 ```
+If you are using IPv6 you will also need to add these in the same way (see Create Rules Section)  
 The first line redirect packages TO 192.168.x.x to the main routing table since there are no routes for them in the VPN table.
 
 If you plan to serve dns replies to clients connected to your wireguard vpn server you might also need something like:
