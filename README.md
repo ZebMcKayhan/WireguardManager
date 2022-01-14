@@ -296,7 +296,9 @@ Disclamer: while adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packag
 ```sh
 opkg install iptables
 ```
-but you need to be aware that the main purpose of iptables is to match extensions and send them to hooks in kernel module netfilter which is very integrated into firmware/processor with HW acceleration and what not. there is a substantial risk that something breaks when you do this. altough I have been running this on 386.4 on my RT-AC86U for several weeks with no obvious problems but I can NOT guarantee that this will be the case for you. Use at your own risk! /Disclamer
+but you need to be aware that the main purpose of iptables is to match extensions and send them to hooks in kernel module netfilter which is very integrated into firmware/processor with HW acceleration and what not. there is a substantial risk that something breaks when you do this. altough I have been running this on 386.4 on my RT-AC86U for several weeks with no obvious problems but I can NOT guarantee that this will be the case for you or that it is causing your system to be less secure. Use at your own risk! /Disclamer
+
+if you dont want to take the risk of installing Entware iptables, then keep the dns in wgm to IPv4 only. this case you should not get the error message. control your DNS from the GUI IPv6 tab.
 
 from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RPCs). 
 
