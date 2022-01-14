@@ -226,7 +226,7 @@ if you dont have an ipv6 WAN connection and still want to use IPv6, get yourself
 
 I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with state-ful.
 
-if you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. be sure to put this in wireguard user config (like /jffs/addons/wireguard/Scripts/wg11-up.sh). see further down were I added them in .conf file.
+if you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. be sure to put this in wireguard user config (like /jffs/addons/wireguard/Scripts/wg11-up.sh). see further down were I added them in UserConfig file.
 ```sh
 ip -6 route add ::/0 dev wg11
 ```
