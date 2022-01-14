@@ -25,7 +25,8 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
   
 [Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
-[Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
+[Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns) 
+[Setup Yazfi for IPv6 subnet to route out wg vpn](#setup-yazfi-for-ipv6-subnet-to-route-out-wg-vpn)  
 [Setup a reverse policy based routing](#setup-a-reverse-policy-based-routing)  
 [Setup Transmission and/or Unbound to use WG Client](#setup-transmission-andor-unbound-to-use-wg-client)  
 [I cant access my nas/samba share over vpn](#i-cant-access-my-nassamba-share-over-vpn)  
