@@ -201,7 +201,7 @@ to
 NOPG_UP
 ```
 
-## ipv6
+## IPv6
 This could means a couple of different things. so lets start with some clarifications.
 
 the wireguard tunnel itself could be either ipv4 or ipv6. this is determined based on 2 things:  
@@ -290,7 +290,7 @@ This basically routes my entire LAN subnet out VPN. It should be noted that the 
 
 If you did not get an ipv6 DNS with your import, you could add one to your existing (you need to add both)(read disclamer first):
 ```sh
-E:Option ==> peer wg11 dns= 9.9.9.9,2620:fe::fe
+E:Option ==> peer wg11 dns=9.9.9.9,2620:fe::fe
 ```
 Disclamer: while adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packages to your selected VPN DNS via DNAT. This is however not really supported by all softwares. the kernel module/function/hooks are there but not implemented in userspace iptables. this will mean that you might get an error when starting the peer, something like "--to-destination extension not found" if this is the case you have the option to install Entware iptables:
 ```sh
