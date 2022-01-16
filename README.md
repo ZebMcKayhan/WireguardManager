@@ -248,15 +248,15 @@ wg11    N     <WgIpv4>/24,<WgIpv6>/64                   wireguard.net:48574     
 
 the most important thing to check here is that your IP is both ipv4 and ipv6. not all .conf file includes an ipv6 DNS
 
-ip6tables rules set by firmware are not completally matching the ipv4 variant, and atleast on my system br0 does not have any access to wireguard interfaces which they do in IPv4 since the firewall has a rule for br0 to access eveywere. if you have the same problem, lets make custom config files for wgm (change to match your wireguard interface):
+If you dont have ipv6 WAN and you put your peer in policy mode you will need to add a default route for ipv6:  
+This is NOT needed if you have ipv6 WAN or the peer is in auto/default mode.
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg11-up.sh
 ```
-populate this with your firewall rule:
+populate this with:
 ```sh
 #!/bin/sh
-ip6tables -t filter -I FORWARD -i br0 -o wg11 -j ACCEPT
-#ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
+ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
 ```
 save and exit.  
 you will also need to make a script to delete the rule as the peer is stopped:
@@ -266,8 +266,7 @@ nano /jffs/addons/wireguard/Scripts/wg11-down.sh
 populate with:
 ```sh
 #!/bin/sh
-ip6tables -t filter -D FORWARD -i br0 -o wg11 -j ACCEPT
-#ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
+ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
 ```
 save and exit
 
@@ -292,7 +291,7 @@ but you need to be aware that the main purpose of iptables is to match extension
 
 if you dont want to take the risk of installing Entware iptables, then keep the dns in wgm to IPv4 only. this case you should not get the error message. control your DNS from the GUI IPv6 tab.
 
-from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RPCs). 
+from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RFCs). 
 
 one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
 
