@@ -203,6 +203,8 @@ NOPG_UP
 ```
 
 ## IPv6
+In order to have ipv6 over wireguard you will need atleast to have firmware 386.4 (ipv6 nat was not available in previous firmware) and wgm 4.14bC or later.
+
 This could means a couple of different things. so lets start with some clarifications.
 
 the wireguard tunnel itself could be either ipv4 or ipv6. this is determined based on 2 things:  
