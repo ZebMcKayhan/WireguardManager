@@ -17,6 +17,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Terminal Options](#terminal-options)  
   -[ipv6](#ipv6)  
   -[Check connection](#check-connection)  
+  -[Site 2 Site](#site-2-site)  
   -[Default or Policy routing](#default-or-policy-routing)  
   -[Create rules in WGM](#create-rules-in-wgm)  
   -[Create categories](#create-categories)  
@@ -394,6 +395,10 @@ if you dont get a responce, you are having problems resolving names but still ha
 try changing the peer DNS in wgm. it should be noted though that some VPN supplier prohibit the use of other DNS than their own. if you look in the .conf file there are sometimes 2 DNS but wgm only imports the 1st. use the commands above to change the DNS to the other one to see if that works better.
 
 also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could also try to point it back to the router itself (192.168.1.1) then it will end up at the routers ordinary DNS handling and from that point you could try to change the DNS in the router GUI (WAN tab).
+
+
+## Site-2-site
+Cooming soon...
 
 
 ## Default or Policy routing?
