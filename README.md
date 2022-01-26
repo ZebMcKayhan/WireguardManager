@@ -405,7 +405,7 @@ In order to setup a site-2-site using wgm, the terminology is:
 ```sh
 E:Option ==> site2site {'SiteA_Name'} {ip='SiteA_wgIP'} {port='SiteA_Port'} {'SiteB_Name'} {lan='SiteB_LanIP'} {allowips='IpsOnSiteB'} {full}
 ```
-there is a lot of options here, but for a typical setup you only need to add a few.  
+There is a lot of options here, but for a typical setup you only need to add a few.  
 *{'SiteX_Name'}* - This is the cosmetic name (tag) for SiteA, if left out it will be 'SiteA'/'SiteB'  
 *{ip='SiteA_wgIP'}* - If you want/need control over what ip the wireguard tunnel interface will have. if left out it will be 10.9.8.1. siteB will always be SiteA+0.0.0.1 (so 10.9.8.2)  
 *{port='SiteA_Port'}* - If you want/need to control which port the wireguard udp tunnel uses. if left out it will be 61820, and siteB will always be SiteA+1 (so 61821).  
@@ -462,12 +462,12 @@ Wgm has created the following config files that needs to be copied over to siteB
 
 If SiteB does not consist of an Asus HND router the Cabin.conf should be suitable for running with wg-quick but you might need to make device specific modifications to it to make it work.
 
-put these files on SiteB router here 
+Put these files on SiteB router here: 
 ```sh
 /opt/etc/wireguard.d/
 ```
 
-and import the config as a server in wgm:
+And import the config as a server in wgm:
 ```sh
 E:Option ==> import Cabin.conf type=server
 
