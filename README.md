@@ -398,48 +398,49 @@ also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could als
 
 
 ## Site-2-site
-Wireguard Manager is essentially designed as a client-server interface altough wireguard is not any such thing. the difference between a server and a client is foremost the firewall. i.e. a client sets up basically the same firewall rules as your WAN, so any uncolicited inbound connections are BLOCKED (as it is assumed to be an internet client). a server on the other hand is considered private so access is allowed for connections carrying the right encryption with the right keys.
-a site-2-site setup basically requires you to setup a server at each end (so access is granted both ways), but a typical server does not contain any endpoint. An enpoint tells the peer on how to make the initial contact with it's counterpart peer (a server typically doesnt try to connect to the clients). so clearly a site-site connection needs to be treated differently in all these cases.
-in order to setup a site-2-site using wgm, the terminology is:
+Wireguard Manager is essentially designed as a client-server interface altough wireguard is not any such thing. The difference between a server and a client is foremost the firewall. A client sets up basically the same firewall rules as your WAN, so any uncolicited inbound connections are BLOCKED (as it is assumed to be an internet client). A server on the other hand is considered private so access is allowed for connections carrying the right encryption with the right keys.
+A site-2-site setup basically requires you to setup a server at each end (so access is granted both ways), but a typical server does not contain any endpoint. An enpoint tells the peer on how to make the initial contact with it's counterpart peer (a server typically doesnt try to connect to the clients). So clearly a site-site connection needs to be treated differently in all these cases.
+
+In order to setup a site-2-site using wgm, the terminology is:
 ```sh
-E:Option ==> site2site {'SiteA_Name'} {ip='SiteA_wgIP'} {port='SiteA_Port'} {'SiteB_Name'} {lan='SiteB_LanIP'} {allowips='IpsOnSiteB'}
+E:Option ==> site2site {'SiteA_Name'} {ip='SiteA_wgIP'} {port='SiteA_Port'} {'SiteB_Name'} {lan='SiteB_LanIP'} {allowips='IpsOnSiteB'} {full}
 ```
 there is a lot of options here, but for a typical setup you only need to add a few.  
-**{'SiteX_Name'} - This is the cosmetic name (tag) for SiteA, if left out it will be 'SiteA'/'SiteB'  
-**{ip='SiteA_wgIP'} - If you want/need control over what ip the wireguard tunnel interface will have. if left out it will be 10.9.8.1. siteB will always be SiteA+0.0.0.1 (so 10.9.8.2)  
-**{port='SiteA_Port'} - If you want/need to control which port the wireguard udp tunnel uses. if left out it will be 61820, and siteB will always be SiteA+1 (so 61821).  
-**{lan='SiteB_LanIP'} - This is the local LAN on SiteB. this is needed so wgm can setup routes for this destination over the wireguard tunnel. if left out it is assumed to be one subnet higher that the LAN on SiteA. so if SiteA has 192.168.50.0/24 then SiteB will assumed to be 192.168.51.0/24.  
-**{allowips='IpsOnSiteB'} - if you have multiple subnets/ips on SiteB these could be added here, or if you only have part of a subnet at siteB. if left out it will be assumed to be same as 'SiteB_LanIP'. the wireguard interface is always appended to this line, so there is never any need to add that.
+*{'SiteX_Name'}* - This is the cosmetic name (tag) for SiteA, if left out it will be 'SiteA'/'SiteB'  
+*{ip='SiteA_wgIP'}* - If you want/need control over what ip the wireguard tunnel interface will have. if left out it will be 10.9.8.1. siteB will always be SiteA+0.0.0.1 (so 10.9.8.2)  
+*{port='SiteA_Port'}* - If you want/need to control which port the wireguard udp tunnel uses. if left out it will be 61820, and siteB will always be SiteA+1 (so 61821).  
+*{lan='SiteB_LanIP'}* - This is the local LAN on SiteB. this is needed so wgm can setup routes for this destination over the wireguard tunnel. if left out it is assumed to be one subnet higher that the LAN on SiteA. so if SiteA has 192.168.50.0/24 then SiteB will assumed to be 192.168.51.0/24.  
+*{allowips='IpsOnSiteB'}* - If you have multiple subnets/ips on SiteB these could be added here, or if you only have part of a subnet at siteB. if left out it will be assumed to be same as 'SiteB_LanIP'. the wireguard interface is always appended to this line, so there is never any need to add that.  
+*{full}* - If specified, the full set of rules are added as pre/post up/down to the remote config file (typically not needed if wgm is running on both sides)  
 
-so for a setup the command could look:
+So for a setup the command could look:
 ```sh
-E:Option ==> site2site Home ip=10.10.10.99 port=54321 Cabin lan=192.168.111.0 allowips=10.1.1.0/24,192.168.111.4/30
+E:Option ==> site2site Home ip=10.10.10.99 port=54321 Cabin lan=192.168.111.0 allowips=10.1.1.0/24,192.168.111.4/30 full
 ```
 
-but for many setups where we have one subnet at siteA and another at siteB and we dont really need to control the wireguard ips and ports, the following would be enough:
+Altough for many setups where we have separate subnet at siteA and siteB and we dont really need to control the wireguard ips and ports, the following would be enough:
 ```sh
 E:Option ==> site2site Home Cabin lan=192.168.111.0
 ```
 
-after the command is issued, wgm asks you about which endpoint to find siteB:
+After the command is issued, wgm asks you about which endpoint to find siteB:
 ```sh
 E:Option ==> site2site Home Cabin lan=192.168.111.0
 
     Creating WireGuard Private/Public key-pair for Site-to-Site Peers Home/Cabin
 
     Enter Cabin Endpoint remote IP, or Cabin DDNS name or press [Enter] to SKIP.
-    
 ```
-Here you need to enter the endpoint to SiteB, like "cabin.ip.ddns"
+Here you need to enter the endpoint to SiteB, like "cabin.ip.ddns". This could be skipped if your remote site is behind cg-nat for example.
 
-depending on how your router is setup, you might need to answer:
+Depending on how your router is setup, you might need to answer:
 ```sh
    Warning: No DDNS is configured! to reach local Home Endpoint from remote Cabin
     Press y to use the current WAN IP or enter Home Endpoint IP or DDNS name or press [Enter] to SKIP.
 ```
 Here you need to enter your ddns for SiteA (since wgm did not find any setup), so if you have a static WAN ip you could just enter "y" to use your WAN ip or enter if you have any ddns not directly configured in router, like "home.ip.ddns"
 
-now the 2 server peers are created, and you are asked if you wish to import SiteA config into the router:
+Now the 2 server peers are created, and you are asked if you wish to import siteA config into the router:
 ```sh
     Press y to import Home or press [Enter] to SKIP.
 ```
@@ -449,7 +450,7 @@ I suggest to choose y, but of you choose no, you have the possibility to make ch
     [✔] Config Home import as wg22 (FORCED as 'server') success
 ```
 
-Wgm has created the following config files that needs to be copied over to SiteB (the names could be different):
+Wgm has created the following config files that needs to be copied over to siteB (the names could be different):
 ```sh
     Copy Cabin/Home files:
 
@@ -459,7 +460,7 @@ Wgm has created the following config files that needs to be copied over to SiteB
 -rw-rw-rw-    1 admin    root            45 Jan 20 15:26 Home_public.key
 ```
 
-if SiteB does not exist of an Asus HND router the Cabin.conf should be suitable for running with wg-quick but you might need to make device specific modifications to it to make it work.
+If SiteB does not consist of an Asus HND router the Cabin.conf should be suitable for running with wg-quick but you might need to make device specific modifications to it to make it work.
 
 put these files on SiteB router here 
 ```sh
@@ -469,14 +470,17 @@ put these files on SiteB router here
 and import the config as a server in wgm:
 ```sh
 E:Option ==> import Cabin.conf type=server
+
+    [✔] Config Cabin import as wg22 (FORCED as 'server') success
 ```
 
-if everything went ok, then then set the peers to autostart (if that is what you wish):
-At Home Router:
+If everything went ok, then then set the peers to autostart (if that is what you wish):
+
+At home router:
 ```sh
 E:Option ==> peer Home auto=y
 ```
-At Remote Router:
+At remote router:
 ```sh
 E:Option ==> peer Cabin auto=y
 ```
