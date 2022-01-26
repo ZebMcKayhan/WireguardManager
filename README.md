@@ -474,16 +474,23 @@ E:Option ==> import Cabin.conf type=server
     [✔] Config Cabin import as wg22 (FORCED as 'server') success
 ```
 
-If everything went ok, then then set the peers to autostart (if that is what you wish):
+If everything went ok, then everything should now be working and autostart at each boot (auto=S)
 
+if you wish to not have the site-2-site server peers auto-start at boot, then:
 At home router:
 ```sh
-E:Option ==> peer Home auto=y
+E:Option ==> peer Home auto=N
 ```
 At remote router:
 ```sh
-E:Option ==> peer Cabin auto=y
+E:Option ==> peer Cabin auto=N
 ```
+
+Or to make them autostart at boot again:
+```sh
+E:Option ==> peer Home auto=S
+```
+And the same for the remote site.
 
 That should be it!
 
