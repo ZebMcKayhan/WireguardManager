@@ -398,8 +398,8 @@ also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could als
 
 
 ## Site-2-site
-Wireguard Manager is essentially designed as a client-server interface altough wireguard is not any such thing. The difference between a server and a client is foremost the firewall. A client sets up basically the same firewall rules as your WAN, so any uncolicited inbound connections are BLOCKED (as it is assumed to be an internet client). A server on the other hand is considered private so access is allowed for connections carrying the right encryption with the right keys.
-A site-2-site setup basically requires you to setup a server at each end (so access is granted both ways), but a typical server does not contain any endpoint. An enpoint tells the peer on how to make the initial contact with it's counterpart peer (a server typically doesnt try to connect to the clients). So clearly a site-site connection needs to be treated differently in all these cases.
+Wireguard Manager is essentially designed as a client-server interface altough wireguard is not any such thing. The difference between a server and a client is foremost the firewall. A client sets up basically the same firewall rules as your WAN, so any unsolicited inbound connections are BLOCKED (as it is assumed to be an internet client). A server on the other hand is considered private so access is allowed for connections carrying the right encryption with the right keys.
+A site-2-site setup basically requires you to setup a server at each end (so access is granted both ways), but a typical server does not contain any endpoint. An endpoint tells the peer on how to make the initial contact with it's counterpart peer (a server typically doesnt try to connect to the clients). So clearly a site-site connection needs to be treated differently in all these cases.
 
 In order to setup a site-2-site using wgm, the terminology is:
 ```sh
