@@ -454,10 +454,14 @@ Wgm has created the following config files that needs to be copied over to siteB
 ```sh
     Copy Cabin/Home files:
 
--rw-rw-rw-    1 admin    root           651 Jan 20 15:26 Cabin.conf
--rw-rw-rw-    1 admin    root            45 Jan 20 15:26 Cabin_private.key
--rw-rw-rw-    1 admin    root            45 Jan 20 15:26 Cabin_public.key
--rw-rw-rw-    1 admin    root            45 Jan 20 15:26 Home_public.key
+-rw-rw-rw-    1 admin    root           645 Jan 27 18:59 Cabin.conf 
+-rw-rw-rw-    1 admin    root            45 Jan 27 18:59 Cabin_private.key 
+-rw-rw-rw-    1 admin    root            45 Jan 27 18:59 Cabin_public.key 
+-rw-rw-rw-    1 admin    root           649 Jan 27 18:59 Home.conf 
+-rw-rw-rw-    1 admin    root            45 Jan 27 18:59 Home_private.key 
+-rw-rw-rw-    1 admin    root            45 Jan 27 18:59 Home_public.key 
+
+    to remote location
 ```
 
 If SiteB does not consist of an Asus HND router the Cabin.conf should be suitable for running with wg-quick but you might need to make device specific modifications to it to make it work.
@@ -472,6 +476,11 @@ And import the config as a server in wgm:
 E:Option ==> import Cabin.conf type=server
 
     [✔] Config Cabin import as wg22 (FORCED as 'server') success
+```
+
+And import Home as device:
+```sh
+E:Option ==> import Home.conf type=device
 ```
 
 If everything went ok, then everything should now be working and autostart at each boot (auto=S)
