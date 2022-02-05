@@ -675,7 +675,7 @@ E:Option ==> peer category My1stCategory del
 ## Geo-location
 Note: development of this feature have been terminated. Please use it if it fit your needs. This feature might be removed in future versions.
 
-This tool is handly to i.e. change the location of a specific client. This only works for peers in policy (P) mode.  
+This tool is handly to i.e. change the location of a specific client. This only works for peers in policy (P) mode and it only works on static assigned ips (gui: LAN-->DHCP-Server).  
 if you have multiple vpn connections wich outputs in different countries, say something like this:
 ```sh
 E:Option ==> peer
@@ -712,17 +712,18 @@ E:Option ==> livin @home 192.168.1.38
 ```
 will delete the rule so this ip will return to be routed to whatever the policy routing rules tell it.
 
-this could also be used with CIDR notation:
-```sh
-E:Option ==> livin Italy 192.168.1.1/24
-```
-but in order to remove the rule, the same ip/CIDR needs to be used:
-```sh
-E:Option ==> livin @home 192.168.1.1/24
-```
 This is really handy if you want to change the location of a specific computer rapidly, but it requires you to continously work with wgm over SSH. 
 
 Note: if you already have rules explicit for this IP setup in policy rules, there is a risk that this rule might be temporarily removed when issuing @home. this command should only be issued against IPs which does not have any explicit rules (Thanks to SNB Forum member @chongnt for finding this).
+
+This command needs to be issued in wgm meny, but if you want you could use it in Apples Shortcuts or Androids SSH Button with a command like this:
+```sh
+echo -e "livin wg11 192.168.1.38\ne" | wg_manager
+```
+Or
+```sh
+echo -e "livin @home 192.168.1.38\ne" | wg_manager
+```
 
 ## Manage/Setup IPSETs for policy based routing
 wgm creates the ability to manage your IPSETs. it does not however, by any means, help you in the creation of IPSETs. depending on what you want to do, there are other tools for that. if you for example wish that NETFLIX and similar streaming sites should bypass VPN since these sites block connection from VPN then "x3mrouting" is just what you need. altough x3mrouting is not really compatible with routing wireguard it does a good job of creating/managing the IPSETs for you.
