@@ -98,8 +98,18 @@ The {start | stop | restart} {peer | category} are also possible to execute dire
 wgm start wg11 #start wg11
 wgm stop #stop all peers
 Wgm restart MyCategory ##restart peers in category
-
 ```
+
+You can also import other types of configs, like a server peer:
+```sh
+E:Option ==> peer import wg1.conf type=server
+```
+
+Or a device peer:
+```sh
+E:Option ==> peer import RoadWarrior.conf type=device
+```
+
 ## Add persistentKeepalive
 It is usually recommended to add some kind of pinging to keep the sockets from closing and keep conntrack happy and nat tunnels open. There are no support for this in wgm so:
 ```sh
