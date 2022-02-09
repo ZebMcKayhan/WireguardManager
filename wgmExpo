@@ -1,0 +1,33 @@
+#!/bin/sh
+version=0.1
+# wgmExpo - script for executing commands inside wg_manager from the shell
+# by ZebMcKayhan
+
+if [ "$1" = "" ];then
+echo "wgmExpo Version $version by ZebMcKayhan"
+echo "wgmExpo --help for usage info"
+echo ""
+exit
+fi
+
+if [ "$1" = "--help" ];then 
+echo "wgmExpo Version $version by ZebMcKayhan"
+echo ""
+echo "usage:"
+echo 'wgmExpo "command 1" "command 2" "command n"'
+echo ""
+echo "example:"
+echo 'wgmExpo "colour off" "peer wg11 dns=9.9.9.9" "restart wg11"'
+echo ""
+exit 
+fi
+
+commands="" 
+pad="\n" 
+for arg in "$@" 
+  do 
+    commands="${commands}${arg}${pad}" 
+  done
+commands="${commands}e"
+
+echo -e "$commands" | wg_manager | awk '/Option ==>/{flag=1; next} /WireGuard ACTIVE Peer Status/{flag=0} flag'
