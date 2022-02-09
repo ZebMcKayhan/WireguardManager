@@ -24,6 +24,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Geo-location](#geo-location)  
   -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
   -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
+  -[Execute menu commands externally](#execute-menu-commands-externally)  
   
 [Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
 [Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
@@ -191,7 +192,7 @@ E:Option ==> peer wg11 comment My 1st VPN Client
 ```
 
 ## Terminal Options
-Wireguard Session Manager was designed to operate properaly with XSHELL 7 with Delete Key = VT220 and Backspace = Backspace. if you are using other terminal programs (like Putty) there is a risk you will have problems with backspace not really looking like it is deleting anything altough it is.
+Wireguard Session Manager was designed to operate properaly with XSHELL 7 with Delete Key = VT220 and Backspace = Backspace. if you are using other terminal programs (like Putty) there is a risk you will have problems with backspace not really looking like it is deleting anything altough it is. 
 the reason for this was that Wireguard Session Manager was designed to use "command buffert" to use "PG-UP" to get to older commands.
 This does not always work well with other terminal programs. 
 
@@ -212,6 +213,29 @@ to
 ```sh
 NOPG_UP
 ```
+
+Another option is if your terminal program (or if you execute menu commands externally) cant handle colour output, it could be turned off:
+```sh
+E:Option ==> colour off
+```
+
+it is also possible to turn the menu off, which is especially useful if you are executing menu commands externally:
+```sh
+E:Option ==> menu hide
+```
+and to make it permanent:
+```sh
+E:Option ==> vx
+```
+and change
+```sh
+#NOMENU
+```
+to
+```sh
+NOMENU
+```
+
 
 ## IPv6
 In order to have ipv6 over wireguard you will need atleast to have firmware 386.4 (ipv6 nat was not available in previous firmware) and wgm 4.14bC or later.
@@ -921,7 +945,58 @@ and finally to only allow a single ip or group of ips to be routed out out wg11:
 ```sh
 E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32
 ```
+# Execute menu commands externally
+Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
 
+the basic command:
+```sh
+echo -e "livin wg11 192.168.1.94\ne" | wg_manager
+```
+**livin wg11 192.168.1.94** - is the command executed, change to your needs
+**\n** - this is the ***ENTER*** key to execute the command that has been printed.
+**e** - a second command which exists wgm so we dont leave it running.
+
+depending on what you want to do, this might function very nice in i.e. Andiod app **SSH Button** since it does not provide any output feedback more than **OK**. but in **Apple Siri Shortcuts** you might want to have the appropriate feedback from your command.
+
+you could continue to add all the commands you wish as long as you separate them with **\n** and end with **e**, i.e:
+```sh
+echo -e "menu hide\ncolour off\nstop wg11\npeer wg11 dns=9.9.9.9\nstart wg11\ne" | wg_manager
+```
+executing this command will give the same output as if you where actually entering the commands inside wgm, altough we reduced the output by hiding the menu and turning off colours, but the initial menu will still show. 
+
+we could supress all terminal outputs from our command if we like:
+```sh
+echo -e "livin wg11 192.168.1.94\ne" | wg_manager 1>/dev/null
+```
+
+or we could choose to output lines containing specific words by adding more output processing:
+```sh
+echo -e "peer help\ne" | wg_manager | grep 9.9.9.9
+```
+
+or display the first line printed after our command is executed:
+```sh
+echo -e "livin wg11 192.168.1.94\ne" | wg_manager | grep -A1 "Option ==>" | grep -v "Option ==>"
+```
+
+but if we are really interested in all command output, to be able to catch unexpected output, we will have to use a slightly more messy command, altough it is written so you dont have to change anything else then the command you wish to execute:
+```sh
+echo -e "livin wg11 192.168.1.94\ne" | wg_manager | awk 'flag; /Option ==>/{flag=1} /WireGuard ACTIVE/{flag=0}'
+```
+This command will show all outputs between the **E:Option ==>**(excluded) and the **WireGuard ACTIVE status peers**(included) line.
+
+a variant could be if we dont want to see the **WireGuard ACTIVE status peers** line:
+```sh
+echo -e "livin wg11 192.168.1.94\ne" | wg_manager | awk '/Option ==>/{flag=1; next} /WireGuard ACTIVE/{flag=0} flag'
+```
+
+with these commands we dont need to use the **menu hide** since it wont be displayed anyway, but it could be useful to use the **colour off** 
+```sh
+echo -e "colour off\nstop wg11\npeer wg11 dns=9.9.9.9\nstart wg11\ne" | wg_manager | awk '/Option ==>/{flag=1; next} /WireGuard ACTIVE/{flag=0} flag'
+```
+will execute each command in order and provide outputs from each command execution, without colours or menu being printed.
+
+so pick and choose your suitable command to run for your task and adjust the wgm commands according to your needs.
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
