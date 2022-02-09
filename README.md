@@ -952,9 +952,9 @@ the basic command:
 ```sh
 echo -e "livin wg11 192.168.1.94\ne" | wg_manager
 ```
-**livin wg11 192.168.1.94** - is the command executed, change to your needs
-**\n** - this is the ***ENTER*** key to execute the command that has been printed.
-**e** - a second command which exists wgm so we dont leave it running.
+**livin wg11 192.168.1.94** - is the command executed, change to your needs.  
+**\n** - this is the ***ENTER*** key to execute the command that has been printed.  
+**e** - a second command which exists wgm so we dont leave it running.  
 
 depending on what you want to do, this might function very nice in i.e. Andiod app **SSH Button** since it does not provide any output feedback more than **OK**. but in **Apple Siri Shortcuts** you might want to have the appropriate feedback from your command.
 
