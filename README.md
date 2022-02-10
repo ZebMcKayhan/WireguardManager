@@ -993,6 +993,13 @@ admin@RT-AC86U-D7D8:/tmp/home/root#
 
 with wgmExpo we dont need to use the **menu hide** since it wont be displayed anyway, but it could be useful to use the **colour off** if you are outputting to a display that dont use colours, you will get alot of escape characters if you dont turn off colours.
 
+if you run some bad command so the script and/or wgm doesnt return to the prompt, it could usually be exit with **CTRL+C**.
+
+If you ever wish to remove the wrapper script, simply execute:
+```sh
+rm /opt/bin/wgmExpo
+```
+
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
 in order to make this work we will need to reset the WG DNS back to the router. 
