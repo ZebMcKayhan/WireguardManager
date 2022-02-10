@@ -707,8 +707,6 @@ E:Option ==> peer category My1stCategory del
 ```
 
 ## Geo-location
-Note: development of this feature have been terminated. Please use it if it fit your needs. This feature might be removed in future versions.
-
 This tool is handly to i.e. change the location of a specific client. This only works for peers in policy (P) mode and it only works on static assigned ips (gui: LAN-->DHCP-Server).  
 if you have multiple vpn connections wich outputs in different countries, say something like this:
 ```sh
@@ -968,35 +966,32 @@ we could supress all terminal outputs from our command if we like:
 ```sh
 echo -e "livin wg11 192.168.1.94\ne" | wg_manager 1>/dev/null
 ```
+But if we are really interested in all command output, to be able to catch unexpected output (which maybee the most important output), we will have to use a slightly more messy command. I have put this in a wrapper shell script so you dont have to see it (altough just look in the file if you are interested). 
 
-or we could choose to output lines containing specific words by adding more output processing:
+To install the wrapper:
 ```sh
-echo -e "peer help\ne" | wg_manager | grep 9.9.9.9
+curl --retry 3 "https://raw.githubusercontent.com/ZebMcKayhan/WireguardManager/main/wgmExpo" -o "/opt/bin/wgmExpo" && chmod 755 "/opt/bin/wgmExpo"
 ```
 
-or display the first line printed after our command is executed:
+It will install wgmExpo at **/opt/bin/** which is in the router path, so you can access it from anywhere. 
 ```sh
-echo -e "livin wg11 192.168.1.94\ne" | wg_manager | grep -A1 "Option ==>" | grep -v "Option ==>"
+admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo
+wgmExpo Version 0.1 by ZebMcKayhan
+wgmExpo --help for usage info
+
+admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo --help
+wgmExpo Version 0.1 by ZebMcKayhan
+
+usage:
+wgmExpo "command 1" "command 2" "command n"
+
+example:
+wgmExpo "colour off" "peer wg11 dns=9.9.9.9" "restart wg11"
+
+admin@RT-AC86U-D7D8:/tmp/home/root#
 ```
 
-but if we are really interested in all command output, to be able to catch unexpected output, we will have to use a slightly more messy command, altough it is written so you dont have to change anything else then the command you wish to execute:
-```sh
-echo -e "livin wg11 192.168.1.94\ne" | wg_manager | awk 'flag; /Option ==>/{flag=1} /WireGuard ACTIVE/{flag=0}'
-```
-This command will show all outputs between the **E:Option ==>**(excluded) and the **WireGuard ACTIVE status peers**(included) line.
-
-a variant could be if we dont want to see the **WireGuard ACTIVE status peers** line:
-```sh
-echo -e "livin wg11 192.168.1.94\ne" | wg_manager | awk '/Option ==>/{flag=1; next} /WireGuard ACTIVE/{flag=0} flag'
-```
-
-with these commands we dont need to use the **menu hide** since it wont be displayed anyway, but it could be useful to use the **colour off** 
-```sh
-echo -e "colour off\nstop wg11\npeer wg11 dns=9.9.9.9\nstart wg11\ne" | wg_manager | awk '/Option ==>/{flag=1; next} /WireGuard ACTIVE/{flag=0} flag'
-```
-will execute each command in order and provide outputs from each command execution, without colours or menu being printed.
-
-so pick and choose your suitable command to run for your task and adjust the wgm commands according to your needs.
+with wgmExpo we dont need to use the **menu hide** since it wont be displayed anyway, but it could be useful to use the **colour off** if you are outputting to a display that dont use colours, you will get alot of escape characters if you dont turn off colours.
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
