@@ -219,22 +219,22 @@ Another option is if your terminal program (or if you execute menu commands exte
 E:Option ==> colour off
 ```
 
-it is also possible to turn the menu off, which is especially useful if you are executing menu commands externally:
+To turn off colours permanently, it could be executed directly from shell: 
+```sh
+wg_manager colour off
+```
+
+ofcource the opposite **colour on** command works in both cases to get the colours back.
+
+it is also possible to turn the menu off, which is especially useful if you are executing menu commands externally (see section for more info):
 ```sh
 E:Option ==> menu hide
 ```
-and to make it permanent:
+To turn off colours permanently, it could be executed directly from shell: 
 ```sh
-E:Option ==> vx
+wg_manager menu hide
 ```
-and change
-```sh
-#NOMENU
-```
-to
-```sh
-NOMENU
-```
+To get the manu back, in the same way, issue **menu show**.
 
 
 ## IPv6
@@ -732,15 +732,22 @@ or, with same result:
 ```sh
 E:Option ==> livin Italy 192.168.1.38
 ```
-what is happening is that a high-priority rule is created for this ip to be routed out the matching wg1x interface, and also an entry to shift the DNS to the target wg DNS.
+Note: tag must be a single word matching anywere in the tag, **Los Angeles** wont work but **Los-Angeles** will. fix your tags to work with this.
+
+What is happening is that a high-priority rule is created for this ip to be routed out the matching wg1x interface, and also an entry to shift the DNS to the target wg DNS.
+
+For this to be reliable we should make sure the ip-address we are routing have a fixed ip, so you should really consider assigning a static ip to this device in the GUI. After doing so, you could simply use the device name:
+```sh
+E:Option ==> livin Italy Samsung-Phone
+```
 
 further we could change the same IP to:
 ```sh
-E:Option ==> livin USA 192.168.1.38
+E:Option ==> livin USA Samsung-Phone
 ```
 and 192.168.1.38 will be re-assigned to wg12 and finally:
 ```sh
-E:Option ==> livin @home 192.168.1.38
+E:Option ==> livin @home Samsung-Phone
 ```
 will delete the rule so this ip will return to be routed to whatever the policy routing rules tell it.
 
@@ -748,14 +755,7 @@ This is really handy if you want to change the location of a specific computer r
 
 Note: if you already have rules explicit for this IP setup in policy rules, there is a risk that this rule might be temporarily removed when issuing @home. this command should only be issued against IPs which does not have any explicit rules (Thanks to SNB Forum member @chongnt for finding this).
 
-This command needs to be issued in wgm meny, but if you want you could use it in Apples Shortcuts or Androids SSH Button with a command like this:
-```sh
-echo -e "livin wg11 192.168.1.38\ne" | wg_manager
-```
-Or
-```sh
-echo -e "livin @home 192.168.1.38\ne" | wg_manager
-```
+This command needs to be issued in wgm meny, but if you want you could use it in Apples Shortcuts or Androids SSH Button. See [Execute menu commands externally](#execute-menu-commands-externally) section.
 
 ## Manage/Setup IPSETs for policy based routing
 wgm creates the ability to manage your IPSETs. it does not however, by any means, help you in the creation of IPSETs. depending on what you want to do, there are other tools for that. if you for example wish that NETFLIX and similar streaming sites should bypass VPN since these sites block connection from VPN then "x3mrouting" is just what you need. altough x3mrouting is not really compatible with routing wireguard it does a good job of creating/managing the IPSETs for you.
@@ -903,10 +903,10 @@ so only 192.168.1.x will be covered by this rule. all else will be routed out VP
 there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
 
 ## Route WG Server to internet via WG Client
-This is a brand new feature (included in 4.12b4). I cannot test this as Im not running any server. the point would be if you only have 1 client and will be able to connect home over the internet to access your LAN and also to surf the internet via your VPN client... in this case you should use the wgm "passthru" command.
+I cannot test this as Im not running any server. the point would be if you only have 1 client and will be able to connect home over the internet to access your LAN and also to surf the internet via your VPN client... in this case you should use the wgm "passthru" command.
 when clients are connected in policy mode then of no rules are setup then server clients will access the internet via WAN. sadly it is not enough to just add the ips to the policy routing table. we also need to handle access rights in the firewall and setup masquarading. wgm handles till all for you in a single command!
 
-some information:
+Some information:
 ```sh
 E:Option ==> peer help
 
@@ -929,24 +929,24 @@ E:Option ==> peer help
                                                                                                            peer wg21 passthru add wg12 10.100.100.0/27
 ```
 
-interpreting the help above would give, the device SGS8 connected to wg21 should be routed out wg11 for internet access.
+Interpreting the help above would give, the device SGS8 connected to wg21 should be routed out wg11 for internet access.
 ```sh
 E:Option ==> peer wg21 passthru add wg11 SGS8
 ```
 
-similarely to route ALL devices connected on wg21 out wg11
+Similarely to route ALL devices connected on wg21 out wg11
 ```sh
 E:Option ==> peer wg21 passthru add wg11 all
 ```
 
-and finally to only allow a single ip or group of ips to be routed out out wg11:
+And finally to only allow a single ip or group of ips to be routed out out wg11:
 ```sh
 E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32
 ```
 # Execute menu commands externally
 Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
 
-the basic command:
+The basic command:
 ```sh
 echo -e "livin wg11 192.168.1.94\ne" | wg_manager
 ```
@@ -954,19 +954,9 @@ echo -e "livin wg11 192.168.1.94\ne" | wg_manager
 **\n** - this is the ***ENTER*** key to execute the command that has been printed.  
 **e** - a second command which exists wgm so we dont leave it running.  
 
-depending on what you want to do, this might function very nice in i.e. Andiod app **SSH Button** since it does not provide any output feedback more than **OK**. but in **Apple Siri Shortcuts** you might want to have the appropriate feedback from your command.
+Depending on what you want to do, this might function very nice in i.e. Andiod app **SSH Button** since it does not provide any output feedback more than **OK**. But in **Apple Siri Shortcuts** you might want to have the appropriate feedback from your command. The above command will splash you the menu which will clutter the output so its really hard to see the output from your command.
 
-you could continue to add all the commands you wish as long as you separate them with **\n** and end with **e**, i.e:
-```sh
-echo -e "menu hide\ncolour off\nstop wg11\npeer wg11 dns=9.9.9.9\nstart wg11\ne" | wg_manager
-```
-executing this command will give the same output as if you where actually entering the commands inside wgm, altough we reduced the output by hiding the menu and turning off colours, but the initial menu will still show. 
-
-we could supress all terminal outputs from our command if we like:
-```sh
-echo -e "livin wg11 192.168.1.94\ne" | wg_manager 1>/dev/null
-```
-But if we are really interested in all command output, to be able to catch unexpected output (which maybee the most important output), we will have to use a slightly more messy command. I have put this in a wrapper shell script so you dont have to see it (altough just look in the file if you are interested). 
+If we are really interested in all command output, to be able to catch unexpected output (which maybee the most important output), we will have to use a slightly more messy command. I have put this in a wrapper shell script so you dont have to see it (altough just look in the file if you are interested). 
 
 To install the wrapper:
 ```sh
@@ -975,25 +965,36 @@ curl --retry 3 "https://raw.githubusercontent.com/ZebMcKayhan/WireguardManager/m
 
 It will install wgmExpo at **/opt/bin/** which is in the router path, so you can access it from anywhere. 
 ```sh
-admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo
-wgmExpo Version 0.1 by ZebMcKayhan
-wgmExpo --help for usage info
-
 admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo --help
-wgmExpo Version 0.1 by ZebMcKayhan
+   wgmExpo Version 0.2 by ZebMcKayhan
 
-usage:
-wgmExpo "command 1" "command 2" "command n"
+   Execute menu command in Wireguard Session Manager
 
-example:
-wgmExpo "colour off" "peer wg11 dns=9.9.9.9" "restart wg11"
+   usage:
+      wgmExpo <Option> "command 1" "command 2" "command n"
 
-admin@RT-AC86U-D7D8:/tmp/home/root#
+   Options:
+      -h     - help
+      -v     - version
+      -s     - Silent mode, no output
+      -c     - Monocrome output (no ASCII escape characters)
+      -t     - Display Wireguard ACTIVE Peer Status: each command
+
+   example:
+      wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"
+      wgmExpo -ct "livin wg11 192.168.10.53"
 ```
+The script will pad the nessissary **\n** between each command and add **exit** at the end, so you dont have to add this to the command list.
 
-with wgmExpo we dont need to use the **menu hide** since it wont be displayed anyway, but it could be useful to use the **colour off** if you are outputting to a display that dont use colours, you will get alot of escape characters if you dont turn off colours.
+The **-s** (silent mode) will prohibit all output when running the command, it could be useful when you are running wgm commands from your own scripts, but you will need to make sure, by other means, that the command actually pulled through. Currently it wont even output program errors, but that might change in the future.
 
-if you run some bad command so the script and/or wgm doesnt return to the prompt, it could usually be exit with **CTRL+C**.
+With wgmExpo we dont need to use the **menu hide** since it wont be displayed anyway, but it could be useful to use the **-c** (colour off) if you are outputting to a display that dont use colours. You will get a lot of escape characters if you dont turn off colours. The script silently adds the "colour off" command to the list of commands to be able to do this.
+
+The **-t** (display status) will display the **WireGuard ACTIVE Peer Status: Clients 1, Servers 0** after each executed commands. It could be useful sometimes.
+
+The only options that could be used together is the **-c** and **-t** since these are the only ones that makes sense.
+
+If you run some bad command so the script and/or wgm doesnt return to the prompt, it could usually be exit with **CTRL+C**.
 
 If you ever wish to remove the wrapper script, simply execute:
 ```sh
