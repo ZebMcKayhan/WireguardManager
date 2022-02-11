@@ -44,7 +44,7 @@ if [[ ${1::1} == "-" ]];then
 		;;
 		
 		"-V"|"-v")
-			echo "   wgmExpo Version $version by ZebMcKayhan"
+			echo "   wgmExpo Version $version"
 			echo ""
 			exit
 		;;
