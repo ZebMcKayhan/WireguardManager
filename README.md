@@ -960,13 +960,12 @@ If we are really interested in all command output, to be able to catch unexpecte
 
 To install the wrapper:
 ```sh
-curl --retry 3 "https://raw.githubusercontent.com/ZebMcKayhan/WireguardManager/main/wgmExpo" -o "/opt/bin/wgmExpo" && chmod 755 "/opt/bin/wgmExpo"
+curl --retry 3 "https://raw.githubusercontent.com/ZebMcKayhan/WireguardManager/main/wgmExpo.sh" -o "/jffs/addons/wireguard/wgmExpo.sh" && chmod 755 "/jffs/addons/wireguard/wgmExpo.sh" && /jffs/addons/wireguard/wgmExpo.sh -install
 ```
-
-It will install wgmExpo at **/opt/bin/** which is in the router path, so you can access it from anywhere. 
+Display help
 ```sh
 admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo --help
-   wgmExpo Version 0.2 by ZebMcKayhan
+   wgmExpo Version 0.4 by ZebMcKayhan
 
    Execute menu command in Wireguard Session Manager
 
@@ -974,16 +973,20 @@ admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo --help
       wgmExpo <Option> "command 1" "command 2" "command n"
 
    Options:
-      -h     - help
-      -v     - version
-      -s     - Silent mode, no output
-      -c     - Monocrome output (no ASCII escape characters)
-      -t     - Display Wireguard ACTIVE Peer Status: each command
+      -h       - help
+      -v       - version
+      -s       - Silent mode, no output
+      -c       - Monocrome output (no ASCII escape characters)
+      -t       - Display Wireguard ACTIVE Peer Status: each command
+      -e       - Expose all display output (no filtering)
+      -remove  - Remove wgmExpo
 
    example:
       wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"
       wgmExpo -ct "livin wg11 192.168.10.53"
 ```
+wgmExpo.sh will install at **/jffs/addons/wireguard/** and make symlink wgmExpo in **/opt/bin/** which is in the router path, so you can access it from 
+
 The script will pad the nessissary **\n** between each command and add **exit** at the end, so you dont have to add this to the command list.
 
 The **-s** (silent mode) will prohibit all output when running the command, it could be useful when you are running wgm commands from your own scripts, but you will need to make sure, by other means, that the command actually pulled through. Currently it wont even output program errors, but that might change in the future.
@@ -998,7 +1001,7 @@ If you run some bad command so the script and/or wgm doesnt return to the prompt
 
 If you ever wish to remove the wrapper script, simply execute:
 ```sh
-rm /opt/bin/wgmExpo
+wgmExpo -remove
 ```
 
 # Why is Diversion not working for WG Clients
