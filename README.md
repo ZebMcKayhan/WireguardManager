@@ -995,7 +995,7 @@ With wgmExpo we dont need to use the **menu hide** since it wont be displayed an
 
 The **-t** (display status) will display the **WireGuard ACTIVE Peer Status: Clients 1, Servers 0** after each executed commands. It could be useful sometimes.
 
-The only options that could be used together is the **-c** and **-t** since these are the only ones that makes sense.
+The only options that could be used together is the **-c** together with **-t** or **-e** since these are the only ones that makes sense.
 
 If you run some bad command so the script and/or wgm doesnt return to the prompt, it could usually be exit with **CTRL+C**.
 
