@@ -35,7 +35,7 @@ if [[ ${1::1} == "-" ]];then
 			echo "      -c       - Monocrome output (no ASCII escape characters)"
 			echo "      -t       - Display Wireguard ACTIVE Peer Status: each command" 
 			echo "      -e       - Expose all display output (no filtering)"
-		 echo "      -remove  - Remove wgmExpo"
+		        echo "      -remove  - Remove wgmExpo"
                         echo ""
 			echo "   example:"
 			echo '      wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"'
