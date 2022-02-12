@@ -25,19 +25,19 @@ if [[ ${1::1} == "-" ]];then
 			echo ""
          		echo "   Execute menu command in Wireguard Session Manager"
 			echo ""
-			echo "   usage:"
+			echo "   Usage:"
 			echo '      wgmExpo <Option> "command 1" "command 2" "command n"'
 			echo ""
 			echo "   Options:"
-			echo "      -h       - help"
-			echo "      -v       - version"
+			echo "      -h       - Help"
+			echo "      -v       - Version"
 			echo "      -s       - Silent mode, no output"
 			echo "      -c       - Monocrome output (no ASCII escape characters)"
 			echo "      -t       - Display Wireguard ACTIVE Peer Status: each command" 
 			echo "      -e       - Expose all display output (no filtering)"
 		        echo "      -remove  - Remove wgmExpo"
                         echo ""
-			echo "   example:"
+			echo "   Example:"
 			echo '      wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"'
 			echo '      wgmExpo -ct "livin wg11 192.168.10.53"'
 			echo ""
@@ -82,24 +82,23 @@ if [[ ${1::1} == "-" ]];then
 			shift
 		;;		
 
-  "-install")
-  rm /opt/bin/wgmExpo 2>/dev/null
-  ln -s /jffs/addons/wireguard/wgmExpo.sh /opt/bin/wgmExpo 2>/dev/null
+                "-install")
+                        rm /opt/bin/wgmExpo 2>/dev/null
+                        ln -s /jffs/addons/wireguard/wgmExpo.sh /opt/bin/wgmExpo 2>/dev/null
+                        echo "   wgmExpo Version $version by ZebMcKayhan"
+                        echo ""
+                        echo "   Wrapper installed"
+                        exit
+                ;;
 
-  echo "   wgmExpo Version $version by ZebMcKayhan"
-  echo ""
-  echo "   Wrapper installed"
-  exit
-  ;;
-
-  "-remove")
-  rm /opt/bin/wgmExpo
-  rm /jffs/addons/wireguard/wgmExpo.sh
-  echo "   wgmExpo Version $version by ZebMcKayhan"
-  echo ""
-  echo "   Wrapper removed"
-  exit
-  ;;
+                "-remove")
+                        rm /opt/bin/wgmExpo
+                        rm /jffs/addons/wireguard/wgmExpo.sh
+                        echo "   wgmExpo Version $version by ZebMcKayhan"
+                        echo ""
+                        echo "   Wrapper removed"
+                        exit
+                ;;
 		
 		*)
 			echo "Error, invalid option: $1, use [wgmExpo --help] to view available options"
