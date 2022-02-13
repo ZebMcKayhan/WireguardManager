@@ -38,7 +38,7 @@ if [[ ${1::1} == "-" ]];then
 		        echo "      -remove  - Remove wgmExpo"
                         echo ""
 			echo "   Example:"
-                        echo '      wgmExpo "peer wg11 comment=Italy"'
+                        echo '      wgmExpo "peer wg11 comment Italy"'
 			echo '      wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"'
 			echo '      wgmExpo -ct "livin wg11 192.168.10.53"'
 			echo ""
