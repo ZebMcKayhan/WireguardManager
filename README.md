@@ -958,7 +958,11 @@ Depending on what you want to do, this might function very nice in i.e. Andiod a
 
 If we are really interested in all command output, to be able to catch unexpected output (which maybee the most important output), we will have to use a slightly more messy command. I have put this in a wrapper shell script so you dont have to see it (altough just look in the file if you are interested). 
 
-To install the wrapper:
+Latest wgm installs the wrapper script by default, but if it don't, you could install it in wgm:
+```sh
+E:Option ==> addon wgmExpo.sh
+```
+Or, with the same result, execute from shell:
 ```sh
 curl --retry 3 "https://raw.githubusercontent.com/ZebMcKayhan/WireguardManager/main/wgmExpo.sh" -o "/jffs/addons/wireguard/wgmExpo.sh" && chmod 755 "/jffs/addons/wireguard/wgmExpo.sh" && /jffs/addons/wireguard/wgmExpo.sh -install
 ```
@@ -969,19 +973,20 @@ admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo --help
 
    Execute menu command in Wireguard Session Manager
 
-   usage:
+   Usage:
       wgmExpo <Option> "command 1" "command 2" "command n"
 
    Options:
-      -h       - help
-      -v       - version
+      -h       - Help
+      -v       - Version
       -s       - Silent mode, no output
       -c       - Monocrome output (no ASCII escape characters)
       -t       - Display Wireguard ACTIVE Peer Status: each command
       -e       - Expose all display output (no filtering)
       -remove  - Remove wgmExpo
 
-   example:
+   Example:
+      wgmExpo "peer wg11 comment Italy"
       wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"
       wgmExpo -ct "livin wg11 192.168.10.53"
 ```
@@ -995,14 +1000,22 @@ With wgmExpo we dont need to use the **menu hide** since it wont be displayed an
 
 The **-t** (display status) will display the **WireGuard ACTIVE Peer Status: Clients 1, Servers 0** after each executed commands. It could be useful sometimes.
 
-The only options that could be used together is the **-c** together with **-t** or **-e** since these are the only ones that makes sense.
+The **-e** (Expose all) will display everything that is happening, useful for debugging.
+
+The only options that could be used together is the **-c** together with **-t** or **-e** since these are the only ones that makes sense. Please note that **-ce** will show the initial menu with colours until the first **colour off** command is executed.
 
 If you run some bad command so the script and/or wgm doesnt return to the prompt, it could usually be exit with **CTRL+C**.
 
 If you ever wish to remove the wrapper script, simply execute:
 ```sh
+E:Option ==> addon wgmExpo.sh del
+```
+Or execute at the shell prompt:
+```sh
 wgmExpo -remove
 ```
+
+Enjoy!
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
