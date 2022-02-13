@@ -38,6 +38,7 @@ if [[ ${1::1} == "-" ]];then
 		        echo "      -remove  - Remove wgmExpo"
                         echo ""
 			echo "   Example:"
+                        echo '      wgmExpo "peer wg11 comment=Italy"'
 			echo '      wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"'
 			echo '      wgmExpo -ct "livin wg11 192.168.10.53"'
 			echo ""
@@ -87,7 +88,7 @@ if [[ ${1::1} == "-" ]];then
                         ln -s /jffs/addons/wireguard/wgmExpo.sh /opt/bin/wgmExpo 2>/dev/null
                         echo "   wgmExpo Version $version by ZebMcKayhan"
                         echo ""
-                        echo "   Wrapper installed"
+                        echo "   Installed! Use [wgmExpo --help] for usage info"
                         exit
                 ;;
 
@@ -96,7 +97,7 @@ if [[ ${1::1} == "-" ]];then
                         rm /jffs/addons/wireguard/wgmExpo.sh
                         echo "   wgmExpo Version $version by ZebMcKayhan"
                         echo ""
-                        echo "   Wrapper removed"
+                        echo "   Removed!"
                         exit
                 ;;
 		
