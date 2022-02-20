@@ -230,7 +230,7 @@ it is also possible to turn the menu off, which is especially useful if you are 
 ```sh
 E:Option ==> menu hide
 ```
-To turn off colours permanently, it could be executed directly from shell: 
+To turn off menu permanently, it could be executed directly from shell: 
 ```sh
 wg_manager menu hide
 ```
