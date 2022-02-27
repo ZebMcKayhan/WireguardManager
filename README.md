@@ -1487,7 +1487,7 @@ You might need to further adjust this for your system.
 # Setup Transmission and/or Unbound to use WG Client (alternate way)
 Thanks to SNB forum member @eibgrad for proposing this.
 
-The methode proposed above is mainly designed to minimize custom scripting. However, given the amount of possibilities with your ASUS router there is no way of saying if routing router LAN ip to vpn will never cause any issues.
+The methode proposed above is mainly designed to minimize custom scripting. However, given the amount of possibilities with your ASUS router there is no way of saying if routing router LAN ip to vpn will never cause any issues (altough none has been reported yet).
 
 If you find that some local process is not behaving correctly, this alternative way will probably solve it:
 
