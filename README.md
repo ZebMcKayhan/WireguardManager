@@ -31,6 +31,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [Setup Yazfi for IPv6 subnet to route out wg vpn](#setup-yazfi-for-ipv6-subnet-to-route-out-wg-vpn)  
 [Setup a reverse policy based routing](#setup-a-reverse-policy-based-routing)  
 [Setup Transmission and/or Unbound to use WG Client](#setup-transmission-andor-unbound-to-use-wg-client)  
+[Setup Transmission and/or Unbound to use WG Client (alternative way)](#setup-transmission-andor-unbound-to-use-wg-client-alternate-way)
 [I cant access my nas/samba share over vpn](#i-cant-access-my-nassamba-share-over-vpn)  
 [Why is my SMB share slow over vpn](#why-is-my-smb-share-slow-over-vpn)
 
@@ -1482,6 +1483,56 @@ If you plan to serve dns replies to clients connected to your wireguard vpn serv
 E:Option ==> peer wg11 rule add wan dst=10.50.1.1/24 comment ToWg21UseMain
 ```
 You might need to further adjust this for your system.
+
+# Setup Transmission and/or Unbound to use WG Client (alternate way)
+Thanks to SNB forum member @eibgrad for proposing this.
+
+The methode proposed above is mainly designed to minimize custom scripting. However, given the amount of possibilities with your ASUS router there is no way of saying if routing router LAN ip to vpn will never cause any issues.
+
+If you find that some local process is not behaving correctly, this alternative way will probably solve it:
+
+Setup a br0 ip adress alias by editing nat-start:
+```sh
+nano /jffs/scripts/nat-start
+```
+And create a subnet alias i.e. 192.168.100.1 in there:
+```sh
+#!/bin/sh
+sleep 10
+ifconfig br0:1 192.168.100.1 netmask 255.255.255.255
+```
+The next step would be to enable Wireguard masquarading to this ip, so edit the wireguard custom config file:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+And populate with:
+```sh
+#!/bin/sh
+iptables -t nat -I POSTROUTING -s 192.168.100.1/32 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"
+```
+Also remove the rule as wg interface is stopped:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+And populate with:
+```sh
+#!/bin/sh
+iptables -t nat -D POSTROUTING -s 192.168.100.1/32 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"
+```
+Make the files executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+Then head into wgm and setup a rule to route this new IP out your wireguard peer:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.100.1 comment LocalProcToVpn
+```
+No other rule should be needed.
+
+Now you could point Transmission and/or Unbound to this ip instead according to above instructions.
+
+With this methode we have only affected the processes we intended, no other, and minimized any ill effects.
 
 # I cant access my nas/samba share over vpn
  - Thanks for SNB forum member @mgear1981 for testing and elaborating to get this together.
