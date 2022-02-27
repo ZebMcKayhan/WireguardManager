@@ -31,7 +31,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [Setup Yazfi for IPv6 subnet to route out wg vpn](#setup-yazfi-for-ipv6-subnet-to-route-out-wg-vpn)  
 [Setup a reverse policy based routing](#setup-a-reverse-policy-based-routing)  
 [Setup Transmission and/or Unbound to use WG Client](#setup-transmission-andor-unbound-to-use-wg-client)  
-[Setup Transmission and/or Unbound to use WG Client (alternative way)](#setup-transmission-andor-unbound-to-use-wg-client-alternate-way)
+[Setup Transmission and/or Unbound to use WG Client (alternative way)](#setup-transmission-andor-unbound-to-use-wg-client-alternate-way)  
 [I cant access my nas/samba share over vpn](#i-cant-access-my-nassamba-share-over-vpn)  
 [Why is my SMB share slow over vpn](#why-is-my-smb-share-slow-over-vpn)
 
