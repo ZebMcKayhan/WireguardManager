@@ -1493,13 +1493,16 @@ If you find that some local process is not behaving correctly, this alternative 
 
 Setup a br0 ip adress alias by editing nat-start:
 ```sh
-nano /jffs/scripts/nat-start
+nano /jffs/scripts/init-start
 ```
 And create a subnet alias i.e. 192.168.100.1 in there:
 ```sh
 #!/bin/sh
-sleep 10
 ifconfig br0:1 192.168.100.1 netmask 255.255.255.255
+```
+If this file did not exist and you just created it, you need to make it executable:
+```sh
+chmod +x /jffs/scripts/init-start
 ```
 The next step would be to enable Wireguard masquarading to this ip, so edit the wireguard custom config file:
 ```sh
