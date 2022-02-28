@@ -9,6 +9,8 @@ Wireguard Session Manager: https://www.snbforums.com/threads/session-manager-dis
 Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt-ac86u-gt-ac2900-rt-ax88u-rt-ax86u.46164/
 
 ## Table of content
+[Preface](#preface)  
+  
 [Setup wgm](#setup-wgm)  
   -[Import Client](#import-client)  
   -[Add persistentKeepalive](#add-persistentkeepalive)  
@@ -34,6 +36,13 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [Setup Transmission and/or Unbound to use WG Client (alternative way)](#setup-transmission-andor-unbound-to-use-wg-client-alternate-way)  
 [I cant access my nas/samba share over vpn](#i-cant-access-my-nassamba-share-over-vpn)  
 [Why is my SMB share slow over vpn](#why-is-my-smb-share-slow-over-vpn)
+
+# Preface
+This guide is written for the purpose of aiding users in setting up Wireguard Session Manager on their ASUS router. When it comes to setting up Wgm, the guide serves as informational and also as a command reference. However, some of the examples may not always be applicable for your specific system. You are advised to read the text to understand what different parts do and adopt each command to suite your system.
+
+Following all parts of this guide as-is may cause conflicts in your system as many parts are stand alone demonstrative examples.
+
+With that said, Congratulations on your choice of setting up Wireguard and Wireguard Session Manager. I hope this guide will serve you well and provide a hazzle free setup of Wireguard on your ASUS router.
 
 # Setup wgm
 
@@ -1491,7 +1500,7 @@ The methode proposed above is mainly designed to minimize custom scripting. Howe
 
 If you find that some local process is not behaving correctly, this alternative way will probably solve it:
 
-Setup a br0 ip adress alias by editing nat-start:
+Setup a br0 ip adress alias by editing init-start:
 ```sh
 nano /jffs/scripts/init-start
 ```
