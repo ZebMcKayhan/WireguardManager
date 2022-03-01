@@ -1507,7 +1507,7 @@ nano /jffs/scripts/init-start
 And create a subnet alias i.e. 192.168.100.1 in there:
 ```sh
 #!/bin/sh
-ifconfig br0:1 192.168.100.1 netmask 255.255.255.255
+ifconfig br0:1 192.168.100.1 netmask 255.255.255.255 up
 ```
 If this file did not exist and you just created it, you need to make it executable:
 ```sh
