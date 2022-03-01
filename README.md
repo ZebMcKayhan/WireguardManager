@@ -641,7 +641,7 @@ a typical use case could be that we want the entire network to go out VPN except
 E:Option ==> peer wg11 rule add vpn 192.168.1.1/24 comment All LAN to VPN
 E:Option ==> peer wg11 rule add wan 192.168.1.38 comment Except This Computer
 ```
-this works just fine, with one exception. sadly this computer will still use wg DNS (because vpn rules gets a dns redirection rule but wan rules does not). so in this case it could be better to devide your network in 2 parts, like restrict the DHCP to only give out ip adresses 192.168.1.32 - 192.168.1.255 and manually assign the numbers below 32 and create rules for these ranges separately:
+this works just fine, with one exception. sadly this computer will still use wg DNS (because vpn rules gets a dns redirection rule but wan rules does not). So in this case it could be better to devide your network in 2 parts, like restrict the DHCP to only give out ip adresses 192.168.1.32 - 192.168.1.255 and manually assign the numbers below 32 and create rules for these ranges separately:
 192.168.1.0/27 #0 - 31 (no rule needed for this)
 192.168.1.32/27 #32-63 (wgm VPN rule)
 192.168.1.64/26 #64-127 (wgm VPN rule)
@@ -1498,49 +1498,28 @@ Thanks to SNB forum member @eibgrad for proposing this.
 
 The methode proposed above is mainly designed to minimize custom scripting. However, given the amount of possibilities with your ASUS router there is no way of saying if routing router LAN ip to vpn will never cause any issues (altough none has been reported yet).
 
-If you find that some local process is not behaving correctly, this alternative way will probably solve it:
+If you find that some local process is not behaving correctly, this alternative way will probably solve it. What we will do is to create an ip alias for br0 for this purpose, much the same way as Pixelserv already does.
+
+Start by heading into the router GUI and navigate to LAN --> DHCP Server and change "IP Pool Starting Address" to one higher i.e. "192.168.1.3" to "192.168.1.4". If you already have Pixelserv installed this is already using 192.18.1.2 and if yoy could have more reserved for this purpose. What we need to do is to find the first available ip, in this case 192.168.1.3. 
 
 Setup a br0 ip adress alias by editing init-start:
 ```sh
 nano /jffs/scripts/init-start
 ```
-And create a subnet alias i.e. 192.168.100.1 in there:
+And create the ip alias i.e. 192.168.1.3 in there:
 ```sh
 #!/bin/sh
-ifconfig br0:1 192.168.100.1 netmask 255.255.255.255 up
+ifconfig br0:LocalProc 192.168.1.3 netmask 255.255.255.255 up
 ```
 If this file did not exist and you just created it, you need to make it executable:
 ```sh
 chmod +x /jffs/scripts/init-start
 ```
-The next step would be to enable Wireguard masquarading to this ip, so edit the wireguard custom config file:
-```sh
-nano /jffs/addons/wireguard/Scripts/wg11-up.sh
-```
-And populate with:
-```sh
-#!/bin/sh
-iptables -t nat -I POSTROUTING -s 192.168.100.1/32 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"
-```
-Also remove the rule as wg interface is stopped:
-```sh
-nano /jffs/addons/wireguard/Scripts/wg11-down.sh
-```
-And populate with:
-```sh
-#!/bin/sh
-iptables -t nat -D POSTROUTING -s 192.168.100.1/32 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"
-```
-Make the files executable:
-```sh
-chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
-chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
-```
 Then head into wgm and setup a rule to route this new IP out your wireguard peer:
 ```sh
-E:Option ==> peer wg11 rule add vpn 192.168.100.1 comment LocalProcToVpn
+E:Option ==> peer wg11 rule add vpn 192.168.1.3 comment LocalProcToVpn
 ```
-No other rule should be needed.
+No other rule should be needed. Well, atleast not for your LAN. The policy routing table still only contains routes to VPN and to LAN so if you have other subnets that i.e. Transmission process needs to communicate with, you will still need to redirect these to main routing table using "ToLocalUseMain" rule above.
 
 Now you could point Transmission and/or Unbound to this ip instead according to above instructions.
 
