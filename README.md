@@ -971,6 +971,11 @@ So we could take a small portion of the subnet and assign to our server, since w
 
 so, here we have 255 possible devices: 2600:aaaa:bbbb:cccc::101 - 2600:aaaa:bbbb:cccc::1ff
 
+It is really important that we somehow differentiate our wg21 IP range from the rest. /64 (left most 4x4 values) is asigned by WAN, and for /120 the right most 2 values are varied for our devices on wg21. so to print out the entire ip (without the ::) gives:  
+2600:aaaa:bbbb:cccc:0000:0000:0000:0**1**xx
+
+so just by placing the **1** in the /64 area but outside /120 area we would avoid conflict with br0 and hopefully other more or less statically assigned addresses.
+
 From this we could create a server peer that gives IPv6 connectivity (only):
 ```sh
 E:Option ==> peer new ipv6=2600:aaaa:bbbb:cccc::101/120 noipv4
