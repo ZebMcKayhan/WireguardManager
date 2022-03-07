@@ -956,6 +956,11 @@ E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cc10::1/64
 
 Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
 
+To make it autostart at boot:
+```sh
+E:Option ==> peer wg21 auto=Y
+```
+
 **IPv6 - setup with static /64 subnet**  
 If you only have a single subnet assigned to you, we will have to fork in our server and device's into your subnet. I would not expect this to be a problem as mostly IPv6 is stateless assigned. This means that any client assignes it's own right hand (4x4) numbers on the ip, usually based on MAC, or combination of MAC and time or just random. Since Wireguard only works on static assignement, we should be able to take a small portion and just assign it and the chances for conflict is virtually zero. If a conflict should arise, IPv6 already has protocols for this, so hopefully the conflicting IP will know this and change it's IP.
 
@@ -985,8 +990,12 @@ Or we could create a dual stack server peer that gives both IPv4 and IPv6 connec
 ```sh
 E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cccc::101/120
 ```
-
 Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
+
+To make it autostart at boot:
+```sh
+E:Option ==> peer wg21 auto=Y
+```
 
 **IPv6 - setup with dynamic IPv6**  
 Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a private IPv6 for the wg21 server peer and the devices. This means we break rfc- complience as the device peers wont be reachable from the outside anymore. However, from been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
@@ -1050,7 +1059,40 @@ E:Option ==> peer wg21 restart
 ```
 
 **Device peer setup**  
-Cooming soon
+Creating a Road-Worrior device is really easy, i.e.:
+```sh
+E:Option ==> create Samsung-S10 wg21
+```
+You might have to answer some questions in the setup. Finally you will be asked to view the qrcode to import it into your device. Regardless how you choose, before importing the config into your phone, you could exit wgm and take a look at it.  
+```sh
+nano /opt/etc/wireguard.d/Samsung-S10.conf
+```
+One important thing that should/could be checked and/or changed is the DNS we are telling our VPN device to use:
+```sh
+DNS = 9.9.9.9, 2620:fe::fe
+```
+This line is probably populated with your WAN DNS. Now, if you feel that this is good, then just leave it. For some people, they might want to use the router as DNS to use dnsmasq with all the benefits (local hosts resolv, Diversion, Unbound et.c.). then simply change this to point at your wg21 IP instead. i.e. from my dynamic example above:
+```sh
+DNS = 192.168.100.1, fc00:192:168:100::1
+```
+While you are in here, also take a look at the Address field:
+```sh
+Address = 192.168.100.2/32, fc00:192:168:100::2/128
+```
+This is the device local address, so we check that it has turned out correctly, simply wg21 ip +1 at the end.
+
+finally, check your Endpoint:
+```sh
+Endpoint = MyDDnsAddress:Wgport
+```
+There is a chance that wgm got your intentions wrong and populated this with something you did not intend. This should be the address the device is using to connect to your server. It could be your WAN IP (IPv4 or IPv6), it could be a DDNS address. change this to match your intentions. after you are done, save and exit.
+
+When you are comfortable with your client file, you could either copy the **/opt/etc/wireguard.d/Samsung-S10.conf** to your device to import it. Or you could head into wgm to display the qrcode again:
+```sh
+E:Option ==> qrcode Samsung-S10
+```
+It will display your modified .conf file.
+
 
 ## Route WG Server to internet via WG Client
 I cannot test this as Im not running any server. the point would be if you only have 1 client and will be able to connect home over the internet to access your LAN and also to surf the internet via your VPN client... in this case you should use the wgm "passthru" command.
