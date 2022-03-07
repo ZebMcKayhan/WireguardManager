@@ -936,7 +936,7 @@ E:Option ==> peer wg21 del
 ```
 Now, if you have IPv6 enabled on your router, and wishes to have IPv6 Only or IPv4/IPv6 dual-stack server peer, you will need to go an extra mile and configuration could differ depending on how your system is:
 
-**IPv6 - setup with static >/64 subnet (as /56 or /48 subnet)**
+**IPv6 - setup with static >/64 subnet (as /56 or /48 subnet)**  
 If you are amongst the lucky few who has a fixed IPv6 and a larger assignement then a single subnet, we could just devide a separate subnet for our server. So assuming your static IPv6 assignement is 2600:aaaa:bbbb:cc00::/56 or 2600:aaaa:bbbb::/48 we simply use the last digits to fill up 4x4 complete numbers:  
 2600:aaaa:bbbb:cc00::/56 --> 2600:aaaa:bbbb:cc**10**::/**64**  
 2600:aaaa:bbbb::/48 --> 2600:aaaa:bbbb:**0010**::/**64** (leading zeroes could be removed) --> 2600:aaaa:bbbb:**10**::/**64**
@@ -956,7 +956,7 @@ E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cc10::1/64
 
 Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
 
-**IPv6 - setup with static /64 subnet**
+**IPv6 - setup with static /64 subnet**  
 If you only have a single subnet assigned to you, we will have to fork in our server and device's into your subnet. I would not expect this to be a problem as mostly IPv6 is stateless assigned. This means that any client assignes it's own right hand (4x4) numbers on the ip, usually based on MAC, or combination of MAC and time or just random. Since Wireguard only works on static assignement, we should be able to take a small portion and just assign it and the chances for conflict is virtually zero. If a conflict should arise, IPv6 already has protocols for this, so hopefully the conflicting IP will know this and change it's IP.
 
 so assuming your static /64 IP is:
@@ -983,10 +983,10 @@ E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cccc::101/120
 
 Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
 
-**IPv6 - setup with dynamic IPv6**
+**IPv6 - setup with dynamic IPv6**  
 Cooming soon
 
-**Device peer setup**
+**Device peer setup**  
 Cooming soon
 
 ## Route WG Server to internet via WG Client
