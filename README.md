@@ -25,6 +25,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Create categories](#create-categories)  
   -[Geo-location](#geo-location)  
   -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
+  -[Setup Server](#setup-server)  
   -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   
@@ -911,6 +912,82 @@ ip -6 rule add from fdff:a37f:fa75:1::/64 fwmark 0x8000 table main prio 9900
 so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any 0x8000 fwmark set.
 
 there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
+
+## Setup Server
+Wireguard Manager sets up a server peer (wg21) when it is installed. If your only purpose is to access your IPv4 LAN then this might be enough for you, so to setup a Road-Warrior device, simply execute:
+```sh
+E:Option ==> create MyPhone wg21
+```
+And follow the instructions on screen. Display the qrcode either after creating the device peer, or by executing:
+```sh
+E:Option ==> qrcode MyPhone
+```
+To make the server autostart at boot:
+```sh
+E:Option ==> peer wg21 auto=Y
+```
+If you wish to delete the device peer:
+```sh
+E:Option ==> peer MyPhone delX
+```
+If you wish to delete the server peer:
+```sh
+E:Option ==> peer wg21 del
+```
+Now, if you have IPv6 enabled on your router, and wishes to have IPv6 Only or IPv4/IPv6 dual-stack server peer, you will need to go an extra mile and configuration could differ depending on how your system is:
+
+**IPv6 - setup with static >/64 subnet (as /56 or /48 subnet)**
+If you are amongst the lucky few who has a fixed IPv6 and a larger assignement then a single subnet, we could just devide a separate subnet for our server. So assuming your static IPv6 assignement is 2600:aaaa:bbbb:cc00::/56 or 2600:aaaa:bbbb::/48 we simply use the last digits to fill up 4x4 complete numbers:  
+2600:aaaa:bbbb:cc00::/56 --> 2600:aaaa:bbbb:cc**10**::/**64**
+2600:aaaa:bbbb::/48 --> 2600:aaaa:bbbb:**0010**::/**64** (leading zeroes could be removed) --> 2600:aaaa:bbbb:**10**::/**64**
+
+so, from here we could assign wg21 ip, which will just be the first number in subnet (only /56 example):
+2600:aaaa:bbbb:cc10::/64 --> 2600:aaaa:bbbb:cc10::**1**/64
+
+From this we could create a server peer that gives IPv6 connectivity (only):
+```sh
+E:Option ==> peer new ipv6=2600:aaaa:bbbb:cc10::1/64 noipv4
+```
+
+Or we could create a dual stack server peer that gives both IPv4 and IPv6 connectivity:
+```sh
+E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cc10::1/64
+```
+
+Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
+
+**IPv6 - setup with static /64 subnet**
+If you only have a single subnet assigned to you, we will have to fork in our server and device's into your subnet. I would not expect this to be a problem as mostly IPv6 is stateless assigned. This means that any client assignes it's own right hand (4x4) numbers on the ip, usually based on MAC, or combination of MAC and time or just random. Since Wireguard only works on static assignement, we should be able to take a small portion and just assign it and the chances for conflict is virtually zero. If a conflict should arise, IPv6 already has protocols for this, so hopefully the conflicting IP will know this and change it's IP.
+
+so assuming your static /64 IP is:
+2600:aaaa:bbbb:cccc::/64
+
+usually the router br0 hogs:
+2600:aaaa:bbbb:cccc::1/64
+and clients on br0 will assign themself based on this.
+
+So we could take a small portion of the subnet and assign to our server, since we are statically assigning interfaces we can make smaller subnets than /64, i.e.:
+2600:aaaa:bbbb:cccc::101/120
+
+so, here we have 255 possible devices: 2600:aaaa:bbbb:cccc::101 - 2600:aaaa:bbbb:cccc::1ff
+
+From this we could create a server peer that gives IPv6 connectivity (only):
+```sh
+E:Option ==> peer new ipv6=2600:aaaa:bbbb:cccc::101/120 noipv4
+```
+
+Or we could create a dual stack server peer that gives both IPv4 and IPv6 connectivity:
+```sh
+E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cccc::101/120
+```
+
+Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
+
+**IPv6 - setup with dynamic IPv6**
+Cooming soon
+
+**Device peer setup**
+Cooming soon
 
 ## Route WG Server to internet via WG Client
 I cannot test this as Im not running any server. the point would be if you only have 1 client and will be able to connect home over the internet to access your LAN and also to surf the internet via your VPN client... in this case you should use the wgm "passthru" command.
