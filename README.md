@@ -979,7 +979,7 @@ so, here we have 255 possible devices: 2600:aaaa:bbbb:cccc::101 - 2600:aaaa:bbbb
 It is really important that we somehow differentiate our wg21 IP range from the rest. /64 (left most 4x4 values) is asigned by WAN, and for /120 the right most 2 values are varied for our devices on wg21. so to print out the entire ip (without the ::) gives:  
 2600:aaaa:bbbb:cccc:0000:0000:0000:0**1**xx
 
-so just by placing the **1** in the /64 area but outside /120 area we would avoid conflict with br0 and hopefully other more or less statically assigned addresses.
+so just by placing the **1** outside the /64 area but inside /120 area we would avoid conflict with br0 and hopefully other more or less statically assigned addresses.
 
 From this we could create a server peer that gives IPv6 connectivity (only):
 ```sh
@@ -1000,7 +1000,7 @@ E:Option ==> peer wg21 auto=Y
 **IPv6 - setup with dynamic IPv6**  
 Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a private IPv6 for the wg21 server peer and the devices. This means we break rfc- complience as the device peers wont be reachable from the outside anymore. However, from been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
 
-So we could let wgm just create a private network for us (starts with fc or fd):
+So we could let wgm just create a private network for us (private network starts with fc or fd):
 ```sh
 E:Option ==> peer new ipv6 noipv4
 
