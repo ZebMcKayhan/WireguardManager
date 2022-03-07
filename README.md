@@ -25,7 +25,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Create categories](#create-categories)  
   -[Geo-location](#geo-location)  
   -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing)  
-  -[Setup Server](#setup-server)  
+  -[Setup WG Server](#setup-wg-server)  
   -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   
@@ -913,7 +913,7 @@ so only 192.168.1.x will be covered by this rule. all else will be routed out VP
 
 there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
 
-## Setup Server
+## Setup WG Server
 Wireguard Manager sets up a server peer (wg21) when it is installed. If your only purpose is to access your IPv4 LAN then this might be enough for you, so to setup a Road-Warrior device, simply execute:
 ```sh
 E:Option ==> create MyPhone wg21
