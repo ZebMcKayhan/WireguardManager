@@ -984,7 +984,65 @@ E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cccc::101/120
 Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
 
 **IPv6 - setup with dynamic IPv6**  
-Cooming soon
+Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a private IPv6 for the wg21 server peer and the devices. This means we break rfc- complience as the device peers wont be reachable from the outside anymore. However, from been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
+
+So we could let wgm just create a private network for us (starts with fc or fd):
+```sh
+E:Option ==> peer new ipv6 noipv4
+
+        Press y to Create (IPv6) 'server' Peer (wg21) fc00:50:2::1/64:11502 or press [Enter] to SKIP.
+y
+        Creating WireGuard Private/Public key-pair for (IPv6) 'server' Peer wg21 on RT-AX88U (v386.4_0)
+        Press y to Start (IPv6) 'server' Peer (wg21) or press [Enter] to SKIP.
+y
+```
+Please pay attention to which ip got created (in this case "fc00:50:2:0::1/64" and write it down somewhere)
+
+or we can control the ips ourself, either from a generated ULA or just make one up, i.e. while also creating a dual stack server peer:
+```sh
+E:Option ==> peer new ip=192.168.100.1/24 ipv6=fc00:192:196:100::1/64
+
+        Press y to Create (IPv4/IPv6) 'server' Peer (wg21) 192.168.100.1/24,fc00:192:196:100::1/64:11501 or press [Enter] to SKIP.
+y
+        Creating WireGuard Private/Public key-pair for (IPv4/IPv6) 'server' Peer wg21 on RT-AC86U (v386.4_0)
+        Press y to Start (IPv4/IPv6) 'server' Peer (wg21) or press [Enter] to SKIP.
+y
+```
+
+Either way, since we are using private adresses, we need to setup NAT6 to translate this address to WAN source address, otherwise packets will be dropped by our ISP. So do this by creating a custom wg21 scripts:
+
+```sh
+nano /jffs/addons/wireguard/Scripts/wg21-up.sh
+```
+and populate with:
+```sh
+#!/bin/sh
+#Masquarade ipv6 packets from clients to WAN
+ip6tables -t nat -I POSTROUTING -s fc00:50:2:0::/64 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
+```
+Change the IPv6 address you selected (or got) for your wg21 peer. Also remove the rules when wg21 is disabled:
+
+```sh
+nano /jffs/addons/wireguard/Scripts/wg21-down.sh
+```
+Populate with:
+```sh
+#!/bin/sh
+#Masquarade ipv6 packets from clients to WAN
+ip6tables -t nat -D POSTROUTING -s fc00:50:2:0::/64 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
+```
+Again, change the IPv6 to match your wg21 server peer.
+
+make them executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg21-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg21-down.sh
+```
+Now you could restart wg21, and set it to autostart at boot (if you wish):
+```sh
+E:Option ==> peer wg21 auto=Y
+E:Option ==> peer wg21 restart
+```
 
 **Device peer setup**  
 Cooming soon
