@@ -938,10 +938,10 @@ Now, if you have IPv6 enabled on your router, and wishes to have IPv6 Only or IP
 
 **IPv6 - setup with static >/64 subnet (as /56 or /48 subnet)**
 If you are amongst the lucky few who has a fixed IPv6 and a larger assignement then a single subnet, we could just devide a separate subnet for our server. So assuming your static IPv6 assignement is 2600:aaaa:bbbb:cc00::/56 or 2600:aaaa:bbbb::/48 we simply use the last digits to fill up 4x4 complete numbers:  
-2600:aaaa:bbbb:cc00::/56 --> 2600:aaaa:bbbb:cc**10**::/**64**
+2600:aaaa:bbbb:cc00::/56 --> 2600:aaaa:bbbb:cc**10**::/**64**  
 2600:aaaa:bbbb::/48 --> 2600:aaaa:bbbb:**0010**::/**64** (leading zeroes could be removed) --> 2600:aaaa:bbbb:**10**::/**64**
 
-so, from here we could assign wg21 ip, which will just be the first number in subnet (only /56 example):
+so, from here we could assign wg21 ip, which will just be the first number in subnet (only /56 example):  
 2600:aaaa:bbbb:cc10::/64 --> 2600:aaaa:bbbb:cc10::**1**/64
 
 From this we could create a server peer that gives IPv6 connectivity (only):
@@ -966,7 +966,7 @@ usually the router br0 hogs:
 2600:aaaa:bbbb:cccc::1/64
 and clients on br0 will assign themself based on this.
 
-So we could take a small portion of the subnet and assign to our server, since we are statically assigning interfaces we can make smaller subnets than /64, i.e.:
+So we could take a small portion of the subnet and assign to our server, since we are statically assigning interfaces we can make smaller subnets than /64, i.e.:  
 2600:aaaa:bbbb:cccc::101/120
 
 so, here we have 255 possible devices: 2600:aaaa:bbbb:cccc::101 - 2600:aaaa:bbbb:cccc::1ff
