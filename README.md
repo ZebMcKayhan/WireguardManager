@@ -1079,9 +1079,9 @@ While you are in here, also take a look at the Address field:
 ```sh
 Address = 192.168.100.2/32, fc00:192:168:100::2/128
 ```
-This is the device local address, so we check that it has turned out correctly, simply wg21 ip +1 at the end.
+This is the device local address, so we check that it has turned out correctly, simply wg21 ip +1 at the end. If you want to change this, please do, but also update **/opt/etc/wireguard.d/wg21.conf** section **AllowedIPs =** to match the same.
 
-finally, check your Endpoint:
+Finally, check your Endpoint:
 ```sh
 Endpoint = MyDDnsAddress:Wgport
 ```
