@@ -1000,7 +1000,7 @@ E:Option ==> peer wg21 auto=Y
 **IPv6 - setup with dynamic IPv6**  
 Note: Below setup are still experimental and may not work. Stay tuned...
 
-Note2: Despite my best effort I cant seem to get ipv6 packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:196:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
+Note2: Despite my best effort I cant seem to get ipv6 packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
 
 Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a private IPv6 for the wg21 server peer and the devices. This means we break rfc- complience as the device peers wont be reachable from the outside anymore. However, from been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
 
