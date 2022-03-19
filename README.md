@@ -998,7 +998,7 @@ E:Option ==> peer wg21 auto=Y
 ```
 
 **IPv6 - setup with dynamic IPv6**  
-Note: Despite my best effort I cant seem to get ipv6 packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
+Note: Despite my best effort I cant seem to get ipv6 ULA packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
 
 Special thanks to SNB-Forum member @archiel for testing this out.
 
