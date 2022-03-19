@@ -998,36 +998,34 @@ E:Option ==> peer wg21 auto=Y
 ```
 
 **IPv6 - setup with dynamic IPv6**  
-Note: Below setup are still experimental and may not work. Stay tuned...
+Note: Despite my best effort I cant seem to get ipv6 packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
 
-Note2: Despite my best effort I cant seem to get ipv6 packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
+Special thanks to SNB-Forum member @archiel for testing this out.
 
-Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a private IPv6 for the wg21 server peer and the devices. This means we break rfc- complience as the device peers wont be reachable from the outside anymore. However, from been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
+Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a local IPv6 for the wg21 server peer and the devices. From been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
 
-So we could let wgm just create a private network for us (private network starts with fc or fd):
+The proper way of doing this would be to generate yourself an ipv6 ULA address range. However, the current firmware in our ASUS routers wont route this to wan, packages wont even reach the place where we typically changes its source address. So we need to think of something else. It has also been found that most devices are reluctant of using ipv6 ULA addresses. They rather use ipv4 instead which also means we need to use something else. Since there are no other reserved addresses we will have to make it up.  
+1) look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml to find an address space not assigned, but it cant start with fc, fd, fe or ff.  
+2) use your isp assignement, which means the address you have right now. We will use NAT6 anyway so it will still work when your address is changed.  
+3) generate an ULA (google to an online generator) then change the 2 first letters to something not used, like aa.  
+
+Since we are using an address which might be our own or someone else we need to make the risk for conflict minimal.
+
+So, assuming we will use prefix aaaa:bbbb:cccc:dddd::/64 
+We create a wg21 address that is not in conflict with br0, and we slim down the range, 120 would leave room for 255 devices, should be enough for most servers: aaaa:bbbb:cccc:dddd:**100::1/120**
+
+Creatin our server we need to control the ips ourself, according to our ip above. Creating a dual stack server peer:
 ```sh
-E:Option ==> peer new ipv6 noipv4
+E:Option ==> peer new ip=192.168.100.1/24 ipv6=aaaa:bbbb:cccc:dddd:100::1/120
 
-        Press y to Create (IPv6) 'server' Peer (wg21) fc00:50:2::1/64:11502 or press [Enter] to SKIP.
-y
-        Creating WireGuard Private/Public key-pair for (IPv6) 'server' Peer wg21 on RT-AX88U (v386.4_0)
-        Press y to Start (IPv6) 'server' Peer (wg21) or press [Enter] to SKIP.
-y
-```
-Please pay attention to which ip got created (in this case "fc00:50:2:0::1/64" and write it down somewhere)
-
-or we can control the ips ourself, either from a generated ULA or just make one up, i.e. while also creating a dual stack server peer:
-```sh
-E:Option ==> peer new ip=192.168.100.1/24 ipv6=fc00:192:168:100::1/64
-
-        Press y to Create (IPv4/IPv6) 'server' Peer (wg21) 192.168.100.1/24,fc00:192:168:100::1/64:11501 or press [Enter] to SKIP.
+        Press y to Create (IPv4/IPv6) 'server' Peer (wg21) 192.168.100.1/24,aaaa:bbbb:cccc:dddd:100::1/120:11501 or press [Enter] to SKIP.
 y
         Creating WireGuard Private/Public key-pair for (IPv4/IPv6) 'server' Peer wg21 on RT-AC86U (v386.4_0)
         Press y to Start (IPv4/IPv6) 'server' Peer (wg21) or press [Enter] to SKIP.
 y
 ```
 
-Either way, since we are using private adresses, we need to setup NAT6 to translate this address to WAN source address, otherwise packets will be dropped by our ISP. So do this by creating a custom wg21 scripts:
+Since we are not using our global adress, we need to setup NAT6 to translate this address to WAN source address, otherwise packets will be dropped by our ISP. So do this by creating a custom wg21 scripts:
 
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg21-up.sh
@@ -1036,9 +1034,9 @@ and populate with:
 ```sh
 #!/bin/sh
 #Masquarade ipv6 packets from clients to WAN
-ip6tables -t nat -I POSTROUTING -s fc00:50:2:0::/64 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
+ip6tables -t nat -I POSTROUTING -s aaaa:bbbb:cccc:dddd:100::/120 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
 ```
-Change the IPv6 address you selected (or got) for your wg21 peer. Also remove the rules when wg21 is disabled:
+Change the IPv6 address you selected for your wg21 peer. Also remove the rules when wg21 is disabled:
 
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg21-down.sh
@@ -1047,7 +1045,7 @@ Populate with:
 ```sh
 #!/bin/sh
 #Masquarade ipv6 packets from clients to WAN
-ip6tables -t nat -D POSTROUTING -s fc00:50:2:0::/64 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
+ip6tables -t nat -D POSTROUTING -s aaaa:bbbb:cccc:dddd:100::/120 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
 ```
 Again, change the IPv6 to match your wg21 server peer.
 
@@ -1061,6 +1059,65 @@ Now you could restart wg21, and set it to autostart at boot (if you wish):
 E:Option ==> peer wg21 auto=Y
 E:Option ==> peer wg21 restart
 ```
+
+**Alternative NPT6 instead of NAT6**
+Note: Below is still experimental and have not been tested properly.
+
+I have choosen to still reccommend the usage of NAT6 above, mainly for its ease of usage. A better solution is to use NPT6 (Network Prefix Translation Ipv6). This methode does not need to keep track of any connections and will simply perform better in every aspect than NAT6.
+ 
+The basic command for doing this:
+```sh
+ip6tables -t mangle -I POSTROUTING -s <wg21Prefix>:100::/120 -o eth0 -j SNPT --src-pfx <wg21Prefix>/64 --dst-pfx <wanIpv6Prefix>/64 
+ip6tables -t mangle -I PREROUTING -i eth0 -d <wanIpv6Prefix>:100::/120 -j DNPT --src-pfx <wanIpv6Prefix>/64 --dst-pfx <wg21Prefix>/64
+```
+
+The problem here is that we need automatically find the wan prefix to put into the rules but it is difficult to make a script that accounts for everything. The right place for this is inside wgm.
+
+I've made a script that I'm hooping to work if you have a /64 or a /56 assignement:
+
+wg21-up.sh
+```sh
+#!/bin/sh
+###############################################################################
+ # Example for wg21 ipv6 = aa00:aaaa:bbbb:cccc:100::1/120
+ # Change to your needs but keep formatting 
+Wg21Prefix=aa00:aaaa:bbbb:cccc:: #Wg21 ULA prefix with aa instead of fd 
+Wg21Suffix=100::1 #Wg21 Device suffix (last 64 bits) 
+Wg21PrefixLength=120 #Wg21 Prefix Length (120 recommended) 
+WanInterface=eth0 
+
+# Changing below lines should not be needed: 
+WanIp6Prefix=${nvram get ipv6_prefix} #WanIp6Prefix=2001:1111:2222:3333:: 
+Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
+WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
+# Execute firewall commands: 
+ip6tables -t mangle -I POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j SNPT --src-pfx ${Wg21Prefix}/64 --dst-pfx ${WanIp6Prefix}/64 
+ip6tables -t mangle -I PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j DNPT --src-pfx ${WanIp6Prefix}/64 --dst-pfx ${Wg21Prefix}/64 
+###############################################################################
+```
+
+wg21-down.sh
+```sh
+#!/bin/sh
+###############################################################################
+ # Example for wg21 ipv6 = aa00:aaaa:bbbb:cccc:100::1/120
+ # Change to your needs but keep formatting 
+Wg21Prefix=aa00:aaaa:bbbb:cccc:: #Wg21 ULA prefix with aa instead of fd 
+Wg21Suffix=100::1 #Wg21 Device suffix (last 64 bits) 
+Wg21PrefixLength=120 #Wg21 Prefix Length (120 recommended) 
+WanInterface=eth0 
+
+# Changing below lines should not be needed: 
+WanIp6Prefix=${nvram get ipv6_prefix} #WanIp6Prefix=2001:1111:2222:3333:: 
+Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
+WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
+# Execute firewall commands: 
+ip6tables -t mangle -D POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j SNPT --src-pfx ${Wg21Prefix}/64 --dst-pfx ${WanIp6Prefix}/64 
+ip6tables -t mangle -D PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j DNPT --src-pfx ${WanIp6Prefix}/64 --dst-pfx ${Wg21Prefix}/64 
+###############################################################################
+```
+
+Note: The scripts will not work if you were assigned a 0-subnet or a /48 range. More scripting would be needed to expand the address, do all concatinations and then compress it again. This is out of scope for this guide. If you make a script that is working for all situations, please post it at SNB Forum (link on top) so others could benefit.
 
 **Device peer setup**  
 Creating a Road-Worrior device is really easy, i.e.:
