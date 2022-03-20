@@ -1060,7 +1060,7 @@ E:Option ==> peer wg21 auto=Y
 E:Option ==> peer wg21 restart
 ```
 
-**Alternative NPT6 instead of NAT6**
+**Alternative NPT6 instead of NAT6**  
 Note: Below is still experimental and have not been tested properly.
 
 I have choosen to still reccommend the usage of NAT6 above, mainly for its ease of usage. A better solution is to use NPT6 (Network Prefix Translation Ipv6). This methode does not need to keep track of any connections and will simply perform better in every aspect than NAT6.
