@@ -1087,7 +1087,7 @@ Wg21PrefixLength=120 #Wg21 Prefix Length (120 recommended)
 WanInterface=eth0 
 
 # Changing below lines should not be needed: 
-WanIp6Prefix=${nvram get ipv6_prefix} #WanIp6Prefix=2001:1111:2222:3333:: 
+WanIp6Prefix=$(nvram get ipv6_prefix) #WanIp6Prefix=2001:1111:2222:3333:: 
 Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
 WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
 # Execute firewall commands: 
@@ -1108,7 +1108,7 @@ Wg21PrefixLength=120 #Wg21 Prefix Length (120 recommended)
 WanInterface=eth0 
 
 # Changing below lines should not be needed: 
-WanIp6Prefix=${nvram get ipv6_prefix} #WanIp6Prefix=2001:1111:2222:3333:: 
+WanIp6Prefix=$(nvram get ipv6_prefix) #WanIp6Prefix=2001:1111:2222:3333:: 
 Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
 WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
 # Execute firewall commands: 
