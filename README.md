@@ -1061,19 +1061,29 @@ E:Option ==> peer wg21 restart
 ```
 
 **Alternative NPT6 instead of NAT6**  
-Note: Below is still experimental and have not been tested properly.
+Special thanks to snb forum member @archiel for evaluating this.
 
-I have choosen to still reccommend the usage of NAT6 above, mainly for its ease of usage. A better solution is to use NPT6 (Network Prefix Translation Ipv6). This methode does not need to keep track of any connections and will simply perform better in every aspect than NAT6.
+I have choosen to still reccommend the usage of NAT6 above, mainly for its ease of usage. A better technical solution is to use NPT6 (Network Prefix Translation Ipv6). This methode does not need to keep track of any connections and will simply perform better in every aspect than NAT6.
  
+Sadly, it has shown that NTP is not compatible with conntrack, which our router uses for its stateful firewall. We would not like to give that up! But there is another way to do the same thing called NETMAP. Whilst NPT6 is checksum neutral (by changing first 16 bits device id to accomplish that) NETMAP is not, so it will need recalculation of package checksum. But on the upside it leaves the device ip untouched.
+
+Disclamer: NETMAP is not really supported by all softwares. The kernel module/function/hooks are there but not implemented in userspace iptables. You have the option to install Entware iptables:
+```sh
+opkg install iptables
+```
+but you need to be aware that the main purpose of iptables is to match extensions and send them to hooks in kernel module netfilter which is very integrated into firmware/processor with HW acceleration and what not. there is a substantial risk that something breaks when you do this. altough I have been running this on 386.5 on my RT-AC86U for several months with no obvious problems but I can NOT guarantee that this will be the case for you or that it is causing your system to be less secure. Use at your own risk! /Disclamer
+
+if you dont want to take the risk of installing Entware iptables, then you will have to settle for using MASQUARADE according to above.
+
 The basic command for doing this:
 ```sh
-ip6tables -t mangle -I POSTROUTING -s <wg21Prefix>:100::/120 -o eth0 -j SNPT --src-pfx <wg21Prefix>/64 --dst-pfx <wanIpv6Prefix>/64 
-ip6tables -t mangle -I PREROUTING -i eth0 -d <wanIpv6Prefix>:100::/120 -j DNPT --src-pfx <wanIpv6Prefix>/64 --dst-pfx <wg21Prefix>/64
+ip6tables -t nat -I POSTROUTING -s <wg21Prefix>:100::/120 -o eth0 -j NETMAP --to <wanIpv6Prefix>/64
+ip6tables -t nat -I PREROUTING -i eth0 -d <wanIpv6Prefix>:100::/120 -j NETMAP --to <wg21Prefix>/64
 ```
 
-The problem here is that we need automatically find the wan prefix to put into the rules but it is difficult to make a script that accounts for everything. The right place for this is inside wgm.
+The problem here is that we need automatically find the wan prefix to put into the rules but it is difficult to make a script that accounts for everything. The right place for this is inside wgm (which wont happen until it is supported by firmware iptables).
 
-I've made a script that I'm hooping to work if you have a /64 or a /56 assignement:
+I've made a script that works if you have a /64 or a /56 assignement:
 
 wg21-up.sh
 ```sh
@@ -1091,8 +1101,8 @@ WanIp6Prefix=$(nvram get ipv6_prefix) #WanIp6Prefix=2001:1111:2222:3333::
 Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
 WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
 # Execute firewall commands: 
-ip6tables -t mangle -I POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j SNPT --src-pfx ${Wg21Prefix}/64 --dst-pfx ${WanIp6Prefix}/64 
-ip6tables -t mangle -I PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j DNPT --src-pfx ${WanIp6Prefix}/64 --dst-pfx ${Wg21Prefix}/64 
+ip6tables -t nat -I POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j NETMAP --to ${WanIp6Prefix}/64 
+ip6tables -t nat -I PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j NETMAP --to ${Wg21Prefix}/64 
 ###############################################################################
 ```
 
@@ -1112,8 +1122,8 @@ WanIp6Prefix=$(nvram get ipv6_prefix) #WanIp6Prefix=2001:1111:2222:3333::
 Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
 WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
 # Execute firewall commands: 
-ip6tables -t mangle -D POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j SNPT --src-pfx ${Wg21Prefix}/64 --dst-pfx ${WanIp6Prefix}/64 
-ip6tables -t mangle -D PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j DNPT --src-pfx ${WanIp6Prefix}/64 --dst-pfx ${Wg21Prefix}/64 
+ip6tables -t nat -D POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j NETMAP --to ${WanIp6Prefix}/64 
+ip6tables -t nat -D PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j NETMAP --to ${Wg21Prefix}/64 
 ###############################################################################
 ```
 
