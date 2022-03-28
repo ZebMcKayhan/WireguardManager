@@ -1007,7 +1007,7 @@ Wireguard dont work with dynamic ip. The peer address needs to be static, so if 
 The proper way of doing this would be to generate yourself an ipv6 ULA address range. However, the current firmware in our ASUS routers wont route this to wan, packages wont even reach the place where we typically changes its source address. So we need to think of something else. It has also been found that most devices are reluctant of using ipv6 ULA addresses. They rather use ipv4 instead which also means we need to use something else. Since there are no other reserved addresses we will have to make it up.  
 1) look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to find an address space not assigned, but it cant start with fc, fd, fe or ff.  
 2) use your isp assignement, which means the address you have right now. We will use NAT6 anyway so it will still work when your address is changed.  
-3) generate an ULA (google to an online generator) then change the 2 first letters to something not used, like aa.  
+3) generate an ULA (Enter wgm command "ipv6 ula" and it generates it for you) then change the 2 first letters to something not used, like aa (proposed).  
 
 Since we are using an address which might be our own or someone else we need to make the risk for conflict minimal.
 
