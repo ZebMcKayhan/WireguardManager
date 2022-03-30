@@ -1668,8 +1668,8 @@ Note: Below instructions are ONE way of doing this. It is not the only way and m
 
 This is only needed in policy mode. 
 
-Lets Start with Transmission since this is easier. In order to select outgoing interface we need to bind the program to a specific source adress.
-**Transmission**
+Lets Start with Transmission since this is easier. In order to select outgoing interface we need to bind the program to a specific source adress.  
+**Transmission**  
 Please note before doing this. You will not be able to open ports if Transmission is communicating via VPN. Only proceed if this is acceptable.
 
 What we are going to do is to make Transmission request a specific source adress on its packages. the source adress choosen should be an ip-adress that is a part of the router. typically the most straight forward ip would be to use the br0 bridge ip which usually is 192.168.1.1 (but could be different on your router). If you already have an interface (like guest network 4 for example) routed out vpn then use this local ip instead (192.168.5.1).
@@ -1702,7 +1702,7 @@ if you already have a general rule like 192.168.1.1/24 already directed to VPN t
 
 note: access to Transmission GUI/Webpage might be affected by the fact that Transmission is now using a specific local interface. Replies from transmission GUI back to other subnets might need additional rules... se Unbound below to add these rules to redirect replies to other subnets to main table.
 
-**Unbound**
+**Unbound**  
 For Unbound it is pretty much the same. first of all, for Wireguard clients to use unbound we need to set the wireguard DNS to use the router
 ```sh
 E:Option ==> peer wg11 dns=192.168.1.1
