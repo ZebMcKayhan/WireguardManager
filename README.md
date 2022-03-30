@@ -1668,8 +1668,9 @@ Note: Below instructions are ONE way of doing this. It is not the only way and m
 
 This is only needed in policy mode. 
 
-Lets Start with Transmission since this is easier. In order to select outgoing interface we need to bind the program to a specific source adress.  
 **Transmission**  
+Lets Start with Transmission since this is easier. In order to select outgoing interface we need to bind the program to a specific source adress.  
+
 Please note before doing this. You will not be able to open ports if Transmission is communicating via VPN. Only proceed if this is acceptable.
 
 What we are going to do is to make Transmission request a specific source adress on its packages. the source adress choosen should be an ip-adress that is a part of the router. typically the most straight forward ip would be to use the br0 bridge ip which usually is 192.168.1.1 (but could be different on your router). If you already have an interface (like guest network 4 for example) routed out vpn then use this local ip instead (192.168.5.1).
