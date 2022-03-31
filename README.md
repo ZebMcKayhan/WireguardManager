@@ -18,6 +18,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Change DNS/mtu/Name](#change-dnsmtuname)  
   -[Terminal Options](#terminal-options)  
   -[ipv6](#ipv6)  
+  -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
   -[Check connection](#check-connection)  
   -[Site 2 Site](#site-2-site)  
   -[Default or Policy routing](#default-or-policy-routing)  
@@ -267,24 +268,13 @@ then this peer will give you both IPv4 and IPv6 access (dual-stack) (altough the
 
 Wgm has foremost been tested with the tunnel over ipv4 and I dont know if it will work with a tunnel over ipv6.
 
-if you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
-
 prerequisites for this is atleast to have firmware 386.4 since before this the ipv6 NAT table was not enabled in the kernel.
-
-if you dont have an ipv6 WAN connection and still want to use IPv6, get yourself a ULA prefix (kind of like 192.168.x.y). Google yourself to an ipv6 ULA generator of your choice. Mine became "fdff:a37f:fa75::/48". The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "fdff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "fdff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
-
-I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with state-ful.
-
-if you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. be sure to put this in wireguard user config (like /jffs/addons/wireguard/Scripts/wg11-up.sh). see further down were I added them in UserConfig file.
-```sh
-ip -6 route add ::/0 dev wg11
-```
 
 in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
 
-if you DO have a dual stack WAN (Ipv4+Ipv6) then you should really use a dual-stack VPN. otherwise your ipv4 data will go out VPN and ipv6 will go out WAN, so privacy might be compromized (or data leakage or whatever you wish to call it)
+if you have a dual stack WAN (Ipv4+Ipv6) then you should really use a dual-stack VPN. otherwise your ipv4 data will go out VPN and ipv6 will go out WAN, so privacy might be compromized (or data leakage or whatever you wish to call it)
 
-when you have ipv6 enabled on your router, you could import you dual-stack .conf file (according to section above). verify that both IPs have been imported:
+when you have ipv6 enabled on your router, you could import you dual-stack .conf file (according to section above). Verify that both IPs have been imported:
 ```sh
 E:Option ==> peer wg11
 
@@ -296,7 +286,68 @@ wg11    N     <WgIpv4>/24,<WgIpv6>/64                   wireguard.net:48574     
 
 the most important thing to check here is that your IP is both ipv4 and ipv6. not all .conf file includes an ipv6 DNS
 
-If you dont have ipv6 WAN and you put your peer in policy mode you will need to add a default route for ipv6:  
+starting this peer will now get both your ipv4 and ipv6 to be routed out VPN so you wont get any data-leakage.
+
+if you want/need to run this peer in policy mode you will need to add rules for ipv4 and ipv6, which is the same procedure (see section).
+
+If you did not get an ipv6 DNS with your import, you could add one to your existing (you need to add both)(read disclamer first):
+```sh
+E:Option ==> peer wg11 dns=9.9.9.9,2620:fe::fe
+```
+Disclamer: while adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packages to your selected VPN DNS via DNAT. This is however not really supported by all softwares. the kernel module/function/hooks are there but not implemented in userspace iptables. this will mean that you might get an error when starting the peer, something like "--to-destination extension not found" if this is the case you have the option to install Entware iptables:
+```sh
+opkg install iptables
+```
+but you need to be aware that the main purpose of iptables is to match extensions and send them to hooks in kernel module netfilter which is very integrated into firmware/processor with HW acceleration and what not. there is a substantial risk that something breaks when you do this. altough I have been running this on 386.4 on my RT-AC86U for several weeks with no obvious problems but I can NOT guarantee that this will be the case for you or that it is causing your system to be less secure. Use at your own risk! /Disclamer
+
+if you dont want to take the risk of installing Entware iptables, then keep the dns in wgm to IPv4 only. this case you should not get the error message. control your DNS from the GUI IPv6 tab.
+
+wgm would not import IPv6 info if IPv6 is not enabled in the router. and even if you had it enabled when importing it and later diasabled it, it would not attempt to setup the IPv6 part if IPv6 is not enabled.
+
+however, if you are on a Ipv6 system and really dont want VPN over IPV6, you could disable it in wgm config:
+```sh
+E:Option ==> vx
+```
+and change:
+```sh
+#NOIPV6
+```
+to
+```sh
+NOIPV6
+```
+Then regardless how your peer was imported it will be forced to ipv4 only.
+
+see rules section for how to add rules for ipv6
+
+see IPSET section for manage ipv6 IPSET's
+
+see Yazfi section for setting up YazFi for ipv6
+
+## IPv6 Over Wireguard without IPv6 WAN
+If you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
+
+If you dont have an ipv6 WAN connection and still want to use IPv6, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
+```sh
+E:Option ==> ipv6 ula
+
+        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6
+```
+
+Note that Wgm suggest to use aa as the fist 2 letters instead of fd. The reason for this is 2 fold:
+1) Asus router seems to refuse to route ULA to WAN if needed (see WG-server section)
+2) Devices that gets addresses starting with fd are reluctant to use IPv6 since this is a local address. This wil cause your devices to use IPv4 until the last resort, then only use IPv6. 
+
+To get around both these issues we propose to use aa instead, which is probably a violation to the internet standards. but as long as it is only used internally it should be ok. The aa prefix is a global prefix but it is not proscribed yet, so it is not in use. This could however change in the future. look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to see how addresses are assigned at the moment.
+
+Mine became "fdff:a37f:fa75::/48" (altough wgm says /64). The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "aaff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "aaff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
+
+I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with state-ful.
+
+Now that your LAN has some sort of IPv6 enabled you should follow the guide above to import your dual stack config file, but if you choose to have it in policy (P) mode, you also need to put in the rules (see sections), and add a default route (see below)
+
+As you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. 
+
 This is NOT needed if you have ipv6 WAN or the peer is in auto/default mode.
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg11-up.sh
@@ -323,47 +374,9 @@ make both files executable:
 chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
 chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
 ```
-starting this peer will now get both your ipv4 and ipv6 to be routed out VPN so you wont get any data-leakage.
-
-if you want/need to run this peer in policy mode you will need to add rules for ipv4 and ipv6, which is the same procedure (see section).
-
-If you did not get an ipv6 DNS with your import, you could add one to your existing (you need to add both)(read disclamer first):
-```sh
-E:Option ==> peer wg11 dns=9.9.9.9,2620:fe::fe
-```
-Disclamer: while adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packages to your selected VPN DNS via DNAT. This is however not really supported by all softwares. the kernel module/function/hooks are there but not implemented in userspace iptables. this will mean that you might get an error when starting the peer, something like "--to-destination extension not found" if this is the case you have the option to install Entware iptables:
-```sh
-opkg install iptables
-```
-but you need to be aware that the main purpose of iptables is to match extensions and send them to hooks in kernel module netfilter which is very integrated into firmware/processor with HW acceleration and what not. there is a substantial risk that something breaks when you do this. altough I have been running this on 386.4 on my RT-AC86U for several weeks with no obvious problems but I can NOT guarantee that this will be the case for you or that it is causing your system to be less secure. Use at your own risk! /Disclamer
-
-if you dont want to take the risk of installing Entware iptables, then keep the dns in wgm to IPv4 only. this case you should not get the error message. control your DNS from the GUI IPv6 tab.
-
 from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RFCs). 
 
 one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
-
-wgm would not import IPv6 info if IPv6 is not enabled in the router. and even if you had it enabled when importing it and later diasabled it, it would not attempt to setup the IPv6 part if IPv6 is not enabled.
-
-however, if you are on a Ipv6 system and really dont want VPN over IPV6, you could disable it in wgm config:
-```sh
-E:Option ==> vx
-```
-and change:
-```sh
-#NOIPV6
-```
-to
-```sh
-NOIPV6
-```
-Then regardless how your peer was imported it will be forced to ipv4 only.
-
-see rules section for how to add rules for ipv6
-
-see IPSET section for manage ipv6 IPSET's
-
-see Yazfi section for setting up YazFi for ipv6
 
 ## check connection
 Checking connection is usually needed to find out why something is not working properly.
