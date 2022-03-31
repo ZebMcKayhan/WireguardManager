@@ -673,16 +673,16 @@ now, every computer you manually assign an ip in the range 192.168.1.2 - 192.168
 for ipv6 the rules are added in the same way as ipv4, but with an ipv6 adress/prefix instead.
 for example, I have added:
 ```sh
-E:Option ==> peer wg11 rule add vpn src=fdff:a37f:fa75:1::/64 comment LAN to VPN
-E:Option ==> peer wg11 rule add wan dst=fdff:a37f:fa75:1::/48 comment To ipv6Lan
+E:Option ==> peer wg11 rule add vpn src=aaff:a37f:fa75:1::/64 comment LAN to VPN
+E:Option ==> peer wg11 rule add wan dst=aaff:a37f:fa75:1::/48 comment To ipv6Lan
 ```
 and the result is:
 ```sh
         Selective Routing RPDB rules
 ID  Peer  Interface  Source                 Destination          Description
-6   wg11  WAN        Any                    fdff:a37f:fa75::/48  To ipv6Lan
+6   wg11  WAN        Any                    aaff:a37f:fa75::/48  To ipv6Lan
 2   wg11  WAN        Any                    192.168.1.1/16       local WAN
-5   wg11  VPN        fdff:a37f:fa75:1::/64  Any                  LAN to VPN
+5   wg11  VPN        aaff:a37f:fa75:1::/64  Any                  LAN to VPN
 3   wg11  VPN        192.168.1.1/24         Any                  LAN to VPN
 ```
 This basically routes my entire LAN subnet out VPN (both IPv6 and IPv4). It should be noted that the policy routing table for IPv6 may not contain a route even to your own subnet, which means it is very important to redirect TO the same destination to your WAN. this could prefferably be a very generic rule covering your entire network. this would be my rule 2 and 6 above.
@@ -920,7 +920,7 @@ if we were to use the original fwmark to route out matches wg12, then we wouldnt
 in my case I have 2 country outputs, and one of the purpose is to be able to watch streaming content from a different continent, which means I want to limit the fwmark to only apply to certain subnets, in my case the rule is:
 ```sh
 ip rule add from 192.168.1.1/24 fwmark 0x8000 table main prio 9900
-ip -6 rule add from fdff:a37f:fa75:1::/64 fwmark 0x8000 table main prio 9900
+ip -6 rule add from aaff:a37f:fa75:1::/64 fwmark 0x8000 table main prio 9900
 ```
 so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any 0x8000 fwmark set.
 
@@ -1307,7 +1307,7 @@ E:Option ==> peer wg11 dns=192.168.1.1
 
 if you are using IPv6 DNS you will need to change that too, i.e.:
 ```sh
-E:Option ==> peer wg11 dns=192.168.1.1,fdff:a37f:fa75:1::1
+E:Option ==> peer wg11 dns=192.168.1.1,aaff:a37f:fa75:1::1
 ```
 replace all local addresses with the one you have.
 
@@ -1453,11 +1453,11 @@ Thats it! it should now be working... if the rules did not come out correct, del
 YazFi was not designed for IPv6 and does not provide any IPs, DNS or firewall rules. when enabling IPv6 you will see that all YazFi clients will get br0 ipaddress, so the same subnet as your LAN. this is because YazFi puts the guest network inside br0 bridge, thus they will have access to your entire LAN.
 
 in order to be able to distinguish each guest network in our policy rules, we would need to assign these a specific prefix. if you use ULA addresses you will typically have some to spare as we are required to provide a /64 subnet to device and the ULA's are usually /48. in my case I got:  
-fdff:a37f:fa75::/48  
+aaff:a37f:fa75::/48  
 which I then devided into one subnet to my LAN:  
-fdff:a37f:fa75:1::/64  
+aaff:a37f:fa75:1::/64  
 and one subnet for my guest wifi:
-fdff:a37f:fa75:6::/64
+aaff:a37f:fa75:6::/64
 
 Prevent access to br0 could ofcource be prevented by putting in the appropriate firewall rules, but instead I suggest we move them outside the br0 bridge. I have not found any way of keeping them in br0 bridge and prevent them from getting LAN IPv6 addresses.
 however, there have been reports of problems with the wireless network, so you might want to run these commands manually from the shell first, so if you have problems, you could just reboot. run each one of your guest wifi interfaces:
@@ -1474,7 +1474,7 @@ if you connect to your guest networks now you will see that it only gets a link-
 
 YazFi has already assigned IPv4 to these interfaces, now we need to assign IPv6 to them, so we execute:
 ```sh
-ip -6 address add dev wl1.2 fdff:a37f:fa75:6::1/64
+ip -6 address add dev wl1.2 aaff:a37f:fa75:6::1/64
 ip link set up dev wl1.2
 ```
 now we need to setup dnsmasq to provide state-less prefix assignement and DNS:
@@ -1512,7 +1512,7 @@ nano /jffs/scripts/firewall-start
 populate with (somewere after YazFi perhaps):
 ```sh
 ### Yazfi ipv6 fix
-ip -6 address add dev wl1.2 fdff:a37f:fa75:6::1/64 2>/dev/null
+ip -6 address add dev wl1.2 aaff:a37f:fa75:6::1/64 2>/dev/null
 ip link set up dev wl1.2 2>/dev/null
 # add more ipv6 address to guest interfaces here
 
@@ -1565,14 +1565,14 @@ nano /jffs/addons/wireguard/Scripts/wg12-up.sh
 ```
 and add:
 ```sh
-ip6tables -t nat -I POSTROUTING -s fdff:a37f:fa75:6::/64 -o wg12 -j MASQUERADE -m comment --comment "WireGuard 'client'"
+ip6tables -t nat -I POSTROUTING -s aaff:a37f:fa75:6::/64 -o wg12 -j MASQUERADE -m comment --comment "WireGuard 'client'"
 ```
 and also remove the same rule in wg12-down.sh (just change -I to -D) same as for IPv4 (see section).
 
 so now just add the rules in wgm:
 ```sh
-E:Options ==> peer wg12 add wan dst=fdff:a37f:fa75:6::/64 comment ToGuestToMain
-E:Options ==> peer wg12 add vpn src=fdff:a37f:fa75:6::/64 comment GuestToVPN
+E:Options ==> peer wg12 add wan dst=aaff:a37f:fa75:6::/64 comment ToGuestToMain
+E:Options ==> peer wg12 add vpn src=aaff:a37f:fa75:6::/64 comment GuestToVPN
 E:Options ==> restart wg12
 ```
 
@@ -1737,7 +1737,7 @@ outgoing-interface: 192.168.1.1 # v1.08 Martineau Use VPN tunnel to hide Root se
 And/Or if you are using both IPv4 and IPv6, you need to put in both:
 ```sh
 outgoing-interface: 192.168.1.1 # v1.08 Martineau Use VPN tunnel to hide Root server queries from ISP (or force WAN ONLY)
-outgoing-interface: fdff:a37f:fa75:1::1 # v1.08 Martineau Use VPN tunnel to hide Root server queries from ISP (or force WAN ONLY)
+outgoing-interface: aaff:a37f:fa75:1::1 # v1.08 Martineau Use VPN tunnel to hide Root server queries from ISP (or force WAN ONLY)
 ```
 Save and Exit.
 
@@ -1815,9 +1815,9 @@ E:Option ==> stop wg21
 
 now you likely need to remove all device peers from the server:
 ```sh
-E:Option ==> peer Device1 delX
-E:Option ==> peer Device2 delX
-E:Option ==> peer Device3 delX
+E:Option ==> peer Device1 del
+E:Option ==> peer Device2 del
+E:Option ==> peer Device3 del
 ...
 ```
 
