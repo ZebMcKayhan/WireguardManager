@@ -252,7 +252,7 @@ To get the manu back, in the same way, issue **menu show**.
 ## IPv6
 In order to have ipv6 over wireguard you will need atleast to have firmware 386.4 (ipv6 nat was not available in previous firmware) and wgm 4.14bC or later.
 
-This could means a couple of different things. so lets start with some clarifications.
+Ipv6 for Wireguard could means a couple of different things. so lets start with some clarifications.
 
 the wireguard tunnel itself could be either ipv4 or ipv6. this is determined based on 2 things:  
 1) the endpoint is an ipv6
@@ -264,15 +264,9 @@ you can just look at the conf file to determine this. if you open your .conf fil
 ```sh
 Address = <AnIpv4Address>,<AnIpv6Address>
 ```
-then this peer will give you both IPv4 and IPv6 access (dual-stack) (altough the udp tunnel is only over ipv4)
+then this peer will give you both IPv4 and IPv6 access (dual-stack) (altough the udp tunnel is only over ipv4 **or** ipv6). If you only get an ipv4 address then this config file will only provide ipv4 connectivity.
 
-Wgm has foremost been tested with the tunnel over ipv4 and I dont know if it will work with a tunnel over ipv6.
-
-prerequisites for this is atleast to have firmware 386.4 since before this the ipv6 NAT table was not enabled in the kernel.
-
-in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
-
-if you have a dual stack WAN (Ipv4+Ipv6) then you should really use a dual-stack VPN. otherwise your ipv4 data will go out VPN and ipv6 will go out WAN, so privacy might be compromized (or data leakage or whatever you wish to call it)
+if you have a dual stack WAN (Ipv4+Ipv6) then you should really use a dual-stack VPN. otherwise your ipv4 data will go out VPN and ipv6 will go out WAN, so privacy might be compromized.
 
 when you have ipv6 enabled on your router, you could import you dual-stack .conf file (according to section above). Verify that both IPs have been imported:
 ```sh
@@ -327,22 +321,24 @@ see Yazfi section for setting up YazFi for ipv6
 ## IPv6 Over Wireguard without IPv6 WAN
 If you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
 
-If you dont have an ipv6 WAN connection and still want to use IPv6, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
+Since you dont have an ipv6 lan ip, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
 ```sh
 E:Option ==> ipv6 ula
 
-        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6
+        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6)
 ```
 
 Note that Wgm suggest to use aa as the fist 2 letters instead of fd. The reason for this is 2 fold:
-1) Asus router seems to refuse to route ULA to WAN if needed (see WG-server section)
+1) Asus router seems to refuse to route ULA to WAN (see WG-server section)
 2) Devices that gets addresses starting with fd are reluctant to use IPv6 since this is a local address. This wil cause your devices to use IPv4 until the last resort, then only use IPv6. 
 
 To get around both these issues we propose to use aa instead, which is probably a violation to the internet standards. but as long as it is only used internally it should be ok. The aa prefix is a global prefix but it is not proscribed yet, so it is not in use. This could however change in the future. look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to see how addresses are assigned at the moment.
 
 Mine became "fdff:a37f:fa75::/48" (altough wgm says /64). The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "aaff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "aaff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
 
-I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with state-ful.
+I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with stateful.
+
+in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
 
 Now that your LAN has some sort of IPv6 enabled you should follow the guide above to import your dual stack config file, but if you choose to have it in policy (P) mode, you also need to put in the rules (see sections), and add a default route (see below)
 
