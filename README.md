@@ -937,7 +937,7 @@ E:Option ==> peer wg21 auto=Y
 ```
 If you wish to delete the device peer:
 ```sh
-E:Option ==> peer MyPhone delX
+E:Option ==> peer MyPhone del
 ```
 If you wish to delete the server peer:
 ```sh
