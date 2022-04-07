@@ -254,13 +254,13 @@ To get the manu back, in the same way, issue **menu show**.
 ## IPv6
 In order to have ipv6 over wireguard you will need atleast to have firmware 386.4 (ipv6 nat was not available in previous firmware) and wgm 4.14bC or later.
 
-Ipv6 for Wireguard could means a couple of different things. so lets start with some clarifications.
+Ipv6 for Wireguard could mean a couple of different things. so lets start with some clarifications.
 
 the wireguard tunnel itself could be either ipv4 or ipv6. this is determined based on 2 things:  
 1) the endpoint is an ipv6
 2) the endpoint i a domain-name which is looked up as a ipv6 (depending on how router prioritize between ipv4 and ipv6).
 
-the other case is whiether or not the endpoint you get is ipv4, ipv6 or both. this will determine how the peer will interact with your network.
+the other case is whiether or not the address you get is ipv4, ipv6 or both. this will determine how the peer will interact with your network.
 
 you can just look at the conf file to determine this. if you open your .conf file in a text editor and you see:
 ```sh
