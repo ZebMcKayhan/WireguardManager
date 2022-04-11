@@ -1145,6 +1145,12 @@ Creating a Road-Worrior device is really easy, i.e.:
 ```sh
 E:Option ==> create Samsung-S10 wg21
 ```
+Note: starting from wgm 4.16bA there is now the possibilities to tell devices to use router (dnsmasq) as dns:
+```sh
+E:Option ==> create Samsung-S10 wg21 dns=local
+```
+/Note
+
 You might have to answer some questions in the setup. Finally you will be asked to view the qrcode to import it into your device. Regardless how you choose, before importing the config into your phone, you could exit wgm and take a look at it.  
 ```sh
 nano /opt/etc/wireguard.d/Samsung-S10.conf
@@ -1153,7 +1159,7 @@ One important thing that should/could be checked and/or changed is the DNS we ar
 ```sh
 DNS = 9.9.9.9, 2620:fe::fe
 ```
-This line is probably populated with your WAN DNS. Now, if you feel that this is good, then just leave it. For some people, they might want to use the router as DNS to use dnsmasq with all the benefits (local hosts resolv, Diversion, Unbound et.c.). then simply change this to point at your wg21 IP instead. i.e. from my dynamic example above:
+This line is probably populated with your WAN DNS (if you didnt use dns=local). Now, if you feel that this is good, then just leave it. For some people, they might want to use the router as DNS to use dnsmasq with all the benefits (local hosts resolv, Diversion, Unbound et.c.). then simply change this to point at your wg21 IP instead. i.e. from my dynamic example above:
 ```sh
 DNS = 192.168.100.1, fc00:192:168:100::1
 ```
