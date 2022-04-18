@@ -1328,11 +1328,11 @@ ipset restore -! < /opt/tmp/NETFLIX-DNS6
 ipset restore -! < /opt/tmp/wg11-mac
 ```
 
-To automate the process of periodically saving the ipsets and to restore them at boot we could put in nat-start:
+To automate the process of periodically saving the ipsets and to restore them at boot, first create your ipset and manually save it according to above. Then put in nat-start:
 ```sh
 nano /jffs/scripts/nat-start
 ```
-And populate with (only one ipset showed)
+And populate with (only one ipset showed, change to your needs.)
 ```sh
 #!/bin/sh
 sleep 10 # Needed as nat-start is executed many times during boot
@@ -1345,7 +1345,73 @@ if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if i
    fi 
 fi
 ```
-TBC
+Save and exit. If you just created the file, make it executable:
+```sh
+chmod +x /jffs/scripts/nat-start
+```
+
+If we want our ipset's to be autopopulated by dnsmasq:
+```sh
+nano /jffs/configs/dnsmasq.conf.add
+```
+And add 
+```sh
+ipset=/netflix.com/netflix.net/nflxext.com/nflximg.com/nflximg.net/nflxso.net/nflxvideo.net/amazonaws.com/NETFLIX-DNS,NETFLIX-DNS6
+```
+Here you need to change to your needs. It is simply a list of top-domains separated by / and ends with the ipsets. If you only use ipv4 or ipv6 just remove the ipset name you don't use.
+
+Save and exit
+
+To make our changes kick-in:
+```sh
+service restart_dnsmasq
+```
+Before doing anything else, check syslog so that there were no error messages from dnsmasq, if there are check your syntax and try to restart again. If you disconnect at this point you might not get a new ip so continue until dnsmasq starts.
+
+Now any lookup of netflix.com, netflix.net o.s.o from dnsmasq would result in the ips looked up being added to the ipsets. 
+
+Now these ipsets could be added to wgm (see section).
+
+To manually delete an entry in the sets:
+```sh
+ipset del NETFLIX-DNS 54.155.178.5
+ipset del NETFLIX-DNS6 2a05:d018:76c:b683:e1fe:9fbf:c403:57f1
+ipset del wg11-mac a1:b2:c3:d4:e5:f6
+```
+To wipe all entries but keep the sets:
+```sh
+ipset flush NETFLIX-DNS
+ipset flush NETFLIX-DNS6 
+ipset flush wg11-mac
+```
+And when the ipset is empty, it could be removed:
+```sh
+ipset destroy NETFLIX-DNS
+ipset destroy NETFLIX-DNS6 
+ipset destroy wg11-mac
+```
+
+If you want to look at your ipset:
+```sh
+ipset list NETFLIX-DNS
+ipset list NETFLIX-DNS6 
+ipset list wg11-mac
+```
+Or if above just gives screen after screen with ips:
+```sh
+ipset list NETFLIX-DNS -t
+ipset list NETFLIX-DNS6 -t
+ipset list wg11-mac -t
+```
+
+You could test the set for an entry:
+```sh
+ipset test NETFLIX-DNS 192.168.2.0
+   192.168.2.0 is NOT in set NETFLIX-DNS.
+ipset test NETFLIX-DNS 52.217.164.72
+   Warning: 52.217.164.72 is in set NETFLIX-DNS.
+```
+
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
