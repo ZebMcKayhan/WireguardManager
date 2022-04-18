@@ -32,6 +32,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   
+[Create and setup IPSETs](#create-and-setup-ipsets)  
 [Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
 [Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
 [Setup Yazfi for IPv6 subnet to route out wg vpn](#setup-yazfi-for-ipv6-subnet-to-route-out-wg-vpn)  
@@ -1296,6 +1297,55 @@ wgmExpo -remove
 ```
 
 Enjoy!
+
+# Create and setup IPSETs
+Ipsets are really handy for various reasons. It is basically just a set of ipv4, ipv6, Mac addresses, ip addresses and port combinations. Maybee one of the more useful parts is that we can have dnsmasq to autopopulate the set with ip-addresses as it is requested to lookup certain domains.
+
+To create an ipset we could issue one of the following:
+```sh
+ipset create NETFLIX-DNS hash:net family inet # ipv4 addresses
+ipset create NETFLIX-DNS6 hash:net family inet6 # ipv6 addresses
+ipset create wg11-mac hash:mac # mac-addresses
+```
+
+To add an entry manually to the ipsets we just created:
+```sh
+ipset add NETFLIX-DNS 54.155.178.5
+ipset add NETFLIX-DNS6 2a05:d018:76c:b683:e1fe:9fbf:c403:57f1
+ipset add wg11-mac a1:b2:c3:d4:e5:f6
+```
+
+To save the ipset to a file:
+```sh
+ipset save NETFLIX-DNS > /opt/tmp/NETFLIX-DNS
+ipset save NETFLIX-DNS6 > /opt/tmp/NETFLIX-DNS6
+ipset save wg11-mac > /opt/tmp/wg11-mac
+```
+And to restore them:
+```sh
+ipset restore -! < /opt/tmp/NETFLIX-DNS
+ipset restore -! < /opt/tmp/NETFLIX-DNS6
+ipset restore -! < /opt/tmp/wg11-mac
+```
+
+To automate the process of periodically saving the ipsets and to restore them at boot we could put in nat-start:
+```sh
+nano /jffs/scripts/nat-start
+```
+And populate with (only one ipset showed)
+```sh
+#!/bin/sh
+sleep 10 # Needed as nat-start is executed many times during boot
+
+IPSET_NAME=wg11-mac 
+if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if ipset does not already exist 
+   if [ -s "/opt/tmp/$IPSET_NAME" ]; then #if a backup file exists 
+      ipset restore -! <"/opt/tmp/$IPSET_NAME" #restore ipset 
+      cru a "$IPSET_NAME" "0 2 * * * ipset save $IPSET_NAME > /opt/tmp/$IPSET_NAME" >/dev/null 2>&1 # create cron job for autosave
+   fi 
+fi
+```
+TBC
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
