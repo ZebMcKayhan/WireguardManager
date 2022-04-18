@@ -1337,13 +1337,16 @@ And populate with (only one ipset showed, change to your needs.)
 #!/bin/sh
 sleep 10 # Needed as nat-start is executed many times during boot
 
-IPSET_NAME=wg11-mac 
-if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if ipset does not already exist 
-   if [ -s "/opt/tmp/$IPSET_NAME" ]; then #if a backup file exists 
-      ipset restore -! <"/opt/tmp/$IPSET_NAME" #restore ipset 
-      cru a "$IPSET_NAME" "0 2 * * * ipset save $IPSET_NAME > /opt/tmp/$IPSET_NAME" >/dev/null 2>&1 # create cron job for autosave
-   fi 
-fi
+IPSET_LIST=NETFLIX-DNS NETFLIX-DNS6 wg11-mac
+
+for IPSET_NAME in $IPSET_LIST; do 
+   if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if ipset does not already exist 
+      if [ -s "/opt/tmp/$IPSET_NAME" ]; then #if a backup file exists 
+         ipset restore -! <"/opt/tmp/$IPSET_NAME" #restore ipset 
+         cru a "$IPSET_NAME" "0 2 * * * ipset save $IPSET_NAME > /opt/tmp/$IPSET_NAME" >/dev/null 2>&1 # create cron job for autosave
+      fi 
+   fi
+done
 ```
 Save and exit. If you just created the file, make it executable:
 ```sh
