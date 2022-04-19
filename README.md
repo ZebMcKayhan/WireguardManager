@@ -1415,6 +1415,18 @@ ipset test NETFLIX-DNS 52.217.164.72
    Warning: 52.217.164.72 is in set NETFLIX-DNS.
 ```
 
+Other useful set- types:
+```sh
+ipset create TEST hash:net,port family inet # Ip+port (could also be inet6 for ipv6)
+add TEST 192.168.1.101,25 # 192.168.1.101:25
+
+ipset create TEST2 hash:net,iface family inet # Ip+Iface (could also be inet6 for ipv6)
+ipset add TEST2 192.168.1.102,br0 #192.168.1.102 br0
+
+ipset create NETFLIX list:set # set of ipsets
+ipset add NETFLIX NETFLIX-DNS  # add IPv4 ipset to the set
+ipset add NETFLIX NETFLIX-DNS6 # add IPv6 ipset to the set
+```
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
