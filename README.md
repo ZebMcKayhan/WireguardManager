@@ -646,7 +646,7 @@ ID  Peer  Interface  Source          Destination     Description
 ```
 to avoid this the author recommends using src= and dst= to work around this, which should look like:
 ```sh
-E:Option ==> peer wg11 rule add vpn dst=10.23.50.189 comment LocalIP
+E:Option ==> peer wg11 rule add vpn src=any dst=10.23.50.189 comment LocalIP
 ```
   
 a typical use case could be that we want the entire network to go out VPN except a single computer:
@@ -672,8 +672,8 @@ now, every computer you manually assign an ip in the range 192.168.1.2 - 192.168
 for ipv6 the rules are added in the same way as ipv4, but with an ipv6 adress/prefix instead.
 for example, I have added:
 ```sh
-E:Option ==> peer wg11 rule add vpn src=aaff:a37f:fa75:1::/64 comment LAN to VPN
-E:Option ==> peer wg11 rule add wan dst=aaff:a37f:fa75:1::/48 comment To ipv6Lan
+E:Option ==> peer wg11 rule add vpn src=aaff:a37f:fa75:1::/64 dst=any comment LAN to VPN
+E:Option ==> peer wg11 rule add wan src=any dst=aaff:a37f:fa75:1::/48 comment To ipv6Lan
 ```
 and the result is:
 ```sh
@@ -690,6 +690,8 @@ Whenever you are satisfied with your rules, you can put the peer in policy mode:
 ```sh
 E:Option ==> peer wg11 auto=P
 ```
+
+Please note, ipv6 could be difficult to setup rules for, especially if the devices uses SLAAC with privacy extension and/or you have a dynamic prefix. In this case a better alternative could be to use an ipset with the devices Mac addresses instead, see [Create and setup IPSETs](#create-and-setup-ipsets) section.
   
 ## Create categories
 Categories is a way of grouping clients and servers under a category name and allows you to start or stop entire categories.
@@ -1310,7 +1312,7 @@ wgmExpo -remove
 Enjoy!
 
 # Create and setup IPSETs
-Ipsets are really handy for various reasons. It is basically just a set of ipv4, ipv6, Mac addresses, ip addresses and port combinations. Maybee one of the more useful parts is that we can have dnsmasq to autopopulate the set with ip-addresses as it is requested to lookup certain domains.
+Ipsets are really handy for various reasons. It is basically just a set of ipv4, ipv6, Mac addresses, ip addresses and port combinations. Maybee one of the more useful parts is that we can have dnsmasq to autopopulate the set with ip-addresses as it is requested to lookup certain domains. Ipsets could be added in wgm and matching ips, ports or whatever the ipset contain could be routed out wg- client or wan if the normal route is wg- client. Ipsets adds more flexibility than ordinary policy (source ip) routing. For example an ipset could be source ip and destination port only routed out I.e. wg11. Or ip-range and specific port or even mac-address (source only). Once setup and familiar it is just as easy to handle as ordinary policy rules.
 
 To create an ipset we could issue one of the following:
 ```sh
@@ -1319,11 +1321,13 @@ ipset create NETFLIX-DNS6 hash:net family inet6 # ipv6 addresses
 ipset create wg11-mac hash:mac # mac-addresses
 ```
 
-To add an entry manually to the ipsets we just created:
+To add an entry manually to the ipsets we just created, ie:
 ```sh
 ipset add NETFLIX-DNS 54.155.178.5
 ipset add NETFLIX-DNS6 2a05:d018:76c:b683:e1fe:9fbf:c403:57f1
 ipset add wg11-mac a1:b2:c3:d4:e5:f6
+ipset add NETFLIX-DNS 54.155.179.0/24
+ipset add NETFLIX-DNS6 2a05:d018:76c:b684::/64
 ```
 
 To save the ipset to a file:
@@ -1343,7 +1347,7 @@ To automate the process of periodically saving the ipsets and to restore them at
 ```sh
 nano /jffs/scripts/nat-start
 ```
-And populate with (only one ipset showed, change to your needs.)
+And populate with:
 ```sh
 #!/bin/sh
 sleep 10 # Needed as nat-start is executed many times during boot
@@ -1359,6 +1363,7 @@ for IPSET_NAME in $IPSET_LIST; do
    fi
 done
 ```
+The autosave mostly makes sense if dnsmasq autopopulates the ipset. If you wish to manually add entries then you could comment that line, just don't forget to save your set if you make changes.
 Save and exit. If you just created the file, make it executable:
 ```sh
 chmod +x /jffs/scripts/nat-start
@@ -1380,7 +1385,7 @@ To make our changes kick-in:
 ```sh
 service restart_dnsmasq
 ```
-Before doing anything else, check syslog so that there were no error messages from dnsmasq, if there are check your syntax and try to restart again. If you disconnect at this point you might not get a new ip so continue until dnsmasq starts.
+Before doing anything else, check syslog so that there were no error messages from dnsmasq, if there are, check your syntax and try to restart again. If you disconnect at this point you might not get a new ip so continue until dnsmasq starts.
 
 Now any lookup of netflix.com, netflix.net o.s.o from dnsmasq would result in the ips looked up being added to the ipsets. 
 
@@ -1404,7 +1409,6 @@ ipset destroy NETFLIX-DNS
 ipset destroy NETFLIX-DNS6 
 ipset destroy wg11-mac
 ```
-
 If you want to look at your ipset:
 ```sh
 ipset list NETFLIX-DNS
@@ -1417,7 +1421,6 @@ ipset list NETFLIX-DNS -t
 ipset list NETFLIX-DNS6 -t
 ipset list wg11-mac -t
 ```
-
 You could test the set for an entry:
 ```sh
 ipset test NETFLIX-DNS 192.168.2.0
@@ -1429,7 +1432,8 @@ ipset test NETFLIX-DNS 52.217.164.72
 Other useful set- types:
 ```sh
 ipset create TEST hash:net,port family inet # Ip+port (could also be inet6 for ipv6)
-ipset add TEST 192.168.1.101,25 # 192.168.1.101:25
+ipset add TEST 192.168.1.105,25 # 192.168.1.105/24:25
+ipset add TEST 192.168.2.0/24,80 # 192.168.2.0/24:80
 
 ipset create TEST2 hash:net,iface family inet # Ip+Iface (could also be inet6 for ipv6)
 ipset add TEST2 192.168.1.102,br0 #192.168.1.102 br0
@@ -1438,6 +1442,8 @@ ipset create NETFLIX list:set # set of ipsets
 ipset add NETFLIX NETFLIX-DNS  # add IPv4 ipset to the set
 ipset add NETFLIX NETFLIX-DNS6 # add IPv6 ipset to the set
 ```
+
+There are more types, but I believe these to be the most common. Please see ipset manual for more info.
 
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
