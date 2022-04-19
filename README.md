@@ -783,17 +783,17 @@ Note: if you already have rules explicit for this IP setup in policy rules, ther
 This command needs to be issued in wgm meny, but if you want you could use it in Apples Shortcuts or Androids SSH Button. See [Execute menu commands externally](#execute-menu-commands-externally) section.
 
 ## Manage/Setup IPSETs for policy based routing
-wgm creates the ability to manage your IPSETs. it does not however, by any means, help you in the creation of IPSETs. depending on what you want to do, there are other tools for that. if you for example wish that NETFLIX and similar streaming sites should bypass VPN since these sites block connection from VPN then "x3mrouting" is just what you need. altough x3mrouting is not really compatible with routing wireguard it does a good job of creating/managing the IPSETs for you.
+wgm creates the ability to manage your IPSETs. It does not however, by any means, help you in the creation of IPSETs. depending on what you want to do, there are other tools for that. if you for example wish that NETFLIX and similar streaming sites should bypass VPN since these sites block connection from VPN then "x3mrouting" is just what you need. altough x3mrouting is not really compatible with routing wireguard it does a good job of creating/managing the IPSETs for you.
 
-ofcource there is nothing stopping you from plainly create these yourself, for any purpose. an IPSET is just a list with IPAdresses which you can add or delete adresses as you wish. you can read about it here:  
+ofcource there is nothing stopping you from plainly create these yourself, for any purpose. an IPSET is just a list with IPAdresses, ports, mac addresses or combination there of, which you can add or delete adresses/ports as you wish. you can read about it here:  
 [ipset man page](https://linux.die.net/man/8/ipset)  
 
-one methode, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. this ofcource requires you to actually use dnsmasq (see section about Diversion).
+And/or look at the [Create and setup IPSETs](#create-and-setup-ipsets) section of this guide.
 
-wgm offers some assistance in managing these IPSETs.
+one methode, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. This ofcource requires you to actually use dnsmasq (see section about Diversion).
 
-A couple of things need to happen for IPSET based routing to work:
-1. a rule in the firewall is setup to mark packages with a destination or source adress matching an IP in IPSET. The mark is set based on where you wish to route matching IPs.
+wgm offers capabilities to do routing based on these IPSETs. A couple of things need to happen for IPSET based routing to work:
+1. a rule in the firewall is setup to mark packages with a destination or source adress/port matching an IP/port in IPSET. The mark is set based on where you wish to route matching IPs.
 2. a routing rule is setup to direct packages with a specific mark to a specific routing table.
 3. rp_filter needs to be disabled (or set to loose) for interfaces where IPSETs are routed out.
 
