@@ -923,6 +923,11 @@ ip -6 rule add from aaff:a37f:fa75:1::/64 fwmark 0x8000 table main prio 9900
 ```
 so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any 0x8000 fwmark set.
 
+if your ipset is 2-dimensional, like hash:ip,port (see [Create and setup IPSETs](#create-and-setup-ipsets) section) you will need to setup 2 dstsrc, for example to match source ip with destination port:
+```sh
+E:Option ==> peer wg12 upd ipset TEST dstsrc src,dst
+```
+
 there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
 
 ## Setup WG Server
