@@ -1432,7 +1432,7 @@ ipset test NETFLIX-DNS 52.217.164.72
 Other useful set- types:
 ```sh
 ipset create TEST hash:net,port family inet # Ip+port (could also be inet6 for ipv6)
-ipset add TEST 192.168.1.105,25 # 192.168.1.105/24:25
+ipset add TEST 192.168.1.105,25 # 192.168.1.105:25
 ipset add TEST 192.168.2.0/24,80 # 192.168.2.0/24:80
 
 ipset create TEST2 hash:net,iface family inet # Ip+Iface (could also be inet6 for ipv6)
