@@ -936,6 +936,8 @@ E:Option ==> peer wg12 add ipset TEST
 E:Option ==> peer wg12 upd ipset TEST dstsrc src,src
 ```
 
+And finally, if your ipsets are mac addresses then wgm will force it to "source" since this is the only setting that makes sense. It will also always add this ip ipv4 and ipv6 (if ipv6 is enabled on your system)
+
 there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
 
 ## Setup WG Server
