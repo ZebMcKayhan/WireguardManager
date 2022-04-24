@@ -1423,6 +1423,13 @@ ipset list NETFLIX-DNS -t
 ipset list NETFLIX-DNS6 -t
 ipset list wg11-mac -t
 ```
+
+Or if you just want to check the names of your ipsets:
+```sh
+ipset list -n
+ipset list wg11-mac -n
+```
+
 You could test the set for an entry:
 ```sh
 ipset test NETFLIX-DNS 192.168.2.0
