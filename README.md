@@ -1237,8 +1237,13 @@ E:Option ==> peer wg21 passthru add wg11 all
 
 And finally to only allow a single ip or group of ips to be routed out out wg11:
 ```sh
-E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32
+E:Option ==> peer wg21 passthru add wg11 ip=10.50.1.53/32
 ```
+Or if you are on dual stack:
+```sh
+E:Option ==> peer wg21 passthru add wg11 ip=10.50.1.53/32 ipv6=aaaa:bbbb:cccc:dddd:100:53/128
+```
+
 # Execute menu commands externally
 Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
 
