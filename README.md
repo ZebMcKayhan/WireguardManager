@@ -856,7 +856,7 @@ and if we want to delete it:
 E:Option ==> peer wg12 del ipset NETFLIX_DNS
         [✔] Ipset 'NETFLIX_DNS' Selective Routing deleted wg12
 ```
-Since IPSETs are only IPv4 OR IPv6, never both. wgm will autodetect which is added and put it in the correct firewall, but you will need to add an IPSET for each, like:
+Since IPSETs are typically IPv4 OR IPv6 (except mac- ipset's). wgm will autodetect which is added and put it in the correct firewall, but you will need to add an IPSET for each, like:
 ```sh
 IPSet         Enable  Peer  FWMark  DST/SRC
 NETFLIX-DNS   Y       wg11  0x8000  dst
@@ -866,6 +866,7 @@ MYIP6         Y       wg11  0x8000  dst
 ```
 in this case [MYIP] and [NETFLIX-DNS] are IPv4 IPSETs so they will be enabled for IPv4 firewall and routing rules. [MYIP6] and [NETFLIX-DNS6] are IPv6 IPSETs so they will be enabled in IPv6 firewall and routing rules. this selection is handled automatically by wgm. you add IPv6 IPSETs exactly the same way as for IPv4.
 
+If you add an IPSET containing mac- addresses it is only needed once, since wgm automatically adds this to both ipv4 and ipv6 firewall.
 
 the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packages to different route we will need to disable this.  
 "reverse path filter" is a very simple protection that many now days consider obsolete. whenever a packages comes in on i.e. WAN it will change place on Destination and Source and run it trough the routing table to see if a reply to this package would be routed out the same way. it understands most rules but it will not understand that some packages will recieve a mark and be routed differently. so in this case we need to disable the rp_filter on WAN, otherwise answers from WAN will not be accepted. there are 3 values for rp_filter. 0 means "Disabled", 1 means "Enabled, strict", 2 means "Enabled loose". loose means that it does not check routing explicitly, but will accept if there are any routing ways back this interface. 2 is sufficient for us.
