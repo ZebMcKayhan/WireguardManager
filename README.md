@@ -1965,15 +1965,21 @@ With this methode we have only affected the processes we intended, no other, and
 
 It is common that some devices have build in protection, since they are designed to be used within a single network. This could be because higher end devices pays alot of attention to access control, to make it work from a different subnet you may need to change several settings in several different places. some devices could be just impossible to seem to get it to work from a different subnet.  
 
-first of all, access control to i.e. NAS will not work by trying to access the share name. niether will the share pop up by itself since advertisement dont work over VPN. you will need to access the NAS "blindly" by using it's local ip-adress (like 192.168.1.20).  
+First of all, access control to i.e. NAS will not work by trying to access the share name. niether will the share pop up by itself since advertisement dont work over VPN. you will need to access the NAS "blindly" by using it's local ip-adress (like 192.168.1.20).  
 
-some NAS uses netmask to control access, so ips within the netmask are allowed to access it, but nothing else. the netmask setting is usually under GUI, LAN --> LAN IP and usually set to 255.255.255.0. this is the same as CIDR notation /24 and means that NAS IP must match the first 3 numbers, so if NAS has 192.168.1.20 then it will accept 192.168.1.X ips to access.  
+Some NAS uses netmask to control access, so ips within the netmask are allowed to access it, but nothing else. the netmask setting is usually under GUI, LAN --> LAN IP and usually set to 255.255.255.0. this is the same as CIDR notation /24 and means that NAS IP must match the first 3 numbers, so if NAS has 192.168.1.20 then it will accept 192.168.1.X ips to access.  
 
-but wg server uses 10.50.1.X and therin lies our problem. in order for this to work we would have to set the netmask to 0.0.0.0 to allow all, but this is not at all recommended nor is it allowed by the GUI.  
+But wg server uses 10.50.1.X and therin lies our problem. in order for our NAS to be in the same netmask as our Wireguard server we would have to set the br0 netmask to 0.0.0.0 to allow all, but this is not at all recommended nor is it allowed by the GUI.  
 
-but what if we could set our wg server to give out 192.168.2.x? Then we could adjust the netmask slightly to (255.255.252.0) /22 which would then include 192.168.0.X - 192.168.3.X. this might collide with YazFi gust networks, but they are easaly moved to some other ip's via the GUI tab.  
+But what if we could set our wg server to give out 192.168.2.x? Then we could adjust br0 netmask slightly to 255.255.252.0 (/22) which would then include 192.168.0.X - 192.168.3.X. this might collide with YazFi gust networks, but they are easaly moved to some other ip's via the GUI tab.  
 
-ofcource we could change the network mask to 255.255.0.0 and give our wg server any 192.168.X.Y ip, but it is considered good practice to limit as much access as possible. The router still prevents access, so there are no real security risks, but typically more layers of security gives better protection.
+Ofcource we could change the br0 network mask to 255.255.0.0 and give our wg server any 192.168.X.Y ip, but it is considered good practice to limit as much access as possible. The router still prevents access, so there are no real security risks, but typically more layers of security gives better protection.
+
+Note: Accessing internal (br0) resources from another network will not work if the network you are connected to at the time (i.e. school/library/neighbur/et.c. wifi) has the same subnet as br0. So it might be a good idea to change your br0 network to something not quite as common as 192.168.1.X, i.e. 192.168.16.X (16 = 0x10) and you can have your wg21 server on 192.168.17.X (17 = 0x11). This way they both networks will be included if br0 netmask is set to 255.255.254.0.
+
+It should be noted that we should never change wg21 netmask to include br0 as well, since it will create conflict. Routing is set up based on the netmaks and if br0 has 192.168.1.X/22 and wg21 has 192.168.2.X/22 then the networks are both including each other and equal in size so the routing will be based on metric (or something else) which means that wg21 will probably never recieve ANY package since they are sent to br0. Keeping wg21 the smaller network assures that packets to wg21 devices will be routed to wg21 and all other packets included in this network will be routed to br0.
+
+So, assuming you wish to keep br0 at 192.168.1.X and wg21 on 192.168.2.X:
 
 Disconnect all clients from the server and stop it:
 ```sh
@@ -1990,12 +1996,12 @@ E:Option ==> peer Device3 del
 
 now change wg21 ip pool:
 ```sh
-E:Option ==> peer wg21 ip=192.168.2.0/24
+E:Option ==> peer wg21 ip=192.168.2.1/24
 ```
 
 if you create the server for the first time, you could include this ip from the beginning:
 ```sh
-E:Option ==> peer new wg21 ip=192.168.2.0/24
+E:Option ==> peer new wg21 ip=192.168.2.1/24
 ```
 
 Recreate your device peers
@@ -2014,34 +2020,34 @@ E:Option ==> peer wg21 auto=Y
 E:Option ==> start wg21
 ```
 
-update your netmask in the GUI (LAN --> LAN IP) to 255.255.252.0
+Update your netmask in the GUI (LAN --> LAN IP) to 255.255.252.0
 
-reboot of router after all this to make sure everything got a clean start.
+Reboot of router after all this to make sure everything got a clean start.
 
-check if NAS accepts the new network mask, otherwise you might need to change the network mask inside the NAS configuration.
+Check if NAS accepts the new network mask, otherwise you might need to change the network mask inside the NAS configuration.
 
-now, hopefully you will be able to access your NAS via wg VPN.
+Now, hopefully you will be able to access your NAS via wg VPN.
 
-a variation of this could be to use a netmask of /17 (255.255.127.0) which will include 192.168.1.X - 192.168.126.X but still block access 192.168.127.X - 192.168.255.X so you could assign <= 126 subnet to trusted network and >= 127 subnets to less trusted networks (like guest network, IoT a.s.o.)
+A variation of this could be to use br0 netmask of /17 (255.255.127.0) which will include 192.168.1.X - 192.168.126.X but still block access 192.168.127.X - 192.168.255.X so you could assign <= 126 subnet to trusted network and >= 127 subnets to less trusted networks (like guest network, IoT a.s.o.)
 
-as an alternate way:  
-whenever you feel like you reach the end of the line, and have checked that you can access everything on your local network except this specific resource, the last resort could be to masquarade your vpn communication so the NAS "thinks" the request comes from it's own subnet.  
+**As an alternate way:**  
+whenever you feel like you reach the end of the line, and have checked that you can access your local network except this specific resource, the last resort could be to masquarade your vpn communication so the NAS "thinks" the request comes from it's own subnet.  
 
-why is this a last resort? because it actually does not solve the root cause. it will add complexity to your system while at the same time limit your ability to further control and monitor access to your NAS from VPN (as all access via VPN appears to come from the router)
+Why is this a last resort? because it actually does not solve the root cause. It will add complexity to your system while at the same time limit your ability to further control and monitor access to your NAS from VPN (as all access via VPN appears to come from the router)
 
-lets say my stubborn share is at 192.168.1.20 and router itself has 192.168.1.1 and I have trouble accessing it from wg21, 10.50.1.x. try enter a rule in the router ssh, at the prompt:
+Lets say my stubborn share is at 192.168.1.20 and router itself has 192.168.1.1 and I have trouble accessing it from wg21, 10.50.1.x. Try enter a rule in the router ssh, at the prompt:
 ```sh
 iptables -t nat -I POSTROUTING -s 10.50.1.0/24 -d 192.168.1.20 -j SNAT --to-source 192.168.1.1 -m comment --comment "WireGuard 'server'"
 ```
-the rule matches packets from 10.50.1.X (wg21 clients) to 192.168.1.20 (my NAS) and when packets are matches, the source adress of the packet is changed to 192.168.1.1 (and any reply is changed back). This way we have masquaraded our packages so the NAS think they come from the router itself which is on the same subnet so we are affectively bypassing whatever security measures that we never managed to get to the setting. 
-this type of adress translation happens over the internet all the time without us even knowing about it. try to use 8.8.8.8 as your dns for example and do a dnsleak test. you will not see any 8.8.8.8 there because your packets were re-directed to multiple other sources (DNAT - Destination Network Adress Translation). In this case we are basically using the same technique as your router is already doing to hide your LAN ip (192.168.1.x) from the internet, so it appears as your entire LAN has one single internet adress.
+The rule matches packets from 10.50.1.X (wg21 clients) to 192.168.1.20 (my NAS) and when packets are matched, the source adress of the packet is changed to 192.168.1.1 (and any reply is changed back). This way we have masquaraded our packages so the NAS think they come from the router itself which is on the same subnet so we are affectively bypassing whatever security measures that we never managed to get to the setting. 
+This type of adress translation happens over the internet all the time without us even knowing about it. Try to use 8.8.8.8 as your dns for example and do a dnsleak test. You will not see any 8.8.8.8 there because your packets were re-directed to multiple other sources (DNAT - Destination Network Adress Translation). In this case we are basically using the same technique as your router is already doing to hide your LAN ip (192.168.1.x) from the internet, so it appears as your entire LAN has one single internet adress.
 
 if you found the rule not to be working, or you made some type, just enter the exact same rule again and just change the -I to -D to delete it:
 ```sh
 iptables -t nat -D POSTROUTING -s 10.50.1.0/24 -d 192.168.1.20 -j SNAT --to-source 192.168.1.1 -m comment --comment "WireGuard 'server'"
 ```
 
-if you are successful and wish to keep the rule, lets add it to the wg21 autostart scripts:
+If you are successful and wish to keep the rule, lets add it to the wg21 autostart scripts:
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg21-up.sh
 ```
