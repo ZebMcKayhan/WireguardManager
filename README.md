@@ -962,6 +962,16 @@ If you wish to delete the server peer:
 ```sh
 E:Option ==> peer wg21 del
 ```
+And if you deleted the server peer wgm creates for you, but would like to create it again:
+```sh
+E:Option ==> peer new
+```
+A whole lot of options is offered to this command, like if you want to control the server IP, port number a.s.o but all this information is at hand under the
+```sh
+E:Option ==> peer help
+```
+menu.
+
 Now, if you have IPv6 enabled on your router, and wishes to have IPv6 Only or IPv4/IPv6 dual-stack server peer, you will need to go an extra mile and configuration could differ depending on how your system is:
 
 **IPv6 - setup with static >/64 subnet (as /56 or /48 subnet)**  
@@ -981,6 +991,7 @@ Or we could create a dual stack server peer that gives both IPv4 and IPv6 connec
 ```sh
 E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cc10::1/64
 ```
+Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
 
 Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
 
@@ -1018,6 +1029,8 @@ Or we could create a dual stack server peer that gives both IPv4 and IPv6 connec
 ```sh
 E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cccc:1::1/120
 ```
+Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
+
 Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
 
 To make it autostart at boot:
@@ -1042,7 +1055,7 @@ Since we are using an address which might be our own or someone else we need to 
 So, assuming we will use prefix aaaa:bbbb:cccc:dddd::/64 
 We create a wg21 address that is not in conflict with br0, and we slim down the range, 120 would leave room for 255 devices, should be enough for most servers: aaaa:bbbb:cccc:dddd:**100::1/120**
 
-Creatin our server we need to control the ips ourself, according to our ip above. Creating a dual stack server peer:
+Creating our server we need to control the ips ourself, according to our ip above. Creating a dual stack server peer:
 ```sh
 E:Option ==> peer new ip=192.168.100.1/24 ipv6=aaaa:bbbb:cccc:dddd:100::1/120
 
@@ -1052,7 +1065,8 @@ y
         Press y to Start (IPv4/IPv6) 'server' Peer (wg21) or press [Enter] to SKIP.
 y
 ```
-
+Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
+  
 Since we are not using our global adress, we need to setup NAT6 to translate this address to WAN source address, otherwise packets will be dropped by our ISP. So do this by creating a custom wg21 scripts:
 
 ```sh
