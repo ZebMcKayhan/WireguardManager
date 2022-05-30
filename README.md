@@ -1125,13 +1125,16 @@ ip6tables -t nat -I PREROUTING -i eth0 -d <wanIpv6Prefix>:100::/120 -j NETMAP --
 
 The problem here is that we need automatically find the wan prefix to put into the rules but it is difficult to make a script that accounts for everything. The right place for this is inside wgm (which wont happen until it is supported by firmware iptables).
 
-I've made a script that works if you have a /64 or a /56 assignement:
+I've made a script that works if you have a /64 or a /56 assignement, it also works on /48 assignement but needs wg21 to be setup accordingly.
 
 wg21-up.sh
 ```sh
 #!/bin/sh
 ###############################################################################
- # Example for wg21 ipv6 = aa00:aaaa:bbbb:cccc:100::1/120
+ # 56/64 assignement, wg21 ipv6 = aa00:aaaa:bbbb:cccc:100::1/120
+ # 48 assignement, wg21 ipv6 = aa00:aaaa:bbbb:100::1/120
+ # ####
+ # Example for wg21 56/64 assignement:
  # Change to your needs but keep formatting 
 Wg21Prefix=aa00:aaaa:bbbb:cccc:: #Wg21 ULA prefix with aa instead of fd 
 Wg21Suffix=100::1 #Wg21 Device suffix (last 64 bits) 
@@ -1169,7 +1172,8 @@ ip6tables -t nat -D PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j NETMAP
 ###############################################################################
 ```
 
-Note: The scripts will not work if you were assigned a 0-subnet or a /48 range. More scripting would be needed to expand the address, do all concatinations and then compress it again. This is out of scope for this guide. If you make a script that is working for all situations, please post it at SNB Forum (link on top) so others could benefit.
+Note: The scripts will not work if you were assigned a 0-subnet if you have a /56 (or /64) assignement so the entire last parts of prefix gets excluded inside the ::.
+More scripting would be needed to expand the address, do all concatinations and then compress it again. This is out of scope for this guide. If you make a script that is working for all situations, please post it at SNB Forum (link on top) so others could benefit.
 
 **Device peer setup**  
 Creating a Road-Worrior device is really easy, i.e.:
