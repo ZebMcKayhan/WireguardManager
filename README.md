@@ -1417,6 +1417,18 @@ Now any lookup of netflix.com, netflix.net o.s.o from dnsmasq would result in th
 
 Now these ipsets could be added to wgm (see section).
 
+We could also have the firewall populate the nessisary information into our ipset, I.e:
+```sh
+IPSET_NAME_mac=Test_Mac 
+IPv4Rule=192.168.1.38 
+ipset create ${IPSET_NAME_mac} hash:mac 
+ipset flush ${IPSET_NAME_mac} 
+
+iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
+```
+Here I've used -s to match source ip and conntrack to only match new connection package and when there is a match on a package it will populate the information the ipset contains (mac-addresses) based on source information. 
+This way we could create ipv4 rules as -s and have the firewall populate the rule-matched clients mac addresses into an ipset. This ipset could then be plugged into wgm and it will route clients (ipv4+ipv6) to wherever you want. This could be a way to automatically handle devices which randomizes mac addresses in a non-persistant way.
+
 To manually delete an entry in the sets:
 ```sh
 ipset del NETFLIX-DNS 54.155.178.5
