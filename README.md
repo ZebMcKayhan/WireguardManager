@@ -1430,6 +1430,26 @@ Here I've used -s to match source ip/range and conntrack to only match new conne
 This way we could create ipv4 rules in -s and have the firewall populate the rule-matched clients mac addresses into an ipset. This ipset could then be plugged into wgm and it will route clients (ipv4+ipv6) to wherever you want. This could be a way to automatically handle devices which randomizes mac addresses in a non-persistant way.
 The rule matches ipv4 packages which means if the client changes mac address a new ipv4 connection somewere is needed to get the new mac into the set.
 
+An example to create the ipset "wg11_mac" for a part of your lan could be:
+
+Edit nat-start:
+```sh
+nano /jffs/scripts/nat-start
+```
+
+Populate with:
+#!/bin/sh
+sleep 10 # Needed as nat-start is executed many times during boot
+
+IPSET_NAME_mac=wg11_mac
+IPv4Rule=192.168.1.12/30 #192.168.1.12 - 192.168.1.15
+
+ipset create ${IPSET_NAME_mac} hash:mac 
+ipset flush ${IPSET_NAME_mac} 
+iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
+```
+Ofcource the script could be updated with for-statement to loop through more rules into different sets.
+
 The firewall could populate any information you need into a set as long as you could formulate a rule that matches packages you want.
 
 Anyhow,to manually delete an entry in the sets:
@@ -1865,7 +1885,7 @@ Thats it! now your system should be default route via VPN for everything except 
 
 now the problem with running a wg server, it should be possible by adding these rules:
 ```sh
-iptables -t mangle -I OUTPUT -p udp --sport 51820 -j MARK --set-mark 0x8000
+iptables -t mangle -I OUTPUT -p udp --sport 51820 -j MARK --set-mark 0x8000/0x8000
 ip rule add fwmark 0x8000 table 117 prio 9997
 echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 ```
