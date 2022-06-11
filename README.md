@@ -1413,7 +1413,7 @@ service restart_dnsmasq
 ```
 Before doing anything else, check syslog so that there were no error messages from dnsmasq, if there are, check your syntax and try to restart again. If you disconnect at this point you might not get a new ip so continue until dnsmasq starts.
 
-Now any lookup of netflix.com, netflix.net o.s.o from dnsmasq would result in the ips looked up being added to the ipsets. 
+Now any lookup of netflix.com, netflix.net a.s.o from dnsmasq would result in the ips looked up being added to the ipsets. 
 
 Now these ipsets could be added to wgm (see section).
 
@@ -1427,7 +1427,7 @@ ipset flush ${IPSET_NAME_mac}
 iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
 ```
 Here I've used -s to match source ip/range and conntrack to only match new connection package (to limit amount of matches) and when there is a match on a package it will populate the information the ipset contains (mac-addresses) based on source information. 
-This way we could create ipv4 rules in -s and have the firewall populate the rule-matched clients mac addresses into an ipset. This ipset could then be plugged into wgm and it will route clients (ipv4+ipv6) to wherever you want. This could be a way to automatically handle devices which randomizes mac addresses in a non-persistant way.
+This way we could create ipv4 rules in -s and have the firewall populate the rule-matched clients mac addresses into an ipset. This ipset could then be plugged into wgm and it will route clients (ipv4+ipv6) to wherever you want. This could be a way to automatically handle ipv6 devices which changes ipv6 dynamically and randomizes mac addresses in a non-persistant way.
 The rule matches ipv4 packages which means if the client changes mac address a new ipv4 connection somewere is needed to get the new mac into the set.
 
 An example to create the ipset "wg11_mac" for a part of your lan could be:
@@ -1449,7 +1449,11 @@ ipset create ${IPSET_NAME_mac} hash:mac
 ipset flush ${IPSET_NAME_mac} 
 iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
 ```
-Ofcource the script could be updated with for-statement to loop through more rules into different sets.
+Save and exit. If you just created the file, make it executable:
+```sh
+chmod +x /jffs/scripts/nat-start
+```
+Ofcource the script could be updated with for-statement to loop through more rules into same or different sets.
 
 The firewall could populate any information you need into a set as long as you could formulate a rule that matches packages you want.
 
