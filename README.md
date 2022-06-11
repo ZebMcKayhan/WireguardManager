@@ -1438,6 +1438,7 @@ nano /jffs/scripts/nat-start
 ```
 
 Populate with:
+```sh
 #!/bin/sh
 sleep 10 # Needed as nat-start is executed many times during boot
 
