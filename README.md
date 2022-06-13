@@ -891,8 +891,8 @@ nano /jffs/addons/wireguard/Scripts/wg12-up.sh
 populate this with your mark rule and disable the rp_filter:
 ```sh
 #!/bin/sh
-ip rule add from all fwmark 0x8000 table main prio 9900
-#ip -6 rule add from all fwmark 0x8000 table main prio 9900 # For IPv6 IPSETs only
+ip rule add from all fwmark 0x8000/0x8000 table main prio 9900
+#ip -6 rule add from all fwmark 0x8000/0x8000 table main prio 9900 # For IPv6 IPSETs only
 echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 ```
 save and exit.  
@@ -921,8 +921,8 @@ E:Option ==> restart wg12
 if we were to use the original fwmark to route out matches wg12, then we wouldnt need to create anything in wg12-up.sh. both routing rule and rp_filter is taken care of by wgm.  
 in my case I have 2 country outputs, and one of the purpose is to be able to watch streaming content from a different continent, which means I want to limit the fwmark to only apply to certain subnets, in my case the rule is:
 ```sh
-ip rule add from 192.168.1.1/24 fwmark 0x8000 table main prio 9900
-ip -6 rule add from aaff:a37f:fa75:1::/64 fwmark 0x8000 table main prio 9900
+ip rule add from 192.168.1.1/24 fwmark 0x8000/0x8000 table main prio 9900
+ip -6 rule add from aaff:a37f:fa75:1::/64 fwmark 0x8000/0x8000 table main prio 9900
 ```
 so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any 0x8000 fwmark set.
 
@@ -1842,7 +1842,7 @@ done
 ip rule add from 192.168.50.150 table 117 prio 9990 #Send single ip through WAN
 #ip rule add iif wl1.1 table 117 prio 9991 #Send guest wifi 4 through WAN (interface way)
 #ip rule add 192.168.5.1/24 table 117 prio 9992 #Send guest wifi 4 through WAN (ip way)
-#ip rule add fwmark 0x8000 table 117 prio 9993
+#ip rule add fwmark 0x8000/0x8000 table 117 prio 9993
 # More rules for ip's or ipset marks or interfaces could be added here if needed....
 #################################
 
@@ -1891,7 +1891,7 @@ Thats it! now your system should be default route via VPN for everything except 
 now the problem with running a wg server, it should be possible by adding these rules:
 ```sh
 iptables -t mangle -I OUTPUT -p udp --sport 51820 -j MARK --set-mark 0x8000/0x8000
-ip rule add fwmark 0x8000 table 117 prio 9997
+ip rule add fwmark 0x8000/0x8000 table 117 prio 9997
 echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 ```
 change the --sport to your wireguard server port. test by executing the commands directly at the prompt. if you find that they are working:
