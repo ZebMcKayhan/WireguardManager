@@ -1378,7 +1378,7 @@ And populate with:
 #!/bin/sh
 sleep 10 # Needed as nat-start is executed many times during boot
 
-IPSET_LIST=NETFLIX-DNS NETFLIX-DNS6 wg11-mac
+IPSET_LIST="NETFLIX-DNS NETFLIX-DNS6 wg11-mac"
 
 for IPSET_NAME in $IPSET_LIST; do 
    if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if ipset does not already exist 
