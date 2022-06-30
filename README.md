@@ -1263,6 +1263,51 @@ Or if you are running dual stack, i.e:
 E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32,aa36:7ef1:2add:aa88:100::53/128
 ```
 
+**Note**  
+The same function as the passthru function could be accomplished by adding a policy route, i.e:
+```sh
+E:Option ==> peer wg11 rule add vpn 10.50.1.2/32 comment ServerClientToWg11
+``` 
+But a snag is that the server ips are not included in wg11 MASQUARADE rule (the firewall rule that translates the source addresses to match outgoing interface) and this is needed for the vpn supplier only accepts this source address otherwise the packages will be dropped. The passthru feature automatically adds added wg21 clients to the MASQUARADE rule but if you for example use the rules for DESTINATION routing (like you wish to only connect TO certains web addresses through VPN) you might find that your server clients have broken connection to these pages. This is because the DESTINATION rule is typically set src=Any, which also includes the WG server clients. So the choices are either remake the rule to only be used on your lan, so set src=192.168.1.1/24, but this will make your server client access these addresses via WAN. If you want your server clients to also access these pages via VPN, the server needs to be included in the MASQUARADE rule:
+
+To include your WG server clients in WG11 MASQUARADE rule:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+Replace the name with your wg interface name, but the scripts must be named like this in order for it to start as the wireguard interface is started.
+
+Populate with
+```sh
+#!/bin/sh
+
+iptables -t nat -I POSTROUTING -s 10.50.1.1/24 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"  
+```
+Use your Wireguard server network ip range (change if needed) and change wg11 interface according to your needs. This will enable all Wireguard server clients to MASQUARADE, but will only be used if the rules are setup to route any package from WG server to WG client (meaning that the wgm rules will still determine how it shall be routed)
+
+save & exit.
+
+make the file executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+
+then we also need to make a script that removes the rule if the interface it shut down:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+Populate with:
+```sh
+#!/bin/sh
+
+iptables -t nat -D POSTROUTING -s 10.50.1.1/24 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"  
+```
+
+Save & exit, make the file executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+
+  
 # Execute menu commands externally
 Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
 
