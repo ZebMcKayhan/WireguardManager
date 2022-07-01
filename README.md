@@ -2183,8 +2183,6 @@ there, your rule shall now be applied when wg21 starts (including at boot) and t
 This is basically a problem with TCP and/or the way it is used by SMB. it has been miltigated over the years with SMD2 and SMB3 but SMB was never meant to be used on the internet.  
 The speed killer for SMD is infact latency, which is partly caused by physical distance (i.e. speed of light) and partly by more equipment handling each packet.  
 we cant do much about the speed of light, it is what it is. but we can do what we can to make sure out package does not need to be mangled more than bare minimum. Less handling of the package means lower latency. The typical mangling that happens is that packages which are too big for a certain interface gets cut into 2 packages and then re-assembled.  
-Ones the package leaves your router on it's way over the internet there is nothing we can do about it. if your ISP has high latency out on the internet even for non-mangled packages, there is little we can do about it, and your speed will always be slow.
+Once the package leaves your router on it's way over the internet there is nothing we can do about it. if your ISP has high latency out on the internet even for non-mangled packages, there is little we can do about it, and your speed will always be slow.
 
-it has been shown that proper setting will atleast give you read/write speeds in the 20-30MB/s range.  
-
-More detailed info about this will be provided soon.
+It has been shown that proper setting will atleast give you read/write speeds in the 20-30MB/s range.  
