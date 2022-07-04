@@ -17,7 +17,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Import Client](#import-client)  
   -[Add persistentKeepalive](#add-persistentkeepalive)  
   -[Manage Killswitch](#manage-killswitch)  
-  -[Change DNS/mtu/Name](#change-dnsmtuname)  
+  -[Change DNS/mtu/Name/Endpoint](#change-dnsmtunameendpoint)  
   -[Terminal Options](#terminal-options)  
   -[ipv6](#ipv6)  
   -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
@@ -192,18 +192,33 @@ You will get one of 4 messages:
 ```
 Temporarily means the status will change the next reboot.
 
-## Change DNS/mtu/name
-Dns:
+## Change DNS/mtu/name/endpoint
+**Dns:**
 ```sh
 E:Option ==> peer wg11 dns=8.8.8.8
 ```
-Mtu:
+Or for dual-stack:
+```sh
+E:Option ==> peer wg11 dns=8.8.8.8,2001:4860:4860::8888
+```
+
+**Mtu:**
 ```sh
 E:Option ==> peer wg11 mtu=1412
 ```
-Tag name/Annotate:
+or to let Wireguard determine mtu:
+```sh
+E:Option ==> peer wg11 mtu=auto
+```
+
+**Tag name/Annotate:**
 ```sh
 E:Option ==> peer wg11 comment My 1st VPN Client
+```
+
+**Endpoint**
+```sh
+E:Option ==> peer wg11 endpoint=146.70.51.98:1443
 ```
 
 ## Terminal Options
