@@ -296,25 +296,19 @@ Client  Auto  IP                                        Endpoint                
 wg11    N     <WgIpv4>/24,<WgIpv6>/64                   wireguard.net:48574        <WgIpv4DNS>,<WgIpv6DNS>          1412  Key      Key        # Integrity Swe
 ```
 
-the most important thing to check here is that your IP is both ipv4 and ipv6. not all .conf file includes an ipv6 DNS
+The most important thing to check here is that your IP is both ipv4 and ipv6. not all .conf file includes an ipv6 DNS.
 
-starting this peer will now get both your ipv4 and ipv6 to be routed out VPN so you wont get any data-leakage.
+Starting this peer will now get both your ipv4 and ipv6 to be routed out VPN so you wont get any data-leakage.
 
-if you want/need to run this peer in policy mode you will need to add rules for ipv4 and ipv6, which is the same procedure (see section).
+If you want/need to run this peer in policy mode you will need to add rules for ipv4 and ipv6, which is the same procedure (see section).
 
-If you did not get an ipv6 DNS with your import, you could add one to your existing (you need to add both)(read disclamer first):
+If you did not get an ipv6 DNS with your import, you could add one to your existing (you need to add both) i.e.:
 ```sh
 E:Option ==> peer wg11 dns=9.9.9.9,2620:fe::fe
 ```
-Disclamer: while adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packages to your selected VPN DNS via DNAT. This is however not really supported by all softwares. the kernel module/function/hooks are there but not implemented in userspace iptables. this will mean that you might get an error when starting the peer, something like "--to-destination extension not found" if this is the case you have the option to install Entware iptables:
-```sh
-opkg install iptables
-```
-but you need to be aware that the main purpose of iptables is to match extensions and send them to hooks in kernel module netfilter which is very integrated into firmware/processor with HW acceleration and what not. there is a substantial risk that something breaks when you do this. altough I have been running this on 386.4 on my RT-AC86U for several weeks with no obvious problems but I can NOT guarantee that this will be the case for you or that it is causing your system to be less secure. Use at your own risk! /Disclamer
+While adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packages to your selected VPN DNS via DNAT. This is however not really supported by all softwares. You will need atleast Asuswrt-Merlin 386.7 or later which includes IPV6 DNAT function. If you dont have 386.7 and for some reason dont want to upgrade, then keep the dns in wgm to IPv4 only. This case you should not get the error message. Control your DNS from the GUI IPv6 tab.
 
-if you dont want to take the risk of installing Entware iptables, then keep the dns in wgm to IPv4 only. this case you should not get the error message. control your DNS from the GUI IPv6 tab.
-
-wgm would not import IPv6 info if IPv6 is not enabled in the router. and even if you had it enabled when importing it and later diasabled it, it would not attempt to setup the IPv6 part if IPv6 is not enabled.
+Wgm would not import IPv6 info if IPv6 is not enabled in the router. and even if you had it enabled when importing it and later diasabled it, it would not attempt to setup the IPv6 part if IPv6 is not enabled.
 
 however, if you are on a Ipv6 system and really dont want VPN over IPV6, you could disable it in wgm config:
 ```sh
