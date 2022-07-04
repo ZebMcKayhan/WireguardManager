@@ -19,7 +19,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Manage Killswitch](#manage-killswitch)  
   -[Change DNS/mtu/Name/Endpoint](#change-dnsmtunameendpoint)  
   -[Terminal Options](#terminal-options)  
-  -[ipv6](#ipv6)  
+  -[IPv6](#ipv6)  
   -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
   -[Check connection](#check-connection)  
   -[Site 2 Site](#site-2-site)  
@@ -306,7 +306,7 @@ If you did not get an ipv6 DNS with your import, you could add one to your exist
 ```sh
 E:Option ==> peer wg11 dns=9.9.9.9,2620:fe::fe
 ```
-While adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packages to your selected VPN DNS via DNAT. This is however not really supported by all softwares. You will need atleast Asuswrt-Merlin 386.7 or later which includes IPV6 DNAT function. If you dont have 386.7 and for some reason dont want to upgrade, then keep the dns in wgm to IPv4 only. This case you should not get the error message. Control your DNS from the GUI IPv6 tab.
+While adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packages to your selected VPN DNS via DNAT. This is however not really supported by all softwares. You will need atleast Asuswrt-Merlin 386.7 or later which includes IPV6 DNAT function. If you dont have 386.7 or later and for some reason dont want to upgrade, then keep the dns in wgm to IPv4 only. This case you should not get the error message. Control your DNS from the GUI IPv6 tab.
 
 Wgm would not import IPv6 info if IPv6 is not enabled in the router. and even if you had it enabled when importing it and later diasabled it, it would not attempt to setup the IPv6 part if IPv6 is not enabled.
 
