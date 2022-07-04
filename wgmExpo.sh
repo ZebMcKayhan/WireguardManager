@@ -1,5 +1,5 @@
 #!/bin/sh
-version=0.4
+version=0.5
 # wgmExpo - script for executing commands inside wg_manager from the shell
 # by ZebMcKayhan
 
@@ -128,11 +128,11 @@ case "$Selector" in
 	;;
 	
 	"Status")
-		echo -e "$commands" | wg_manager | awk 'flag; /Option ==>/{flag=1} /WireGuard ACTIVE Peer Status/{flag=0}'
+		echo -e "$commands" | wg_manager | awk 'flag; /Option ==>/{flag=1} /WireGuard® ACTIVE Peer Status/{flag=0}'
 	;;
 	
 	"Normal")
-		echo -e "$commands" | wg_manager | awk '/Option ==>/{flag=1; next} /WireGuard ACTIVE Peer Status/{flag=0} flag'
+		echo -e "$commands" | wg_manager | awk '/Option ==>/{flag=1; next} /WireGuard® ACTIVE Peer Status/{flag=0} flag'
 	;;
 	
 	*)
