@@ -33,7 +33,7 @@ if [[ ${1::1} == "-" ]];then
 			echo "      -v       - Version"
 			echo "      -s       - Silent mode, no output"
 			echo "      -c       - Monocrome output (no ASCII escape characters)"
-			echo "      -t       - Display Wireguard ACTIVE Peer Status: each command" 
+			echo "      -t       - Display WireGuard® ACTIVE Peer Status: each command" 
 			echo "      -e       - Expose all display output (no filtering)"
 		        echo "      -remove  - Remove wgmExpo"
                         echo ""
