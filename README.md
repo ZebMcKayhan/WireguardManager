@@ -33,6 +33,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   
 [Create and setup IPSETs](#create-and-setup-ipsets)  
+[Route Site 2 Site internet access](#route-site-2-site-internet-access)
 [Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
 [Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
 [Setup Yazfi for IPv6 subnet to route out wg vpn](#setup-yazfi-for-ipv6-subnet-to-route-out-wg-vpn)  
@@ -1589,6 +1590,96 @@ if you are using IPv6 DNS you will need to change that too, i.e.:
 E:Option ==> peer wg11 dns=192.168.1.1,aaff:a37f:fa75:1::1
 ```
 replace all local addresses with the one you have.
+
+# Route Site 2 Site internet access
+Special thanks to SNB forum member @JGrana for requesting and debugging this.
+
+Site-2-Site is a special case where 2 peers are connected to join 2 different network. In general only trafic between these 2 networks are routed over the Wireguard tunnel. Internet access is typically handled by each side respectively. Now, all is already setup at the remote side, so nothing is needed to be changed there, unless you need different clients to access internet on each sides, then you would have to do this on both sides. but normally this is only needed at the local side (local to the client that need remote access that is).
+
+Assuming the 2 networks, "Home" at 192.168.1.x and "Cabin" at 192.168.2.x and we wish "Cabin" clients (some or all) to connect to internet via "Home" internet connection. Both sides uses wg21 with an arbitrary ip, like Home wg21=10.9.8.1 and Cabin wg21=10.9.8.2 (wg21 ip has really no impact on this).
+
+The first thing that needs to be done is to change the AllowedIPs at "Cabin" side:
+```sh
+nano /opt/etc/wireguard.d/wg21.conf
+```
+and append 0.0.0.0/0 at the end of AllowedIPs so it will be:
+```sh
+AllowedIPs = 10.9.8.1/32, 192.168.1.0/24, 0.0.0.0/0
+```
+now, edit the file that is executed when wg21 starts at "Cabin" side:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg21-up.sh
+```
+and populate with:
+```sh
+#!/bin/sh 
+# 
+################################# 
+# Create ip table 117 and copy main table routes
+################################# 
+ip route flush table 117 2>/dev/null # Clear table 117 
+ip route show table main | while read ROUTE # Copy all routes from main table to table 117
+   do 
+      { 
+         ip route add table 117 $ROUTE 
+      } 1> /dev/null 
+   done 
+
+############################### 
+# Add superseeding default route via wg21
+###############################
+ip route add table 117 0/1 dev wg21
+ip route add table 117 128/1 dev wg21
+
+###############################
+# Add rules for ips to access internet via remote peer
+###############################
+ip rule add from 192.168.2.104 table 117 prio 9990 #Send single ip internet through remote peer
+#ip rule add iif wl1.1 table 117 prio 9991 #Send guest wifi 4 internet through remote peer (if way) 
+#ip rule add 192.168.5.1/24 table 117 prio 9992 #Send guest wifi 4 internet through remote peer (ip way)
+# More rules for ip's or ipset marks or interfaces could be added here if needed....
+```sh
+Change the rules according to your needs for which ips you would like to access internet through remote peer.
+Save & Exit.
+
+Create a script to remove the rules when wg21 is brought down:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg21-down.sh
+```
+populate with:
+```sh
+#!/bin/sh
+
+# Delete rules:
+ip rule del prio 9990
+#ip rule del prio 9991
+#ip rule del prio 9992
+#ip rule del prio 9993
+#...
+
+# Delete table 117:
+ip route flush table 117 2>/dev/null
+```
+Also here adjust so that the rules you created/changed are removed.
+Save & exit.
+
+make the files executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg21-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg21-down.sh
+```
+Now restart your peer at "Cabin":
+```sh
+wgm restart wg21
+```
+
+And all should be setup and working. Except for DNS. DNS lookup will still be through local peer... If this is also needed to be done via remote peer, the following could be used (but it's untested) to make an "Exclusive" redirection of DNS for this peer (requires some use of DNSFilter I presume) to the remote peer dnsmasq (which should trigger a lookup via remote wan):
+```sh
+iptables -t nat -I DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
+```
+
+The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
+
 
 # Using Yazfi and WGM to route different SSIDs to different VPNs
 script source: https://github.com/jackyaz/YazFi
