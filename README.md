@@ -1573,30 +1573,12 @@ ipset add NETFLIX NETFLIX-DNS6 # add IPv6 ipset to the set
 
 There are more types, but I believe these to be the most common. Please see ipset manual for more info.
 
-# Why is Diversion not working for WG Clients
-Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
-in order to make this work we will need to reset the WG DNS back to the router. 
-
-There are some precautions though. This will mean that wg clients are using the same DNS as the rest of your system (as specified in the router GUI) and it is not all VPN providers that allow access to other DNS than their specified. also putting wg DNS in the router GUI might not work since dnsmasq is not accessing internet via VPN and these DNS are typically not accessable from outside VPN. however, not all VPN suppliers are this strict.  
-A popular combination is to use Unbound together with WG. since Unbound setup dnsmasq to forward requests to Unbound we will still benefit from Diversion and IPSET autopopulation. 
-
-to change the wg DNS to use dnsmasq, simply issue:
-```sh
-E:Option ==> peer wg11 dns=192.168.1.1
-```
-
-if you are using IPv6 DNS you will need to change that too, i.e.:
-```sh
-E:Option ==> peer wg11 dns=192.168.1.1,aaff:a37f:fa75:1::1
-```
-replace all local addresses with the one you have.
-
-# Route Site 2 Site internet access
+ # Route Site 2 Site internet access
 Special thanks to SNB forum member @JGrana for requesting and debugging this.
 
-Site-2-Site is a special case where 2 peers are connected to join 2 different network. In general only trafic between these 2 networks are routed over the Wireguard tunnel. Internet access is typically handled by each side respectively. Now, all is already setup at the remote side, so nothing is needed to be changed there, unless you need different clients to access internet on each sides, then you would have to do this on both sides. but normally this is only needed at the local side (local to the client that need remote access that is).
+Site-2-Site is a special case where 2 peers are connected to join 2 different network. In general only trafic between these 2 networks are routed over the Wireguard tunnel, internet access is typically handled by each side respectively. If we wish to access internet on remote site all is already setup at the remote side, so nothing is needed to be changed there, unless you need different clients to access internet on each sides, then you would have to do this on both sides. but normally this is only needed at the local side (local to the client that need remote access that is).
 
-Assuming the 2 networks, "Home" at 192.168.1.x and "Cabin" at 192.168.2.x and we wish "Cabin" clients (some or all) to connect to internet via "Home" internet connection. Both sides uses wg21 with an arbitrary ip, like Home wg21=10.9.8.1 and Cabin wg21=10.9.8.2 (wg21 ip has really no impact on this).
+Assuming the 2 networks, "Home" at 192.168.1.x and "Cabin" at 192.168.2.x and we wish "Cabin" clients (some or all) to connect to internet via "Home" internet connection, in this example routing only 192.168.2.194 to internet via remote internet. Both sides uses wg21 with an arbitrary ip, like Home wg21=10.9.8.1 and Cabin wg21=10.9.8.2 (wg21 ip has really no impact on this).
 
 The first thing that needs to be done is to change the AllowedIPs at "Cabin" side:
 ```sh
@@ -1606,7 +1588,9 @@ and append 0.0.0.0/0 at the end of AllowedIPs so it will be:
 ```sh
 AllowedIPs = 10.9.8.1/32, 192.168.1.0/24, 0.0.0.0/0
 ```
-now, edit the file that is executed when wg21 starts at "Cabin" side:
+Save & exit.  
+  
+Now, edit the file that is executed when wg21 starts at "Cabin" side:
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg21-up.sh
 ```
@@ -1679,7 +1663,24 @@ iptables -t nat -I DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
 ```
 
 The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
+   
+# Why is Diversion not working for WG Clients
+Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
+in order to make this work we will need to reset the WG DNS back to the router. 
 
+There are some precautions though. This will mean that wg clients are using the same DNS as the rest of your system (as specified in the router GUI) and it is not all VPN providers that allow access to other DNS than their specified. also putting wg DNS in the router GUI might not work since dnsmasq is not accessing internet via VPN and these DNS are typically not accessable from outside VPN. however, not all VPN suppliers are this strict.  
+A popular combination is to use Unbound together with WG. since Unbound setup dnsmasq to forward requests to Unbound we will still benefit from Diversion and IPSET autopopulation. 
+
+to change the wg DNS to use dnsmasq, simply issue:
+```sh
+E:Option ==> peer wg11 dns=192.168.1.1
+```
+
+if you are using IPv6 DNS you will need to change that too, i.e.:
+```sh
+E:Option ==> peer wg11 dns=192.168.1.1,aaff:a37f:fa75:1::1
+```
+replace all local addresses with the one you have.
 
 # Using Yazfi and WGM to route different SSIDs to different VPNs
 script source: https://github.com/jackyaz/YazFi
