@@ -1622,7 +1622,7 @@ ip rule add from 192.168.2.104 table 117 prio 9990 #Send single ip internet thro
 #ip rule add iif wl1.1 table 117 prio 9991 #Send guest wifi 4 internet through remote peer (if way) 
 #ip rule add 192.168.5.1/24 table 117 prio 9992 #Send guest wifi 4 internet through remote peer (ip way)
 # More rules for ip's or ipset marks or interfaces could be added here if needed....
-```sh
+```
 Change the rules according to your needs for which ips you would like to access internet through remote peer.
 Save & Exit.
 
