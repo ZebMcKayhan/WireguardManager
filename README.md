@@ -33,7 +33,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   
 [Create and setup IPSETs](#create-and-setup-ipsets)  
-[Route Site 2 Site internet access](#route-site-2-site-internet-access)
+[Route Site 2 Site internet access](#route-site-2-site-internet-access)  
 [Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
 [Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
 [Setup Yazfi for IPv6 subnet to route out wg vpn](#setup-yazfi-for-ipv6-subnet-to-route-out-wg-vpn)  
