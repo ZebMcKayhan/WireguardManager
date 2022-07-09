@@ -1622,6 +1622,11 @@ ip rule add from 192.168.2.104 table 117 prio 9990 #Send single ip internet thro
 #ip rule add iif wl1.1 table 117 prio 9991 #Send guest wifi 4 internet through remote peer (if way) 
 #ip rule add 192.168.5.1/24 table 117 prio 9992 #Send guest wifi 4 internet through remote peer (ip way)
 # More rules for ip's or ipset marks or interfaces could be added here if needed....
+
+###############################
+# Add DNS redirect to remote router (requires DNS filter to be used) 
+###############################
+iptables -t nat -I DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
 ```
 Change the rules according to your needs for which ips you would like to access internet through remote peer.
 Save & Exit.
@@ -1641,6 +1646,9 @@ ip rule del prio 9990
 #ip rule del prio 9993
 #...
 
+# Delete DNS redirect:
+iptables -t nat -D DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
+
 # Delete table 117:
 ip route flush table 117 2>/dev/null
 ```
@@ -1657,10 +1665,13 @@ Now restart your peer at "Cabin":
 wgm restart wg21
 ```
 
-And all should be setup and working. Except for DNS. DNS lookup will still be through local peer... If this is also needed to be done via remote peer, the following could be used (but it's untested) to make an "Exclusive" redirection of DNS for this peer (requires some use of DNSFilter I presume) to the remote peer dnsmasq (which should trigger a lookup via remote wan):
+And all should be setup and working. If no rules for DNS are added it will still be through local peer... If this is also needed to be done via remote peer, the added rule from the script:
 ```sh
 iptables -t nat -I DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
 ```
+Will redirect DNS requests (port 53) from -s (source ip) 192.168.2.104 to wg21 remote peer 10.9.8.1. Then dnsmasq at remote peer will serve this ip with lookups.
+Change -s to all ips you make rules for, create duplicate lines if needed for more ips.
+Ofcource you dont have to use remote peer dnsmasq, you could replace that ip with i.e 9.9.9.9 or some other public dns of your choice and lookup will still be via remote wan.
 
 The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
    
