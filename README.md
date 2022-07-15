@@ -1576,7 +1576,9 @@ There are more types, but I believe these to be the most common. Please see ipse
  # Route Site 2 Site internet access
 Special thanks to SNB forum member @JGrana for requesting and debugging this.
 
-Site-2-Site is a special case where 2 peers are connected to join 2 different network. In general only trafic between these 2 networks are routed over the Wireguard tunnel, internet access is typically handled by each side respectively. If we wish to access internet on remote site all is already setup at the remote side, so nothing is needed to be changed there, unless you need different clients to access internet on each sides, then you would have to do this on both sides. but normally this is only needed at the local side (local to the client that need remote access that is).
+Site-2-Site is a special case where 2 peers are connected to join 2 different network. In general only trafic between these 2 networks are routed over the Wireguard tunnel, internet access is typically handled by each side respectively. If we wish to access internet on remote site all is already setup at the remote side, so nothing is needed to be changed there, unless you need different clients on both sides to access internet on the other side, then you would have to do this on both sides. but normally this is only needed at the local side (local to the client that need remote access that is).
+
+The site-2-site peers are basically server peers, which means they don't have any policy rules or policy tables so we are going to make our own, pretty much as in "Reverse policy based routing".
 
 Assuming the 2 networks, "Home" at 192.168.1.x and "Cabin" at 192.168.2.x and we wish "Cabin" clients (some or all) to connect to internet via "Home" internet connection, in this example routing only 192.168.2.194 to internet via remote internet. Both sides uses wg21 with an arbitrary ip, like Home wg21=10.9.8.1 and Cabin wg21=10.9.8.2 (wg21 ip has really no impact on this).
 
