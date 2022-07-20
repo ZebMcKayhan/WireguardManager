@@ -222,6 +222,27 @@ E:Option ==> peer wg11 comment My 1st VPN Client
 E:Option ==> peer wg11 endpoint=146.70.51.98:1443
 ```
 
+**Allowed Ips**
+```sh
+E:Option ==> peer wg21 allowedips=​192.168.1.1/24,10.50.1.1/32,0.0.0.0/0
+```
+
+**Wg-interface ip**
+```sh
+E:Option ==> peer wg21 ip=​192.168.100.1
+```
+
+**Port**
+```sh
+E:Option ==> peer wg21 port=38654
+```
+
+**Subnet**
+```sh
+E:Option ==> peer wg21 subnet=​192.168.2.1/24
+```
+
+
 ## Terminal Options
 Wireguard Session Manager was designed to operate properaly with XSHELL 7 with Delete Key = VT220 and Backspace = Backspace. if you are using other terminal programs (like Putty) there is a risk you will have problems with backspace not really looking like it is deleting anything altough it is. 
 the reason for this was that Wireguard Session Manager was designed to use "command buffert" to use "PG-UP" to get to older commands.
