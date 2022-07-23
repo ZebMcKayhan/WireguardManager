@@ -1613,6 +1613,12 @@ AllowedIPs = 10.9.8.1/32, 192.168.1.0/24, 0.0.0.0/0
 ```
 Save & exit.  
   
+**Note** Recent wgm changed the way the Wireguard .conf files are generated so it might be nessissary to execute instead:
+```sh
+E:Option ==> peer wg21 allowedips=​10.9.8.1/32,192.168.1.0/24,0.0.0.0/0
+```
+Make sure you got all ips right, it should be Home wg21 /32, Home LAN /24, and 0.0.0.0/0.
+
 Now, edit the file that is executed when wg21 starts at "Cabin" side:
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg21-up.sh
