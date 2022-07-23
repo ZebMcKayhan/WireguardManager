@@ -528,6 +528,8 @@ Depending on how your router is setup, you might need to answer:
 ```
 Here you need to enter your ddns for SiteA (since wgm did not find any setup), so if you have a static WAN ip you could just enter "y" to use your WAN ip or enter if you have any ddns not directly configured in router, like "home.ip.ddns"
 
+**Note** For a site2site it is sufficient if one site has a public ip (either fixed or via DDNS). Altough beneficial if both have it (redundancy), it is not needed.
+
 Now the 2 server peers are created, and you are asked if you wish to import siteA config into the router:
 ```sh
     Press y to import Home or press [Enter] to SKIP.
