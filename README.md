@@ -621,8 +621,8 @@ Here you need to enter SiteB DDNS address of static public ip address. If SiteB 
 
 If wgm did not find any DDNS on siteA you will also need to answer:
 ```sh
-    Warning: No DDNS is configured! to reach local Home Endpoint from remote Cabin
-    Press y to use the current WAN IP or enter Home Endpoint IP or DDNS name or press [Enter] to SKIP.
+    Warning: No DDNS is configured! to reach local SiteA Endpoint from remote SiteB
+    Press y to use the current WAN IP or enter SiteA Endpoint IP or DDNS name or press [Enter] to SKIP.
 SiteA.ddns.com
 ```
 Here you need to enter SiteA public static ip or ddns address. if SiteA is behind CGNAT then this could be skipped, but then SiteB must have a public address if they are going to be able to connect. Again I entered the bogus address SiteA.ddns.com to illustrate.
@@ -670,7 +670,7 @@ PersistentKeepalive = 25
 Now, There are 2 ways we could change these files to either create a star topology or a mesh topology.
 
 **Star Topology**  
-A star topology is the only suitable choice if only one site have a public ip address. All sites will connect to SiteA and communication between SiteB and SiteC will be routed through siteA. to accomplish this, we simply add the missing allowed ips in SiteB.conf and SiteC.conf (edit them with i.e. nano):
+A star topology is the only suitable choice if only one site have a public ip address. All sites will connect to SiteA and communication between SiteB and SiteC will be routed through siteA. to accomplish this, we simply add the missing AllowedIPs in SiteB.conf and SiteC.conf (edit them with i.e. nano):
 ```sh
 ========== SiteB configuration ==========   
 # SiteB - 172.16.2.0/24                     
@@ -723,7 +723,7 @@ If you are using another system then Asus HND routers and Wireguard Manager and 
 **Mesh Topology**  
 As a mesh topology each site communicates directly with each other site. This is ofcource very effective and if any site is disconnected it will only affect that site and the others could still functional normally. Ofcource this means that atleast all but one site needs public ips (if 2 sites are behind CGNATs these 2 sites cannot connect to each other and have to be routed via another peer, just as we did in star topology).
 
-Now, we need to edit SiteB.conf and SiteC.conf to add the missing peers (edit them with i.e. nano):
+Now, we need to edit SiteB.conf and SiteC.conf to add the missing peers (edit them with i.e. nano), copy/paste the [PEER] info from SiteA.conf:
 ```sh
 ========== SiteA configuration ==========   ========== SiteB configuration ==========   ========== SiteC configuration ==========
 
