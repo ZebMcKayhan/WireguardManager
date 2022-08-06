@@ -598,7 +598,125 @@ That should be it!
 Either of the site2site peers are proper server peers, which means you are able to create more device peers (for i.e mobile devices) on any of the sites. Altough if you need access to remote lan AllowedIps might need update on remote site.
 
 ## Site 2 Multisite / Mesh
-Cooming soon.
+Wireguard is fully capable of setting up several peers/network either as a mesh network where all nodes directly connects to all other nodes for fastest communication and as star connection where all nodes connect to a central nodes wich routes data between peers/sites. Most fascinating is the creation of combination of these 2. For example, we could have 3 sites wich connects as a mesh and 3 other sites which are behind CGNATs so these could be connected as a star from one of the mesh nodes. This way all 6 nodes could connect and communicate all amongst each others.
+
+This is all very nice, but as network complexity grows, so does the complexity of setting them up. You are adviced to draw a network map of your peers/sites and think about how you want these to communicate; as star configuration or mesh configuration.
+
+Wireguard Manager could assist us in creating the peer config to some extent but the final touch is needed on the configuration files depending on how you want them to connect.
+
+Assume 3 sites, SiteA with lan 192.168.55.0/24, SiteB with lan 172.16.2.0/24, SiteC with lan 172.16.3.0/24.
+
+Start by creating a site-2-site betwen SiteA and SiteB on i.e SiteA:
+```sh
+E:Option ==> site2site SiteA SiteB lan=172.16.2.0/24
+
+    Creating WireGuard® Private/Public key-pair for Site-to-Site (IPv4/IPv6) Peers SiteA/SiteB
+
+    Enter SiteB Endpoint remote IP, or SiteB DDNS name or press [Enter] to SKIP.
+SiteB.ddns.com
+```
+Here you need to enter SiteB DDNS address of static public ip address. If SiteB is behind CGNAT this could be skipped as both peers dont need to contact the other but it could be advantageous for redundancy if both could contact each other. I entered the bogus address SiteB.ddns.com just to illustrate.
+
+If wgm did not find any DDNS on siteA you will also need to answer:
+```sh
+    Warning: No DDNS is configured! to reach local Home Endpoint from remote Cabin
+    Press y to use the current WAN IP or enter Home Endpoint IP or DDNS name or press [Enter] to SKIP.
+SiteA.ddns.com
+```
+Here you need to enter SiteA public static ip or ddns address. if SiteA is behind CGNAT then this could be skipped, but then SiteB must have a public address if they are going to be able to connect. Again I entered the bogus address SiteA.ddns.com to illustrate.
+
+Now, the 2 site-2-site peers are created and you are asked to import SiteA, select Y to import the new site-2-site server peer.
+
+Now, as this is done we could continue on SiteA to add SiteC device:
+```sh
+E:Option ==> site2site add SiteA SiteC lan=172.16.3.0/24
+
+    Creating WireGuard® Private/Public key-pair for Site-to-Site (IPv6) Peers SiteA/SiteC
+
+    Enter SiteC Endpoint remote IP, or SiteC DDNS name or press [Enter] to SKIP.
+SiteC.DDNS.com
+```
+At the end wgm asks to import SiteA, choose Y to re-import the updated server peer to include SiteC.
+
+At this point wgm has created SiteA.conf, SiteB.conf, SiteC.conf in /opt/etc/wireguard.d/. But as they are they will only allow SiteA to communicate to SiteB and SiteC and vice versa but SiteB has no way of communicating with SiteC and vise versa. here are the created peers:
+```sh
+========== SiteA configuration ==========   ========== SiteB configuration ==========   ========== SiteC configuration ==========
+
+# SiteA - 192.168.55.0/24 SiteA.DDNS.com    # SiteB - 172.16.2.0/24                     # SiteC - 172.16.3.0/24
+[Interface]                                 [Interface]                                 [Interface]
+PrivateKey = <hidden>                       PrivateKey = <hidden>                       PrivateKey = <hidden>
+Address = 10.9.8.1/32                       Address = 10.9.8.2/32                       Address = 10.9.8.3/32
+ListenPort = 61820                          ListenPort = 61821                          ListenPort = 61823
+
+# SiteB LAN                                 # SiteA LAN                                 # SiteA LAN
+[Peer]                                      [Peer]                                      [Peer]
+PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>
+AllowedIPs = 10.9.8.2/32, 172.16.2.0/24     AllowedIPs = 10.9.8.1/32, 192.168.55.0/24   AllowedIPs = 10.9.8.1/32, 192.168.55.0/24
+Endpoint = SiteB.ddns.com:61821             Endpoint = SiteA.ddns.com:                  Endpoint = SiteA.ddns.com:61820                  
+#PresharedKey =                             #PresharedKey =                             #PresharedKey = 
+PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25
+
+# SiteC LAN
+[Peer]
+PublicKey = hidden
+AllowedIPs = 10.9.8.3/32, 172.16.3.0/24
+Endpoint = SiteC.ddns.com:61822
+#PresharedKey = 
+PersistentKeepalive = 25
+```
+
+Now, There are 2 ways we could change these files to either create a star topology of a mesh topology.
+
+**Star Topology**
+A star topology is the only suitable choice if only one site have a public ip address. All sites will connect to SiteA and communication between SiteB and SiteC will be routed through siteA. to accomplish this, we simply add the missing allowed ips in SiteB.conf and SiteC.conf (edit them with i.e. nano):
+```sh
+========== SiteB configuration ==========   
+# SiteB - 172.16.2.0/24                     
+[Interface]                                 
+PrivateKey = <hidden>                       
+Address = 10.9.8.2/32                       
+ListenPort = 61821                          
+
+# SiteA + SiteC LAN                                 
+[Peer]                                      
+PublicKey = <hidden>                        
+AllowedIPs = 10.9.8.1/32, 192.168.55.0/24, 10.9.8.3/32, 172.16.3.0/24
+Endpoint = SiteA.ddns.com:                                    
+#PresharedKey =                             
+PersistentKeepalive = 25                    
+
+========== SiteC configuration ==========
+# SiteC - 172.16.3.0/24
+[Interface]
+PrivateKey = <hidden>
+Address = 10.9.8.3/32
+ListenPort = 61823
+
+# SiteA + SiteB LAN
+[Peer]
+PublicKey = <hidden>
+AllowedIPs = 10.9.8.1/32, 192.168.55.0/24, 10.9.8.2/32, 172.16.2.0/24
+Endpoint = SiteA.ddns.com:61820
+#PresharedKey = 
+PersistentKeepalive = 25
+```
+Now, for this to work, SiteA needs to be able to route data. make sure IP Forwarding is enabled on SiteA (as in our case this is an Asus HND router, this is no issue).
+
+now, these peers could be copied to respective device and imported, i.e. on SiteB:
+```sh
+E:Option ==> import SiteB.conf type=server
+
+    [✔] Config SiteB import as wg22 (FORCED as 'server') success
+```
+and:
+And import Home as device:
+```sh
+E:Option ==> import SiteA.conf type=device
+```
+
+For SiteC import SiteC.conf as server and SiteA.conf as device.
+
+**Mesh Topology**
 
 ## Default or Policy routing?
 Default routing is the most common way and basically what you will get if using stock ASUS firmware. this means everything will be routed out your client peer. Even the router itself will access internet via a wg client set in default mode and this could really be the key point. if you are using Transmission, or any other programs on the router itself in Default mode ALL local functions on the router will naturally access the internet via your vpn client. the drawback with this mode is that it is very troublesome to run multiple clients and/or even to run a wg server (basically because the server will also connect via vpn where you cant open ports). it is however possible to exclude some clients by using reverse policy routing (see section) but you will end up managing everything via scripting. so if you just want your entire network to access internet via VPN then this might be your solution. also if you really need router local programs to access internet via VPN then this might also be worth looking into.
