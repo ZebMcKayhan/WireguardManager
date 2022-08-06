@@ -602,6 +602,8 @@ Wireguard is fully capable of setting up several peers/network either as a mesh 
 
 This is all very nice, but as network complexity grows, so does the complexity of setting them up. You are adviced to draw a network map of your peers/sites and think about how you want these to communicate; as star configuration or mesh configuration.
 
+**Note** The following configuration trix is not only applicable on site-2-multisite but could be equally applicable on single peers, i.e. by creating an ordinary server peer with i.e. 2 or more client peers to create a mesh network of computers.
+
 Wireguard Manager could assist us in creating the peer config to some extent but the final touch is needed on the configuration files depending on how you want them to connect.
 
 Assume 3 sites, SiteA with lan 192.168.55.0/24, SiteB with lan 172.16.2.0/24, SiteC with lan 172.16.3.0/24.
@@ -658,16 +660,16 @@ PersistentKeepalive = 25                    PersistentKeepalive = 25            
 
 # SiteC LAN
 [Peer]
-PublicKey = hidden
+PublicKey = <hidden>
 AllowedIPs = 10.9.8.3/32, 172.16.3.0/24
 Endpoint = SiteC.ddns.com:61822
 #PresharedKey = 
 PersistentKeepalive = 25
 ```
 
-Now, There are 2 ways we could change these files to either create a star topology of a mesh topology.
+Now, There are 2 ways we could change these files to either create a star topology or a mesh topology.
 
-**Star Topology**
+**Star Topology**  
 A star topology is the only suitable choice if only one site have a public ip address. All sites will connect to SiteA and communication between SiteB and SiteC will be routed through siteA. to accomplish this, we simply add the missing allowed ips in SiteB.conf and SiteC.conf (edit them with i.e. nano):
 ```sh
 ========== SiteB configuration ==========   
@@ -716,7 +718,55 @@ E:Option ==> import SiteA.conf type=device
 
 For SiteC import SiteC.conf as server and SiteA.conf as device.
 
-**Mesh Topology**
+If you are using another system then Asus HND routers and Wireguard Manager and wishes to use i.e. wg-quick, then on SiteB simply start SiteB.conf and on siteC simply start SiteC.conf. You might need to make custom changes to the .conf files depending on which system to run it on. 
+
+**Mesh Topology**  
+As a mesh topology each site communicates directly with each other site. This is ofcource very effective and if any site is disconnected it will only affect that site and the others could still functional normally. Ofcource this means that atleast all but one site needs public ips (if 2 sites are behind CGNATs these 2 sites cannot connect to each other and have to be routed via another peer, just as we did in star topology).
+
+Now, we need to edit SiteB.conf and SiteC.conf to add the missing peers (edit them with i.e. nano):
+```sh
+========== SiteA configuration ==========   ========== SiteB configuration ==========   ========== SiteC configuration ==========
+
+# SiteA - 192.168.55.0/24 SiteA.DDNS.com    # SiteB - 172.16.2.0/24                     # SiteC - 172.16.3.0/24
+[Interface]                                 [Interface]                                 [Interface]
+PrivateKey = <hidden>                       PrivateKey = <hidden>                       PrivateKey = <hidden>
+Address = 10.9.8.1/32                       Address = 10.9.8.2/32                       Address = 10.9.8.3/32
+ListenPort = 61820                          ListenPort = 61821                          ListenPort = 61823
+
+# SiteB LAN                                 # SiteA LAN                                 # SiteA LAN
+[Peer]                                      [Peer]                                      [Peer]
+PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>
+AllowedIPs = 10.9.8.2/32, 172.16.2.0/24     AllowedIPs = 10.9.8.1/32, 192.168.55.0/24   AllowedIPs = 10.9.8.1/32, 192.168.55.0/24
+Endpoint = SiteB.ddns.com:61821             Endpoint = SiteA.ddns.com:                  Endpoint = SiteA.ddns.com:61820                  
+#PresharedKey =                             #PresharedKey =                             #PresharedKey = 
+PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25
+
+# SiteC LAN                                 # SiteC LAN                                 # SiteB LAN                             
+[Peer]                                      [Peer]                                      [Peer]
+PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>
+AllowedIPs = 10.9.8.3/32, 172.16.3.0/24     AllowedIPs = 10.9.8.3/32, 172.16.3.0/24     AllowedIPs = 10.9.8.2/32, 172.16.2.0/24
+Endpoint = SiteC.ddns.com:61822             Endpoint = SiteC.ddns.com:61822             Endpoint = SiteB.ddns.com:61821
+#PresharedKey =                             #PresharedKey =                             #PresharedKey = 
+PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25
+```
+
+Then copy all config files to SiteB and SiteC and if they are running Wireguard Manager, i.e. on SiteB:
+```sh
+E:Option ==> import SiteB.conf type=server
+E:Option ==> import SiteA.conf type=device
+E:Option ==> import SiteC.conf type=device
+```
+
+and on SiteC, similar:
+```sh
+E:Option ==> import SiteC.conf type=server
+E:Option ==> import SiteA.conf type=device
+E:Option ==> import SiteB.conf type=device
+```
+
+If you are using another system then Asus HND routers and Wireguard Manager and wishes to use i.e. wg-quick, then on SiteB simply start SiteB.conf and on siteC simply start SiteC.conf. You might need to make custom changes to the .conf files depending on which system to run it on. 
+
+Good luck!
 
 ## Default or Policy routing?
 Default routing is the most common way and basically what you will get if using stock ASUS firmware. this means everything will be routed out your client peer. Even the router itself will access internet via a wg client set in default mode and this could really be the key point. if you are using Transmission, or any other programs on the router itself in Default mode ALL local functions on the router will naturally access the internet via your vpn client. the drawback with this mode is that it is very troublesome to run multiple clients and/or even to run a wg server (basically because the server will also connect via vpn where you cant open ports). it is however possible to exclude some clients by using reverse policy routing (see section) but you will end up managing everything via scripting. so if you just want your entire network to access internet via VPN then this might be your solution. also if you really need router local programs to access internet via VPN then this might also be worth looking into.
