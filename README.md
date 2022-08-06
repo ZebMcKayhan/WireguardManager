@@ -23,6 +23,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
   -[Check connection](#check-connection)  
   -[Site 2 Site](#site-2-site)  
+  -[Site 2 Multisite / Mesh](#site-2-multisitemesh)
   -[Default or Policy routing](#default-or-policy-routing)  
   -[Create rules in WGM](#create-rules-in-wgm)  
   -[Create categories](#create-categories)  
@@ -595,6 +596,9 @@ That should be it!
 
 **Tip**  
 Either of the site2site peers are proper server peers, which means you are able to create more device peers (for i.e mobile devices) on any of the sites. Altough if you need access to remote lan AllowedIps might need update on remote site.
+
+## Site 2 Multisite / Mesh
+Cooming soon.
 
 ## Default or Policy routing?
 Default routing is the most common way and basically what you will get if using stock ASUS firmware. this means everything will be routed out your client peer. Even the router itself will access internet via a wg client set in default mode and this could really be the key point. if you are using Transmission, or any other programs on the router itself in Default mode ALL local functions on the router will naturally access the internet via your vpn client. the drawback with this mode is that it is very troublesome to run multiple clients and/or even to run a wg server (basically because the server will also connect via vpn where you cant open ports). it is however possible to exclude some clients by using reverse policy routing (see section) but you will end up managing everything via scripting. so if you just want your entire network to access internet via VPN then this might be your solution. also if you really need router local programs to access internet via VPN then this might also be worth looking into.
