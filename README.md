@@ -23,7 +23,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
   -[Check connection](#check-connection)  
   -[Site 2 Site](#site-2-site)  
-  -[Site 2 Multisite / Mesh](#site-2-multisitemesh)
+  -[Site 2 Multisite / Mesh](#site-2-multisitemesh)  
   -[Default or Policy routing](#default-or-policy-routing)  
   -[Create rules in WGM](#create-rules-in-wgm)  
   -[Create categories](#create-categories)  
