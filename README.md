@@ -13,12 +13,12 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 ## Table of content
 [Preface](#preface)  
   
-[Setup wgm](#setup-wgm)  
+[**Setup wgm**](#setup-wgm)  
   -[Terminal Options](#terminal-options)  
   -[Manage Killswitch](#manage-killswitch) 
   -[Create categories](#create-categories)  
   
-[Setup Wireguard Internet Client](#setup-wireguard-internet-client)  
+[**Setup Wireguard Internet Client**](#setup-wireguard-internet-client)  
   -[Import Client](#import-client)  
   -[Add persistentKeepalive](#add-persistentkeepalive)  
   -[Change DNS/mtu/Name/Endpoint](#change-dnsmtunameendpoint)  
@@ -29,16 +29,16 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Geo-location](#geo-location)  
   -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing) 
   
-[Setup Wireguard Private Server](#setup-wireguard-private-server)  
+[**Setup Wireguard Private Server**](#setup-wireguard-private-server)  
   -[Setup WG Server](#setup-wg-server)  
   -[Route WG Server to internet via WG Client](#route-wg-server-to-internet-via-wg-client)  
   
-[Setup Wireguard Site 2 Site](#setup-wireguard-site-2-site)  
+[**Setup Wireguard Site 2 Site**](#setup-wireguard-site-2-site)  
   -[Site 2 Site](#site-2-site)  
   -[Site 2 Multisite / Mesh](#site-2-multisite--mesh)  
   -[Route Site 2 Site internet access](#route-site-2-site-internet-access)  
   
-[Various Tips & Tricks](#various-tips--tricks)  
+[**Various Tips & Tricks**](#various-tips--tricks)  
   -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   -[Create and setup IPSETs](#create-and-setup-ipsets)  
