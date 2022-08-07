@@ -39,7 +39,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Route Site 2 Site internet access](#route-site-2-site-internet-access)  
   
 [**Various Tips & Tricks**](#various-tips--tricks)  
-  -[Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
+  -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   -[Create and setup IPSETs](#create-and-setup-ipsets)  
   -[Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
@@ -815,74 +815,372 @@ there are endless variations to this and the up/down scripts could be used to de
 
 
 # Setup Wireguard Private Server
-
-# Setup Wireguard Site 2 Site
-
-# Various Tips & Tricks
-
-
-
-
-
-
-## IPv6 Over Wireguard without IPv6 WAN
-If you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
-
-Since you dont have an ipv6 lan ip, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
+## Setup WG Server
+Wireguard Manager sets up a server peer (wg21) when it is installed. If your only purpose is to access your IPv4 LAN then this might be enough for you, so to setup a Road-Warrior device, simply execute:
 ```sh
-E:Option ==> ipv6 ula
+E:Option ==> create MyPhone wg21
+```
+And follow the instructions on screen. Display the qrcode either after creating the device peer, or by executing:
+```sh
+E:Option ==> qrcode MyPhone
+```
+To make the server autostart at boot:
+```sh
+E:Option ==> peer wg21 auto=Y
+```
+If you wish to delete the device peer:
+```sh
+E:Option ==> peer MyPhone del
+```
+If you wish to delete the server peer:
+```sh
+E:Option ==> peer wg21 del
+```
+And if you deleted the server peer wgm creates for you, but would like to create it again:
+```sh
+E:Option ==> peer new
+```
+A whole lot of options is offered to this command, like if you want to control the server IP, port number a.s.o but all this information is at hand under the
+```sh
+E:Option ==> peer help
+```
+menu.
 
-        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6)
+Now, if you have IPv6 enabled on your router, and wishes to have IPv6 Only or IPv4/IPv6 dual-stack server peer, you will need to go an extra mile and configuration could differ depending on how your system is:
+
+**IPv6 - setup with static >/64 subnet (as /56 or /48 subnet)**  
+If you are amongst the lucky few who has a fixed IPv6 and a larger assignement then a single subnet, we could just devide a separate subnet for our server. So assuming your static IPv6 assignement is 2600:aaaa:bbbb:cc00::/56 or 2600:aaaa:bbbb::/48 we simply use the last digits to fill up 4x4 complete numbers:  
+2600:aaaa:bbbb:cc00::/56 --> 2600:aaaa:bbbb:cc**10**::/**64**  
+2600:aaaa:bbbb::/48 --> 2600:aaaa:bbbb:**0010**::/**64** (leading zeroes could be removed) --> 2600:aaaa:bbbb:**10**::/**64**
+
+so, from here we could assign wg21 ip, which will just be the first number in subnet (only /56 example):  
+2600:aaaa:bbbb:cc10::/64 --> 2600:aaaa:bbbb:cc10::**1**/64
+
+From this we could create a server peer that gives IPv6 connectivity (only):
+```sh
+E:Option ==> peer new ipv6=2600:aaaa:bbbb:cc10::1/64 noipv4
 ```
 
-Note that Wgm suggest to use aa as the fist 2 letters instead of fd. The reason for this is 2 fold:
-1) Asus router seems to refuse to route ULA to WAN (see WG-server section)
-2) Devices that gets addresses starting with fd are reluctant to use IPv6 since this is a local address. This wil cause your devices to use IPv4 until the last resort, then only use IPv6. 
+Or we could create a dual stack server peer that gives both IPv4 and IPv6 connectivity:
+```sh
+E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cc10::1/64
+```
+Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
 
-To get around both these issues we propose to use aa instead, which is probably a violation to the internet standards. but as long as it is only used internally it should be ok. The aa prefix is a global prefix but it is not proscribed yet, so it is not in use. This could however change in the future. look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to see how addresses are assigned at the moment.
+Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
 
-Mine became "fdff:a37f:fa75::/48" (altough wgm says /64). The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "aaff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "aaff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
+To make it autostart at boot:
+```sh
+E:Option ==> peer wg21 auto=Y
+```
 
-I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with stateful.
+**IPv6 - setup with static /64 subnet**  
+If you only have a single subnet assigned to you, we will have to fork in our server and device's into your subnet. I would not expect this to be a problem as mostly IPv6 is stateless assigned. This means that any client assignes it's own right hand (4x4) numbers on the ip, usually based on MAC, or combination of MAC and time or just random. Since Wireguard only works on static assignement, we should be able to take a small portion and just assign it and the chances for conflict is virtually zero. If a conflict should arise, IPv6 already has protocols for this, so hopefully the conflicting IP will know this and change it's IP.
 
-in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
+so assuming your static /64 IP is:
+2600:aaaa:bbbb:cccc::/64
 
-Now that your LAN has some sort of IPv6 enabled you should follow the guide above to import your dual stack config file, but if you choose to have it in policy (P) mode, you also need to put in the rules (see sections), and add a default route (see below)
+usually the router br0 hogs:
+2600:aaaa:bbbb:cccc::1/64
+and clients on br0 will assign themself based on this.
 
-As you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. 
+So we could take a small portion of the subnet and assign to our server, since we are statically assigning interfaces we can make smaller subnets than /64, i.e.:  
+2600:aaaa:bbbb:cccc:1::1/120
 
-This is NOT needed if you have ipv6 WAN or the peer is in auto/default mode.
+so, here we have 255 possible devices: 2600:aaaa:bbbb:cccc:1::1 - 2600:aaaa:bbbb:cccc:1::ff
+
+It is really important that we somehow differentiate our wg21 IP range from the rest. /64 (left most 4x4 values) is asigned by WAN, and for /120 the right most 2 values are varied for our devices on wg21. so to print out the entire ip (without the ::) gives:  
+2600:aaaa:bbbb:cccc:000**1**:0000:0000:00xx
+
+so just by placing the **1** outside the /64 area but inside /120 area we would avoid conflict with br0 and hopefully other more or less statically assigned addresses.
+
+From this we could create a server peer that gives IPv6 connectivity (only):
+```sh
+E:Option ==> peer new ipv6=2600:aaaa:bbbb:cccc:1::1/120 noipv4
+```
+
+Or we could create a dual stack server peer that gives both IPv4 and IPv6 connectivity:
+```sh
+E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cccc:1::1/120
+```
+Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
+
+Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
+
+To make it autostart at boot:
+```sh
+E:Option ==> peer wg21 auto=Y
+```
+
+**IPv6 - setup with dynamic IPv6**  
+Note: Despite my best effort I cant seem to get ipv6 ULA packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
+
+Special thanks to SNB-Forum member @archiel for testing this out.
+
+Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a local IPv6 for the wg21 server peer and the devices. From been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
+
+The proper way of doing this would be to generate yourself an ipv6 ULA address range. However, the current firmware in our ASUS routers wont route this to wan, packages wont even reach the place where we typically changes its source address. So we need to think of something else. It has also been found that most devices are reluctant of using ipv6 ULA addresses. They rather use ipv4 instead which also means we need to use something else. Since there are no other reserved addresses we will have to make it up.  
+1) look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to find an address space not assigned, but it cant start with fc, fd, fe or ff.  
+2) use your isp assignement, which means the address you have right now. We will use NAT6 anyway so it will still work when your address is changed.  
+3) generate an ULA (Enter wgm command "ipv6 ula" and it generates it for you) then change the 2 first letters to something not used, like aa (proposed).  
+
+Since we are using an address which might be our own or someone else we need to make the risk for conflict minimal.
+
+So, assuming we will use prefix aaaa:bbbb:cccc:dddd::/64 
+We create a wg21 address that is not in conflict with br0, and we slim down the range, 120 would leave room for 255 devices, should be enough for most servers: aaaa:bbbb:cccc:dddd:**100::1/120**
+
+Creating our server we need to control the ips ourself, according to our ip above. Creating a dual stack server peer:
+```sh
+E:Option ==> peer new ip=192.168.100.1/24 ipv6=aaaa:bbbb:cccc:dddd:100::1/120
+
+        Press y to Create (IPv4/IPv6) 'server' Peer (wg21) 192.168.100.1/24,aaaa:bbbb:cccc:dddd:100::1/120:11501 or press [Enter] to SKIP.
+y
+        Creating WireGuard Private/Public key-pair for (IPv4/IPv6) 'server' Peer wg21 on RT-AC86U (v386.4_0)
+        Press y to Start (IPv4/IPv6) 'server' Peer (wg21) or press [Enter] to SKIP.
+y
+```
+Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
+  
+Since we are not using our global adress, we need to setup NAT6 to translate this address to WAN source address, otherwise packets will be dropped by our ISP. So do this by creating a custom wg21 scripts:
+
+```sh
+nano /jffs/addons/wireguard/Scripts/wg21-up.sh
+```
+and populate with:
+```sh
+#!/bin/sh
+#Masquarade ipv6 packets from clients to WAN
+ip6tables -t nat -I POSTROUTING -s aaaa:bbbb:cccc:dddd:100::/120 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
+```
+Change the IPv6 address you selected for your wg21 peer. Also remove the rules when wg21 is disabled:
+
+```sh
+nano /jffs/addons/wireguard/Scripts/wg21-down.sh
+```
+Populate with:
+```sh
+#!/bin/sh
+#Masquarade ipv6 packets from clients to WAN
+ip6tables -t nat -D POSTROUTING -s aaaa:bbbb:cccc:dddd:100::/120 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
+```
+Again, change the IPv6 to match your wg21 server peer.
+
+make them executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg21-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg21-down.sh
+```
+Now you could restart wg21, and set it to autostart at boot (if you wish):
+```sh
+E:Option ==> peer wg21 auto=Y
+E:Option ==> peer wg21 restart
+```
+
+**Alternative NPT6 instead of NAT6**  
+Special thanks to snb forum member @archiel for evaluating this.
+
+I have choosen to still reccommend the usage of NAT6 above, mainly for its ease of usage. A better technical solution is to use NPT6 (Network Prefix Translation Ipv6). This methode does not need to keep track of any connections and will simply perform better in every aspect than NAT6.
+ 
+Sadly, it has shown that NTP is not compatible with conntrack, which our router uses for its stateful firewall. We would not like to give that up! But there is another way to do the same thing called NETMAP. Whilst NPT6 is checksum neutral (by changing first 16 bits device id to accomplish that) NETMAP is not, so it will need recalculation of package checksum. But on the upside it leaves the device ip untouched.
+
+Disclamer: NETMAP is not really supported by all softwares. The kernel module/function/hooks are there but not implemented in userspace iptables. You have the option to install Entware iptables:
+```sh
+opkg install iptables
+```
+but you need to be aware that the main purpose of iptables is to match extensions and send them to hooks in kernel module netfilter which is very integrated into firmware/processor with HW acceleration and what not. there is a substantial risk that something breaks when you do this. altough I have been running this on 386.5 on my RT-AC86U for several months with no obvious problems but I can NOT guarantee that this will be the case for you or that it is causing your system to be less secure. Use at your own risk! /Disclamer
+
+if you dont want to take the risk of installing Entware iptables, then you will have to settle for using MASQUARADE according to above.
+
+The basic command for doing this:
+```sh
+ip6tables -t nat -I POSTROUTING -s <wg21Prefix>:100::/120 -o eth0 -j NETMAP --to <wanIpv6Prefix>/64
+ip6tables -t nat -I PREROUTING -i eth0 -d <wanIpv6Prefix>:100::/120 -j NETMAP --to <wg21Prefix>/64
+```
+
+The problem here is that we need automatically find the wan prefix to put into the rules but it is difficult to make a script that accounts for everything. The right place for this is inside wgm (which wont happen until it is supported by firmware iptables).
+
+I've made a script that works if you have a /64 or a /56 assignement, it also works on /48 assignement but needs wg21 to be setup accordingly.
+
+wg21-up.sh
+```sh
+#!/bin/sh
+###############################################################################
+ # 56/64 assignement, wg21 ipv6 = aa00:aaaa:bbbb:cccc:100::1/120
+ # 48 assignement, wg21 ipv6 = aa00:aaaa:bbbb:100::1/120
+ # ####
+ # Example for wg21 56/64 assignement:
+ # Change to your needs but keep formatting 
+Wg21Prefix=aa00:aaaa:bbbb:cccc:: #Wg21 ULA prefix with aa instead of fd 
+Wg21Suffix=100::1 #Wg21 Device suffix (last 64 bits) 
+Wg21PrefixLength=120 #Wg21 Prefix Length (120 recommended) 
+WanInterface=eth0 
+
+# Changing below lines should not be needed: 
+WanIp6Prefix=$(nvram get ipv6_prefix) #WanIp6Prefix=2001:1111:2222:3333:: 
+Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
+WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
+# Execute firewall commands: 
+ip6tables -t nat -I POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j NETMAP --to ${WanIp6Prefix}/64 
+ip6tables -t nat -I PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j NETMAP --to ${Wg21Prefix}/64 
+###############################################################################
+```
+
+wg21-down.sh
+```sh
+#!/bin/sh
+###############################################################################
+ # Example for wg21 ipv6 = aa00:aaaa:bbbb:cccc:100::1/120
+ # Change to your needs but keep formatting 
+Wg21Prefix=aa00:aaaa:bbbb:cccc:: #Wg21 ULA prefix with aa instead of fd 
+Wg21Suffix=100::1 #Wg21 Device suffix (last 64 bits) 
+Wg21PrefixLength=120 #Wg21 Prefix Length (120 recommended) 
+WanInterface=eth0 
+
+# Changing below lines should not be needed: 
+WanIp6Prefix=$(nvram get ipv6_prefix) #WanIp6Prefix=2001:1111:2222:3333:: 
+Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
+WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
+# Execute firewall commands: 
+ip6tables -t nat -D POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j NETMAP --to ${WanIp6Prefix}/64 
+ip6tables -t nat -D PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j NETMAP --to ${Wg21Prefix}/64 
+###############################################################################
+```
+
+Note: The scripts will not work if you were assigned a 0-subnet if you have a /56 (or /64) assignement so the entire last parts of prefix gets excluded inside the ::.
+More scripting would be needed to expand the address, do all concatinations and then compress it again. This is out of scope for this guide. If you make a script that is working for all situations, please post it at SNB Forum (link on top) so others could benefit.
+
+**Device peer setup**  
+Creating a Road-Worrior device is really easy, i.e.:
+```sh
+E:Option ==> create Samsung-S10 wg21
+```
+Note: starting from wgm 4.16bA there is now the possibilities to tell devices to use router (dnsmasq) as dns:
+```sh
+E:Option ==> create Samsung-S10 wg21 dns=local
+```
+/Note
+
+You might have to answer some questions in the setup. Finally you will be asked to view the qrcode to import it into your device. Regardless how you choose, before importing the config into your phone, you could exit wgm and take a look at it.  
+```sh
+nano /opt/etc/wireguard.d/Samsung-S10.conf
+```
+One important thing that should/could be checked and/or changed is the DNS we are telling our VPN device to use:
+```sh
+DNS = 9.9.9.9, 2620:fe::fe
+```
+This line is probably populated with your WAN DNS (if you didnt use dns=local). Now, if you feel that this is good, then just leave it. For some people, they might want to use the router as DNS to use dnsmasq with all the benefits (local hosts resolv, Diversion, Unbound et.c.). then simply change this to point at your wg21 IP instead. i.e. from my dynamic example above:
+```sh
+DNS = 192.168.100.1, fc00:192:168:100::1
+```
+While you are in here, also take a look at the Address field:
+```sh
+Address = 192.168.100.2/32, fc00:192:168:100::2/128
+```
+This is the device local address, so we check that it has turned out correctly, simply wg21 ip +1 at the end. If you want to change this, please do, but also update **/opt/etc/wireguard.d/wg21.conf** section **AllowedIPs =** to match the same.
+
+Finally, check your Endpoint:
+```sh
+Endpoint = MyDDnsAddress:Wgport
+```
+There is a chance that wgm got your intentions wrong and populated this with something you did not intend. This should be the address the device is using to connect to your server. It could be your WAN IP (IPv4 or IPv6), it could be a DDNS address. change this to match your intentions. after you are done, save and exit.
+
+When you are comfortable with your client file, you could either copy the **/opt/etc/wireguard.d/Samsung-S10.conf** to your device to import it. Or you could head into wgm to display the qrcode again:
+```sh
+E:Option ==> qrcode Samsung-S10
+```
+It will display your modified .conf file.
+
+## Route WG Server to internet via WG Client
+I cannot test this as Im not running any server. the point would be if you only have 1 client and will be able to connect home over the internet to access your LAN and also to surf the internet via your VPN client... in this case you should use the wgm "passthru" command.
+when clients are connected in policy mode then of no rules are setup then server clients will access the internet via WAN. sadly it is not enough to just add the ips to the policy routing table. we also need to handle access rights in the firewall and setup masquarading. wgm handles till all for you in a single command!
+
+Some information:
+```sh
+E:Option ==> peer help
+
+        peer help                                                               - This text
+        peer                                                                    - Show ALL Peers in database
+        peer peer_name                                                          - Show Peer in database or for details e.g peer wg21 config
+        peer peer_name {cmd {options} }                                         - Action the command against the Peer
+        peer peer_name del                                                      - Delete the Peer from the database and all of its files *.conf, *.key
+        peer peer_name ip=xxx.xxx.xxx.xxx                                       - Change the Peer VPN Pool IP
+        peer category                                                           - Show Peer categories in database
+        peer peer_name category [category_name {del | add peer_name[...]} ]     - Create a new category with 3 Peers e.g. peer category GroupA add wg17 wg99 wg11
+        peer new [peer_name [options]]                                          - Create new server Peer e.g. peer new wg27 ip=10.50.99.1/24 port=12345
+        peer peer_name [del|add] ipset {ipset_name[...]}                        - Selectively Route IPSets e.g. peer wg13 add ipset NetFlix Hulu
+        peer peer_name {rule [del {id_num} |add [wan] rule_def]}                - Manage Policy rules e.g. peer wg13 rule add 172.16.1.0/24 comment All LAN
+                                                                                                           peer wg13 rule add wan 52.97.133.162 comment smtp.office365.com
+                                                                                                           peer wg13 rule add wan 172.16.1.100 9.9.9.9 comment Quad9 DNS
+        peer serv_peer_name {passthru client_peer {[add|del] [device|IP/CIDR]}} - Manage passthu' rules for inbound 'server' peer devices/IPs/CIDR outbound via 'client' peer tunnel
+                                                                                                           peer wg21 passthru add wg11 SGS8
+                                                                                                           peer wg21 passthru add wg15 all
+                                                                                                           peer wg21 passthru add wg12 10.100.100.0/27
+```
+
+Interpreting the help above would give, the device SGS8 connected to wg21 should be routed out wg11 for internet access.
+```sh
+E:Option ==> peer wg21 passthru add wg11 SGS8
+```
+
+Similarely to route ALL devices connected on wg21 out wg11
+```sh
+E:Option ==> peer wg21 passthru add wg11 all
+```
+
+And finally to only allow a single ip or group of ips to be routed out out wg11:
+```sh
+E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32
+```
+Or if you are running dual stack, i.e:
+```sh
+E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32,aa36:7ef1:2add:aa88:100::53/128
+```
+
+**Note**  
+The same function as the passthru function could be accomplished by adding a policy route, i.e:
+```sh
+E:Option ==> peer wg11 rule add vpn 10.50.1.2/32 comment ServerClientToWg11
+``` 
+But a snag is that the server ips are not included in wg11 MASQUARADE rule (the firewall rule that translates the source addresses to match outgoing interface) and this is needed for the vpn supplier only accepts this source address otherwise the packages will be dropped. The passthru feature automatically adds added wg21 clients to the MASQUARADE rule but if you for example use the rules for DESTINATION routing (like you wish to only connect TO certains web addresses through VPN) you might find that your server clients have broken connection to these pages. This is because the DESTINATION rule is typically set src=Any, which also includes the WG server clients. So the choices are either remake the rule to only be used on your lan, so set src=192.168.1.1/24, but this will make your server client access these addresses via WAN. If you want your server clients to also access these pages via VPN, the server needs to be included in the MASQUARADE rule:
+
+To include your WG server clients in WG11 MASQUARADE rule:
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg11-up.sh
 ```
-populate this with:
+Replace the name with your wg interface name, but the scripts must be named like this in order for it to start as the wireguard interface is started.
+
+Populate with
 ```sh
 #!/bin/sh
-ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
+
+iptables -t nat -I POSTROUTING -s 10.50.1.1/24 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"  
 ```
-save and exit.  
-you will also need to make a script to delete the rule as the peer is stopped:
+Use your Wireguard server network ip range (change if needed) and change wg11 interface according to your needs. This will enable all Wireguard server clients to MASQUARADE, but will only be used if the rules are setup to route any package from WG server to WG client (meaning that the wgm rules will still determine how it shall be routed)
+
+save & exit.
+
+make the file executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+
+then we also need to make a script that removes the rule if the interface it shut down:
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg11-down.sh
 ```
-populate with:
+Populate with:
 ```sh
 #!/bin/sh
-ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
-```
-save and exit
 
-make both files executable:
+iptables -t nat -D POSTROUTING -s 10.50.1.1/24 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"  
+```
+
+Save & exit, make the file executable:
 ```sh
-chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
 chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
 ```
-from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RFCs). 
 
-one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
-
-
-
+# Setup Wireguard Site 2 Site
 ## Site-2-site
 Wireguard Manager is essentially designed as a client-server interface altough wireguard is not any such thing. The difference between a server and a client is foremost the firewall. A client sets up basically the same firewall rules as your WAN, so any unsolicited inbound connections are BLOCKED (as it is assumed to be an internet client). A server on the other hand is considered private so access is allowed for connections carrying the right encryption with the right keys.
 A site-2-site setup basically requires you to setup a server at each end (so access is granted both ways), but a typical server does not contain any endpoint. An endpoint tells the peer on how to make the initial contact with it's counterpart peer (a server typically doesnt try to connect to the clients). So clearly a site-site connection needs to be treated differently in all these cases.
@@ -1165,379 +1463,174 @@ If you are using another system then Asus HND routers and Wireguard Manager and 
 
 Good luck!
 
+ # Route Site 2 Site internet access
+Special thanks to SNB forum member @JGrana for requesting and debugging this.
 
+Site-2-Site is a special case where 2 peers are connected to join 2 different network. In general only trafic between these 2 networks are routed over the Wireguard tunnel, internet access is typically handled by each side respectively. If we wish to access internet on remote site all is already setup at the remote side, so nothing is needed to be changed there, unless you need different clients on both sides to access internet on the other side, then you would have to do this on both sides. but normally this is only needed at the local side (local to the client that need remote access that is).
 
+The site-2-site peers are basically server peers, which means they don't have any policy rules or policy tables so we are going to make our own, pretty much as in "Reverse policy based routing".
 
+Assuming the 2 networks, "Home" at 192.168.1.x and "Cabin" at 192.168.2.x and we wish "Cabin" clients (some or all) to connect to internet via "Home" internet connection, in this example routing only 192.168.2.194 to internet via remote internet. Both sides uses wg21 with an arbitrary ip, like Home wg21=10.9.8.1 and Cabin wg21=10.9.8.2 (wg21 ip has really no impact on this).
 
-
-
-## Setup WG Server
-Wireguard Manager sets up a server peer (wg21) when it is installed. If your only purpose is to access your IPv4 LAN then this might be enough for you, so to setup a Road-Warrior device, simply execute:
+The first thing that needs to be done is to change the AllowedIPs at "Cabin" side:
 ```sh
-E:Option ==> create MyPhone wg21
+nano /opt/etc/wireguard.d/wg21.conf
 ```
-And follow the instructions on screen. Display the qrcode either after creating the device peer, or by executing:
+and append 0.0.0.0/0 at the end of AllowedIPs so it will be:
 ```sh
-E:Option ==> qrcode MyPhone
+AllowedIPs = 10.9.8.1/32, 192.168.1.0/24, 0.0.0.0/0
 ```
-To make the server autostart at boot:
-```sh
-E:Option ==> peer wg21 auto=Y
-```
-If you wish to delete the device peer:
-```sh
-E:Option ==> peer MyPhone del
-```
-If you wish to delete the server peer:
-```sh
-E:Option ==> peer wg21 del
-```
-And if you deleted the server peer wgm creates for you, but would like to create it again:
-```sh
-E:Option ==> peer new
-```
-A whole lot of options is offered to this command, like if you want to control the server IP, port number a.s.o but all this information is at hand under the
-```sh
-E:Option ==> peer help
-```
-menu.
-
-Now, if you have IPv6 enabled on your router, and wishes to have IPv6 Only or IPv4/IPv6 dual-stack server peer, you will need to go an extra mile and configuration could differ depending on how your system is:
-
-**IPv6 - setup with static >/64 subnet (as /56 or /48 subnet)**  
-If you are amongst the lucky few who has a fixed IPv6 and a larger assignement then a single subnet, we could just devide a separate subnet for our server. So assuming your static IPv6 assignement is 2600:aaaa:bbbb:cc00::/56 or 2600:aaaa:bbbb::/48 we simply use the last digits to fill up 4x4 complete numbers:  
-2600:aaaa:bbbb:cc00::/56 --> 2600:aaaa:bbbb:cc**10**::/**64**  
-2600:aaaa:bbbb::/48 --> 2600:aaaa:bbbb:**0010**::/**64** (leading zeroes could be removed) --> 2600:aaaa:bbbb:**10**::/**64**
-
-so, from here we could assign wg21 ip, which will just be the first number in subnet (only /56 example):  
-2600:aaaa:bbbb:cc10::/64 --> 2600:aaaa:bbbb:cc10::**1**/64
-
-From this we could create a server peer that gives IPv6 connectivity (only):
-```sh
-E:Option ==> peer new ipv6=2600:aaaa:bbbb:cc10::1/64 noipv4
-```
-
-Or we could create a dual stack server peer that gives both IPv4 and IPv6 connectivity:
-```sh
-E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cc10::1/64
-```
-Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
-
-Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
-
-To make it autostart at boot:
-```sh
-E:Option ==> peer wg21 auto=Y
-```
-
-**IPv6 - setup with static /64 subnet**  
-If you only have a single subnet assigned to you, we will have to fork in our server and device's into your subnet. I would not expect this to be a problem as mostly IPv6 is stateless assigned. This means that any client assignes it's own right hand (4x4) numbers on the ip, usually based on MAC, or combination of MAC and time or just random. Since Wireguard only works on static assignement, we should be able to take a small portion and just assign it and the chances for conflict is virtually zero. If a conflict should arise, IPv6 already has protocols for this, so hopefully the conflicting IP will know this and change it's IP.
-
-so assuming your static /64 IP is:
-2600:aaaa:bbbb:cccc::/64
-
-usually the router br0 hogs:
-2600:aaaa:bbbb:cccc::1/64
-and clients on br0 will assign themself based on this.
-
-So we could take a small portion of the subnet and assign to our server, since we are statically assigning interfaces we can make smaller subnets than /64, i.e.:  
-2600:aaaa:bbbb:cccc:1::1/120
-
-so, here we have 255 possible devices: 2600:aaaa:bbbb:cccc:1::1 - 2600:aaaa:bbbb:cccc:1::ff
-
-It is really important that we somehow differentiate our wg21 IP range from the rest. /64 (left most 4x4 values) is asigned by WAN, and for /120 the right most 2 values are varied for our devices on wg21. so to print out the entire ip (without the ::) gives:  
-2600:aaaa:bbbb:cccc:000**1**:0000:0000:00xx
-
-so just by placing the **1** outside the /64 area but inside /120 area we would avoid conflict with br0 and hopefully other more or less statically assigned addresses.
-
-From this we could create a server peer that gives IPv6 connectivity (only):
-```sh
-E:Option ==> peer new ipv6=2600:aaaa:bbbb:cccc:1::1/120 noipv4
-```
-
-Or we could create a dual stack server peer that gives both IPv4 and IPv6 connectivity:
-```sh
-E:Option ==> peer new ip=192.168.100.1/24 ipv6=2600:aaaa:bbbb:cccc:1::1/120
-```
-Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
-
-Any Device created on this server peer will honor the setup of the server peer, so it will get IPv6 only or dual stack connectivity based on wg21.
-
-To make it autostart at boot:
-```sh
-E:Option ==> peer wg21 auto=Y
-```
-
-**IPv6 - setup with dynamic IPv6**  
-Note: Despite my best effort I cant seem to get ipv6 ULA packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
-
-Special thanks to SNB-Forum member @archiel for testing this out.
-
-Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a local IPv6 for the wg21 server peer and the devices. From been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
-
-The proper way of doing this would be to generate yourself an ipv6 ULA address range. However, the current firmware in our ASUS routers wont route this to wan, packages wont even reach the place where we typically changes its source address. So we need to think of something else. It has also been found that most devices are reluctant of using ipv6 ULA addresses. They rather use ipv4 instead which also means we need to use something else. Since there are no other reserved addresses we will have to make it up.  
-1) look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to find an address space not assigned, but it cant start with fc, fd, fe or ff.  
-2) use your isp assignement, which means the address you have right now. We will use NAT6 anyway so it will still work when your address is changed.  
-3) generate an ULA (Enter wgm command "ipv6 ula" and it generates it for you) then change the 2 first letters to something not used, like aa (proposed).  
-
-Since we are using an address which might be our own or someone else we need to make the risk for conflict minimal.
-
-So, assuming we will use prefix aaaa:bbbb:cccc:dddd::/64 
-We create a wg21 address that is not in conflict with br0, and we slim down the range, 120 would leave room for 255 devices, should be enough for most servers: aaaa:bbbb:cccc:dddd:**100::1/120**
-
-Creating our server we need to control the ips ourself, according to our ip above. Creating a dual stack server peer:
-```sh
-E:Option ==> peer new ip=192.168.100.1/24 ipv6=aaaa:bbbb:cccc:dddd:100::1/120
-
-        Press y to Create (IPv4/IPv6) 'server' Peer (wg21) 192.168.100.1/24,aaaa:bbbb:cccc:dddd:100::1/120:11501 or press [Enter] to SKIP.
-y
-        Creating WireGuard Private/Public key-pair for (IPv4/IPv6) 'server' Peer wg21 on RT-AC86U (v386.4_0)
-        Press y to Start (IPv4/IPv6) 'server' Peer (wg21) or press [Enter] to SKIP.
-y
-```
-Note: The ip=<IPv4 Address> is optional and if left out the IPv4 will be wgm selected 10.50.1.1/24.
+Save & exit.  
   
-Since we are not using our global adress, we need to setup NAT6 to translate this address to WAN source address, otherwise packets will be dropped by our ISP. So do this by creating a custom wg21 scripts:
+**Note** Recent wgm changed the way the Wireguard .conf files are generated so it might be nessissary to execute instead:
+```sh
+E:Option ==> peer wg21 allowedips=​10.9.8.1/32,192.168.1.0/24,0.0.0.0/0
+```
+Make sure you got all ips right, it should be Home wg21 /32, Home LAN /24, and 0.0.0.0/0.
 
+Now, edit the file that is executed when wg21 starts at "Cabin" side:
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg21-up.sh
 ```
 and populate with:
 ```sh
-#!/bin/sh
-#Masquarade ipv6 packets from clients to WAN
-ip6tables -t nat -I POSTROUTING -s aaaa:bbbb:cccc:dddd:100::/120 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
-```
-Change the IPv6 address you selected for your wg21 peer. Also remove the rules when wg21 is disabled:
+#!/bin/sh 
+# 
+################################# 
+# Create ip table 117 and copy main table routes
+################################# 
+ip route flush table 117 2>/dev/null # Clear table 117 
+ip route show table main | while read ROUTE # Copy all routes from main table to table 117
+   do 
+      { 
+         ip route add table 117 $ROUTE 
+      } 1> /dev/null 
+   done 
 
+############################### 
+# Add superseeding default route via wg21
+###############################
+ip route add table 117 0/1 dev wg21
+ip route add table 117 128/1 dev wg21
+
+###############################
+# Add rules for ips to access internet via remote peer
+###############################
+ip rule add from 192.168.2.104 table 117 prio 9990 #Send single ip internet through remote peer
+#ip rule add iif wl1.1 table 117 prio 9991 #Send guest wifi 4 internet through remote peer (if way) 
+#ip rule add 192.168.5.1/24 table 117 prio 9992 #Send guest wifi 4 internet through remote peer (ip way)
+# More rules for ip's or ipset marks or interfaces could be added here if needed....
+
+###############################
+# Add DNS redirect to remote router (requires DNS filter to be used) 
+###############################
+iptables -t nat -I DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
+```
+Change the rules according to your needs for which ips you would like to access internet through remote peer.
+Save & Exit.
+
+Create a script to remove the rules when wg21 is brought down:
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg21-down.sh
 ```
-Populate with:
+populate with:
 ```sh
 #!/bin/sh
-#Masquarade ipv6 packets from clients to WAN
-ip6tables -t nat -D POSTROUTING -s aaaa:bbbb:cccc:dddd:100::/120 -o eth0 -j MASQUERADE -m comment --comment "WireGuard 'server'"
-```
-Again, change the IPv6 to match your wg21 server peer.
 
-make them executable:
+# Delete rules:
+ip rule del prio 9990
+#ip rule del prio 9991
+#ip rule del prio 9992
+#ip rule del prio 9993
+#...
+
+# Delete DNS redirect:
+iptables -t nat -D DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
+
+# Delete table 117:
+ip route flush table 117 2>/dev/null
+```
+Also here adjust so that the rules you created/changed are removed.
+Save & exit.
+
+make the files executable:
 ```sh
 chmod +x /jffs/addons/wireguard/Scripts/wg21-up.sh
 chmod +x /jffs/addons/wireguard/Scripts/wg21-down.sh
 ```
-Now you could restart wg21, and set it to autostart at boot (if you wish):
+Now restart your peer at "Cabin":
 ```sh
-E:Option ==> peer wg21 auto=Y
-E:Option ==> peer wg21 restart
+wgm restart wg21
 ```
 
-**Alternative NPT6 instead of NAT6**  
-Special thanks to snb forum member @archiel for evaluating this.
-
-I have choosen to still reccommend the usage of NAT6 above, mainly for its ease of usage. A better technical solution is to use NPT6 (Network Prefix Translation Ipv6). This methode does not need to keep track of any connections and will simply perform better in every aspect than NAT6.
- 
-Sadly, it has shown that NTP is not compatible with conntrack, which our router uses for its stateful firewall. We would not like to give that up! But there is another way to do the same thing called NETMAP. Whilst NPT6 is checksum neutral (by changing first 16 bits device id to accomplish that) NETMAP is not, so it will need recalculation of package checksum. But on the upside it leaves the device ip untouched.
-
-Disclamer: NETMAP is not really supported by all softwares. The kernel module/function/hooks are there but not implemented in userspace iptables. You have the option to install Entware iptables:
+And all should be setup and working. If no rules for DNS are added it will still be through local peer... If this is also needed to be done via remote peer, the added rule from the script:
 ```sh
-opkg install iptables
+iptables -t nat -I DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
 ```
-but you need to be aware that the main purpose of iptables is to match extensions and send them to hooks in kernel module netfilter which is very integrated into firmware/processor with HW acceleration and what not. there is a substantial risk that something breaks when you do this. altough I have been running this on 386.5 on my RT-AC86U for several months with no obvious problems but I can NOT guarantee that this will be the case for you or that it is causing your system to be less secure. Use at your own risk! /Disclamer
+Will redirect DNS requests (port 53) from -s (source ip) 192.168.2.104 to wg21 remote peer 10.9.8.1. Then dnsmasq at remote peer will serve this ip with lookups.
+Change -s to all ips you make rules for, create duplicate lines if needed for more ips.
+Ofcource you dont have to use remote peer dnsmasq, you could replace that ip with i.e 9.9.9.9 or some other public dns of your choice and lookup will still be via remote wan.
 
-if you dont want to take the risk of installing Entware iptables, then you will have to settle for using MASQUARADE according to above.
+The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
+   
 
-The basic command for doing this:
+# Various Tips & Tricks
+## IPv6 Over Wireguard without IPv6 WAN
+If you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
+
+Since you dont have an ipv6 lan ip, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
 ```sh
-ip6tables -t nat -I POSTROUTING -s <wg21Prefix>:100::/120 -o eth0 -j NETMAP --to <wanIpv6Prefix>/64
-ip6tables -t nat -I PREROUTING -i eth0 -d <wanIpv6Prefix>:100::/120 -j NETMAP --to <wg21Prefix>/64
-```
+E:Option ==> ipv6 ula
 
-The problem here is that we need automatically find the wan prefix to put into the rules but it is difficult to make a script that accounts for everything. The right place for this is inside wgm (which wont happen until it is supported by firmware iptables).
-
-I've made a script that works if you have a /64 or a /56 assignement, it also works on /48 assignement but needs wg21 to be setup accordingly.
-
-wg21-up.sh
-```sh
-#!/bin/sh
-###############################################################################
- # 56/64 assignement, wg21 ipv6 = aa00:aaaa:bbbb:cccc:100::1/120
- # 48 assignement, wg21 ipv6 = aa00:aaaa:bbbb:100::1/120
- # ####
- # Example for wg21 56/64 assignement:
- # Change to your needs but keep formatting 
-Wg21Prefix=aa00:aaaa:bbbb:cccc:: #Wg21 ULA prefix with aa instead of fd 
-Wg21Suffix=100::1 #Wg21 Device suffix (last 64 bits) 
-Wg21PrefixLength=120 #Wg21 Prefix Length (120 recommended) 
-WanInterface=eth0 
-
-# Changing below lines should not be needed: 
-WanIp6Prefix=$(nvram get ipv6_prefix) #WanIp6Prefix=2001:1111:2222:3333:: 
-Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
-WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
-# Execute firewall commands: 
-ip6tables -t nat -I POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j NETMAP --to ${WanIp6Prefix}/64 
-ip6tables -t nat -I PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j NETMAP --to ${Wg21Prefix}/64 
-###############################################################################
+        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6)
 ```
 
-wg21-down.sh
-```sh
-#!/bin/sh
-###############################################################################
- # Example for wg21 ipv6 = aa00:aaaa:bbbb:cccc:100::1/120
- # Change to your needs but keep formatting 
-Wg21Prefix=aa00:aaaa:bbbb:cccc:: #Wg21 ULA prefix with aa instead of fd 
-Wg21Suffix=100::1 #Wg21 Device suffix (last 64 bits) 
-Wg21PrefixLength=120 #Wg21 Prefix Length (120 recommended) 
-WanInterface=eth0 
+Note that Wgm suggest to use aa as the fist 2 letters instead of fd. The reason for this is 2 fold:
+1) Asus router seems to refuse to route ULA to WAN (see WG-server section)
+2) Devices that gets addresses starting with fd are reluctant to use IPv6 since this is a local address. This wil cause your devices to use IPv4 until the last resort, then only use IPv6. 
 
-# Changing below lines should not be needed: 
-WanIp6Prefix=$(nvram get ipv6_prefix) #WanIp6Prefix=2001:1111:2222:3333:: 
-Wg21_PrefIp=${Wg21Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #aa00:aaaa:bbbb:cccc:100::1/120 
-WanWg21_PrefIp=${WanIp6Prefix%:*}${Wg21Suffix}/${Wg21PrefixLength} #2001:1111:2222:3333:100::1/120 
-# Execute firewall commands: 
-ip6tables -t nat -D POSTROUTING -s ${Wg21_PrefIp} -o ${WanInterface} -j NETMAP --to ${WanIp6Prefix}/64 
-ip6tables -t nat -D PREROUTING -i ${WanInterface} -d ${WanWg21_PrefIp} -j NETMAP --to ${Wg21Prefix}/64 
-###############################################################################
-```
+To get around both these issues we propose to use aa instead, which is probably a violation to the internet standards. but as long as it is only used internally it should be ok. The aa prefix is a global prefix but it is not proscribed yet, so it is not in use. This could however change in the future. look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to see how addresses are assigned at the moment.
 
-Note: The scripts will not work if you were assigned a 0-subnet if you have a /56 (or /64) assignement so the entire last parts of prefix gets excluded inside the ::.
-More scripting would be needed to expand the address, do all concatinations and then compress it again. This is out of scope for this guide. If you make a script that is working for all situations, please post it at SNB Forum (link on top) so others could benefit.
+Mine became "fdff:a37f:fa75::/48" (altough wgm says /64). The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "aaff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "aaff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
 
-**Device peer setup**  
-Creating a Road-Worrior device is really easy, i.e.:
-```sh
-E:Option ==> create Samsung-S10 wg21
-```
-Note: starting from wgm 4.16bA there is now the possibilities to tell devices to use router (dnsmasq) as dns:
-```sh
-E:Option ==> create Samsung-S10 wg21 dns=local
-```
-/Note
+I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with stateful.
 
-You might have to answer some questions in the setup. Finally you will be asked to view the qrcode to import it into your device. Regardless how you choose, before importing the config into your phone, you could exit wgm and take a look at it.  
-```sh
-nano /opt/etc/wireguard.d/Samsung-S10.conf
-```
-One important thing that should/could be checked and/or changed is the DNS we are telling our VPN device to use:
-```sh
-DNS = 9.9.9.9, 2620:fe::fe
-```
-This line is probably populated with your WAN DNS (if you didnt use dns=local). Now, if you feel that this is good, then just leave it. For some people, they might want to use the router as DNS to use dnsmasq with all the benefits (local hosts resolv, Diversion, Unbound et.c.). then simply change this to point at your wg21 IP instead. i.e. from my dynamic example above:
-```sh
-DNS = 192.168.100.1, fc00:192:168:100::1
-```
-While you are in here, also take a look at the Address field:
-```sh
-Address = 192.168.100.2/32, fc00:192:168:100::2/128
-```
-This is the device local address, so we check that it has turned out correctly, simply wg21 ip +1 at the end. If you want to change this, please do, but also update **/opt/etc/wireguard.d/wg21.conf** section **AllowedIPs =** to match the same.
+in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
 
-Finally, check your Endpoint:
-```sh
-Endpoint = MyDDnsAddress:Wgport
-```
-There is a chance that wgm got your intentions wrong and populated this with something you did not intend. This should be the address the device is using to connect to your server. It could be your WAN IP (IPv4 or IPv6), it could be a DDNS address. change this to match your intentions. after you are done, save and exit.
+Now that your LAN has some sort of IPv6 enabled you should follow the guide above to import your dual stack config file, but if you choose to have it in policy (P) mode, you also need to put in the rules (see sections), and add a default route (see below)
 
-When you are comfortable with your client file, you could either copy the **/opt/etc/wireguard.d/Samsung-S10.conf** to your device to import it. Or you could head into wgm to display the qrcode again:
-```sh
-E:Option ==> qrcode Samsung-S10
-```
-It will display your modified .conf file.
+As you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. 
 
-
-## Route WG Server to internet via WG Client
-I cannot test this as Im not running any server. the point would be if you only have 1 client and will be able to connect home over the internet to access your LAN and also to surf the internet via your VPN client... in this case you should use the wgm "passthru" command.
-when clients are connected in policy mode then of no rules are setup then server clients will access the internet via WAN. sadly it is not enough to just add the ips to the policy routing table. we also need to handle access rights in the firewall and setup masquarading. wgm handles till all for you in a single command!
-
-Some information:
-```sh
-E:Option ==> peer help
-
-        peer help                                                               - This text
-        peer                                                                    - Show ALL Peers in database
-        peer peer_name                                                          - Show Peer in database or for details e.g peer wg21 config
-        peer peer_name {cmd {options} }                                         - Action the command against the Peer
-        peer peer_name del                                                      - Delete the Peer from the database and all of its files *.conf, *.key
-        peer peer_name ip=xxx.xxx.xxx.xxx                                       - Change the Peer VPN Pool IP
-        peer category                                                           - Show Peer categories in database
-        peer peer_name category [category_name {del | add peer_name[...]} ]     - Create a new category with 3 Peers e.g. peer category GroupA add wg17 wg99 wg11
-        peer new [peer_name [options]]                                          - Create new server Peer e.g. peer new wg27 ip=10.50.99.1/24 port=12345
-        peer peer_name [del|add] ipset {ipset_name[...]}                        - Selectively Route IPSets e.g. peer wg13 add ipset NetFlix Hulu
-        peer peer_name {rule [del {id_num} |add [wan] rule_def]}                - Manage Policy rules e.g. peer wg13 rule add 172.16.1.0/24 comment All LAN
-                                                                                                           peer wg13 rule add wan 52.97.133.162 comment smtp.office365.com
-                                                                                                           peer wg13 rule add wan 172.16.1.100 9.9.9.9 comment Quad9 DNS
-        peer serv_peer_name {passthru client_peer {[add|del] [device|IP/CIDR]}} - Manage passthu' rules for inbound 'server' peer devices/IPs/CIDR outbound via 'client' peer tunnel
-                                                                                                           peer wg21 passthru add wg11 SGS8
-                                                                                                           peer wg21 passthru add wg15 all
-                                                                                                           peer wg21 passthru add wg12 10.100.100.0/27
-```
-
-Interpreting the help above would give, the device SGS8 connected to wg21 should be routed out wg11 for internet access.
-```sh
-E:Option ==> peer wg21 passthru add wg11 SGS8
-```
-
-Similarely to route ALL devices connected on wg21 out wg11
-```sh
-E:Option ==> peer wg21 passthru add wg11 all
-```
-
-And finally to only allow a single ip or group of ips to be routed out out wg11:
-```sh
-E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32
-```
-Or if you are running dual stack, i.e:
-```sh
-E:Option ==> peer wg21 passthru add wg11 10.50.1.53/32,aa36:7ef1:2add:aa88:100::53/128
-```
-
-**Note**  
-The same function as the passthru function could be accomplished by adding a policy route, i.e:
-```sh
-E:Option ==> peer wg11 rule add vpn 10.50.1.2/32 comment ServerClientToWg11
-``` 
-But a snag is that the server ips are not included in wg11 MASQUARADE rule (the firewall rule that translates the source addresses to match outgoing interface) and this is needed for the vpn supplier only accepts this source address otherwise the packages will be dropped. The passthru feature automatically adds added wg21 clients to the MASQUARADE rule but if you for example use the rules for DESTINATION routing (like you wish to only connect TO certains web addresses through VPN) you might find that your server clients have broken connection to these pages. This is because the DESTINATION rule is typically set src=Any, which also includes the WG server clients. So the choices are either remake the rule to only be used on your lan, so set src=192.168.1.1/24, but this will make your server client access these addresses via WAN. If you want your server clients to also access these pages via VPN, the server needs to be included in the MASQUARADE rule:
-
-To include your WG server clients in WG11 MASQUARADE rule:
+This is NOT needed if you have ipv6 WAN or the peer is in auto/default mode.
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg11-up.sh
 ```
-Replace the name with your wg interface name, but the scripts must be named like this in order for it to start as the wireguard interface is started.
-
-Populate with
+populate this with:
 ```sh
 #!/bin/sh
-
-iptables -t nat -I POSTROUTING -s 10.50.1.1/24 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"  
+ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
 ```
-Use your Wireguard server network ip range (change if needed) and change wg11 interface according to your needs. This will enable all Wireguard server clients to MASQUARADE, but will only be used if the rules are setup to route any package from WG server to WG client (meaning that the wgm rules will still determine how it shall be routed)
-
-save & exit.
-
-make the file executable:
-```sh
-chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
-```
-
-then we also need to make a script that removes the rule if the interface it shut down:
+save and exit.  
+you will also need to make a script to delete the rule as the peer is stopped:
 ```sh
 nano /jffs/addons/wireguard/Scripts/wg11-down.sh
 ```
-Populate with:
+populate with:
 ```sh
 #!/bin/sh
-
-iptables -t nat -D POSTROUTING -s 10.50.1.1/24 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"  
+ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
 ```
+save and exit
 
-Save & exit, make the file executable:
+make both files executable:
 ```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
 chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
 ```
+from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RFCs). 
 
-  
+one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
+
 # Execute menu commands externally
 Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
 
@@ -1793,116 +1886,7 @@ ipset add NETFLIX NETFLIX-DNS6 # add IPv6 ipset to the set
 
 There are more types, but I believe these to be the most common. Please see ipset manual for more info.
 
- # Route Site 2 Site internet access
-Special thanks to SNB forum member @JGrana for requesting and debugging this.
 
-Site-2-Site is a special case where 2 peers are connected to join 2 different network. In general only trafic between these 2 networks are routed over the Wireguard tunnel, internet access is typically handled by each side respectively. If we wish to access internet on remote site all is already setup at the remote side, so nothing is needed to be changed there, unless you need different clients on both sides to access internet on the other side, then you would have to do this on both sides. but normally this is only needed at the local side (local to the client that need remote access that is).
-
-The site-2-site peers are basically server peers, which means they don't have any policy rules or policy tables so we are going to make our own, pretty much as in "Reverse policy based routing".
-
-Assuming the 2 networks, "Home" at 192.168.1.x and "Cabin" at 192.168.2.x and we wish "Cabin" clients (some or all) to connect to internet via "Home" internet connection, in this example routing only 192.168.2.194 to internet via remote internet. Both sides uses wg21 with an arbitrary ip, like Home wg21=10.9.8.1 and Cabin wg21=10.9.8.2 (wg21 ip has really no impact on this).
-
-The first thing that needs to be done is to change the AllowedIPs at "Cabin" side:
-```sh
-nano /opt/etc/wireguard.d/wg21.conf
-```
-and append 0.0.0.0/0 at the end of AllowedIPs so it will be:
-```sh
-AllowedIPs = 10.9.8.1/32, 192.168.1.0/24, 0.0.0.0/0
-```
-Save & exit.  
-  
-**Note** Recent wgm changed the way the Wireguard .conf files are generated so it might be nessissary to execute instead:
-```sh
-E:Option ==> peer wg21 allowedips=​10.9.8.1/32,192.168.1.0/24,0.0.0.0/0
-```
-Make sure you got all ips right, it should be Home wg21 /32, Home LAN /24, and 0.0.0.0/0.
-
-Now, edit the file that is executed when wg21 starts at "Cabin" side:
-```sh
-nano /jffs/addons/wireguard/Scripts/wg21-up.sh
-```
-and populate with:
-```sh
-#!/bin/sh 
-# 
-################################# 
-# Create ip table 117 and copy main table routes
-################################# 
-ip route flush table 117 2>/dev/null # Clear table 117 
-ip route show table main | while read ROUTE # Copy all routes from main table to table 117
-   do 
-      { 
-         ip route add table 117 $ROUTE 
-      } 1> /dev/null 
-   done 
-
-############################### 
-# Add superseeding default route via wg21
-###############################
-ip route add table 117 0/1 dev wg21
-ip route add table 117 128/1 dev wg21
-
-###############################
-# Add rules for ips to access internet via remote peer
-###############################
-ip rule add from 192.168.2.104 table 117 prio 9990 #Send single ip internet through remote peer
-#ip rule add iif wl1.1 table 117 prio 9991 #Send guest wifi 4 internet through remote peer (if way) 
-#ip rule add 192.168.5.1/24 table 117 prio 9992 #Send guest wifi 4 internet through remote peer (ip way)
-# More rules for ip's or ipset marks or interfaces could be added here if needed....
-
-###############################
-# Add DNS redirect to remote router (requires DNS filter to be used) 
-###############################
-iptables -t nat -I DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
-```
-Change the rules according to your needs for which ips you would like to access internet through remote peer.
-Save & Exit.
-
-Create a script to remove the rules when wg21 is brought down:
-```sh
-nano /jffs/addons/wireguard/Scripts/wg21-down.sh
-```
-populate with:
-```sh
-#!/bin/sh
-
-# Delete rules:
-ip rule del prio 9990
-#ip rule del prio 9991
-#ip rule del prio 9992
-#ip rule del prio 9993
-#...
-
-# Delete DNS redirect:
-iptables -t nat -D DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
-
-# Delete table 117:
-ip route flush table 117 2>/dev/null
-```
-Also here adjust so that the rules you created/changed are removed.
-Save & exit.
-
-make the files executable:
-```sh
-chmod +x /jffs/addons/wireguard/Scripts/wg21-up.sh
-chmod +x /jffs/addons/wireguard/Scripts/wg21-down.sh
-```
-Now restart your peer at "Cabin":
-```sh
-wgm restart wg21
-```
-
-And all should be setup and working. If no rules for DNS are added it will still be through local peer... If this is also needed to be done via remote peer, the added rule from the script:
-```sh
-iptables -t nat -I DNSFILTER -s 192.168.2.104 -j DNAT --to-destination 10.9.8.1
-```
-Will redirect DNS requests (port 53) from -s (source ip) 192.168.2.104 to wg21 remote peer 10.9.8.1. Then dnsmasq at remote peer will serve this ip with lookups.
-Change -s to all ips you make rules for, create duplicate lines if needed for more ips.
-Ofcource you dont have to use remote peer dnsmasq, you could replace that ip with i.e 9.9.9.9 or some other public dns of your choice and lookup will still be via remote wan.
-
-The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
-   
 # Why is Diversion not working for WG Clients
 Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
 in order to make this work we will need to reset the WG DNS back to the router. 
