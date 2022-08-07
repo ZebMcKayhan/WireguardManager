@@ -21,11 +21,11 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [**Setup Wireguard Internet Client**](#setup-wireguard-internet-client)  
   -[Import Client](#import-client)  
   -[Add persistentKeepalive](#add-persistentkeepalive)  
-  -[Change DNS/mtu/Name/Endpoint](#change-dnsmtunameendpoint)  
   -[IPv6](#ipv6)  
   -[Check connection](#check-connection)  
   -[Default or Policy routing](#default-or-policy-routing)  
   -[Create rules in WGM](#create-rules-in-wgm)  
+  -[Change DNS/mtu/Name/Endpoint](#change-dnsmtunameendpoint)  
   -[Geo-location](#geo-location)  
   -[Manage/Setup IPSETs for policy based routing](#managesetup-ipsets-for-policy-based-routing) 
   
@@ -39,7 +39,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Route Site 2 Site internet access](#route-site-2-site-internet-access)  
   
 [**Various Tips & Tricks**](#various-tips--tricks)  
-  -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
+  -[Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   -[Create and setup IPSETs](#create-and-setup-ipsets)  
   -[Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
@@ -59,15 +59,126 @@ Following all parts of this guide as-is may cause conflicts in your system as ma
 With that said, Congratulations on your choice of setting up Wireguard and Wireguard Session Manager. I hope this guide will serve you well and provide a hazzle free setup of Wireguard on your ASUS router.
 
 # Setup wgm
+## Terminal Options
+Wireguard Session Manager was designed to operate properaly with XSHELL 7 with Delete Key = VT220 and Backspace = Backspace. if you are using other terminal programs (like Putty) there is a risk you will have problems with backspace not really looking like it is deleting anything altough it is. 
+the reason for this was that Wireguard Session Manager was designed to use "command buffert" to use "PG-UP" to get to older commands.
+This does not always work well with other terminal programs. 
+
+if you experience problems and wish to revert to "Basic" then you could issue:
+```sh
+E:Option ==> pgupkey off
+```
+
+if you wish to keep this setting:
+```sh
+E:Option ==> vx
+```
+and change
+```sh
+#NOPG_UP
+```
+to
+```sh
+NOPG_UP
+```
+
+Another option is if your terminal program (or if you execute menu commands externally) cant handle colour output, it could be turned off:
+```sh
+E:Option ==> colour off
+```
+
+To turn off colours permanently, it could be executed directly from shell: 
+```sh
+wg_manager colour off
+```
+
+ofcource the opposite **colour on** command works in both cases to get the colours back.
+
+it is also possible to turn the menu off, which is especially useful if you are executing menu commands externally (see section for more info):
+```sh
+E:Option ==> menu hide
+```
+To turn off menu permanently, it could be executed directly from shell: 
+```sh
+wg_manager menu hide
+```
+To get the manu back, in the same way, issue **menu show**.
+
+## Manage Killswitch
+The wgn vpn killswitch is a firewall rule to prevent access to WAN. This is handy if you rather have your connection broken than falling back to non-vpn.
+
+The killswitch is global so you can't use it in combination with policy based routing where you allow some clients to access internet via wan.
+You can temporary enable or disable this in wgm:
+```sh
+E:Option ==> killswitch on
+E:Option ==> killswitch off
+```
+Any changes will be valid until the next reboot. 
+
+To permanently change the killswitch, edit wgm configuration file::
+```sh
+E:Option ==> vx
+```
+Then disable the killswitch by adding a # in front of KILLSWITCH:
+```sh
+#KILLSWITCH
+```
+Or enable it by removing the hash:
+```sh
+KILLSWITCH
+```
+You can check killswitch function by:
+```sh
+E:Option ==> ?
+```
+You will get one of 4 messages:
+```sh
+[✔] WAN KILL-Switch is ENABLED
+[✔] WAN KILL-Switch is temporarily ENABLED
+[✖] WAN KILL-Switch is DISABLED
+[✖] WAN KILL-Switch is temporarily DISABLED
+```
+Temporarily means the status will change the next reboot.
+
+## Create categories
+Categories is a way of grouping clients and servers under a category name and allows you to start or stop entire categories.
+
+you can create a category by adding peers to it directly (in this case adding wg11 and wg12 to a category named My1stCategory:
+```sh
+E:Option ==> peer category My1stCategory add wg11 wg12
+
+
+        'Peer category 'My1stCategory' created
+
+```
+you can now check so it got created properly:
+```sh
+E:Option ==> peer category
+
+        Peer categories
+
+My1stCategory=wg11 wg12
+```
+
+now you can issue start and stop commands to this category:
+```sh
+E:Option ==> start My1stCategory
+```
+or even directly from the shell:
+```sh
+wgm start My1stCategory
+```
+
+at present day you cannot add or delete a single peer to the category, instead you delete it and create a new.
+
+if you wish to remove a category:
+```sh
+E:Option ==> peer category My1stCategory del
+
+        'Peer category 'My1stCategory' Deleted
+```
 
 # Setup Wireguard Internet Client
-
-# Setup Wireguard Private Server
-
-# Setup Wireguard Site 2 Site
-
-# Various Tips & Tricks
-
 ## Import Client
 First make sure to obtain a client file from your favorite wireguard vpn provided. Once you have obtained your .conf file, it is a really good idea to test it on an android client (using wireguard app for Android) or windows or similar. it appears a common problem that config files have a short life and sometimes no life at all. it could spare you alot of trouble by making sure that this config file is working before proceeding with importing it into wgm.
 
@@ -173,138 +284,6 @@ It should now say
 peristent keepalive every 25 seconds
 ```
 
-## Manage Killswitch
-The wgn vpn killswitch is a firewall rule to prevent access to WAN. This is handy if you rather have your connection broken than falling back to non-vpn.
-
-The killswitch is global so you can't use it in combination with policy based routing where you allow some clients to access internet via wan.
-You can temporary enable or disable this in wgm:
-```sh
-E:Option ==> killswitch on
-E:Option ==> killswitch off
-```
-Any changes will be valid until the next reboot. 
-
-To permanently change the killswitch, edit wgm configuration file::
-```sh
-E:Option ==> vx
-```
-Then disable the killswitch by adding a # in front of KILLSWITCH:
-```sh
-#KILLSWITCH
-```
-Or enable it by removing the hash:
-```sh
-KILLSWITCH
-```
-You can check killswitch function by:
-```sh
-E:Option ==> ?
-```
-You will get one of 4 messages:
-```sh
-[✔] WAN KILL-Switch is ENABLED
-[✔] WAN KILL-Switch is temporarily ENABLED
-[✖] WAN KILL-Switch is DISABLED
-[✖] WAN KILL-Switch is temporarily DISABLED
-```
-Temporarily means the status will change the next reboot.
-
-## Change DNS/mtu/name/endpoint
-**Dns:**
-```sh
-E:Option ==> peer wg11 dns=8.8.8.8
-```
-Or for dual-stack:
-```sh
-E:Option ==> peer wg11 dns=8.8.8.8,2001:4860:4860::8888
-```
-
-**Mtu:**
-```sh
-E:Option ==> peer wg11 mtu=1412
-```
-or to let Wireguard determine mtu:
-```sh
-E:Option ==> peer wg11 mtu=auto
-```
-
-**Tag name/Annotate:**
-```sh
-E:Option ==> peer wg11 comment My 1st VPN Client
-```
-
-**Endpoint**
-```sh
-E:Option ==> peer wg11 endpoint=146.70.51.98:1443
-```
-
-**Allowed Ips**
-```sh
-E:Option ==> peer wg21 allowedips=​192.168.1.1/24,10.50.1.1/32,0.0.0.0/0
-```
-
-**Wg-interface ip**
-```sh
-E:Option ==> peer wg21 ip=​192.168.100.1
-```
-
-**Port**
-```sh
-E:Option ==> peer wg21 port=38654
-```
-
-**Subnet**
-```sh
-E:Option ==> peer wg21 subnet=​192.168.2.1/24
-```
-
-
-## Terminal Options
-Wireguard Session Manager was designed to operate properaly with XSHELL 7 with Delete Key = VT220 and Backspace = Backspace. if you are using other terminal programs (like Putty) there is a risk you will have problems with backspace not really looking like it is deleting anything altough it is. 
-the reason for this was that Wireguard Session Manager was designed to use "command buffert" to use "PG-UP" to get to older commands.
-This does not always work well with other terminal programs. 
-
-if you experience problems and wish to revert to "Basic" then you could issue:
-```sh
-E:Option ==> pgupkey off
-```
-
-if you wish to keep this setting:
-```sh
-E:Option ==> vx
-```
-and change
-```sh
-#NOPG_UP
-```
-to
-```sh
-NOPG_UP
-```
-
-Another option is if your terminal program (or if you execute menu commands externally) cant handle colour output, it could be turned off:
-```sh
-E:Option ==> colour off
-```
-
-To turn off colours permanently, it could be executed directly from shell: 
-```sh
-wg_manager colour off
-```
-
-ofcource the opposite **colour on** command works in both cases to get the colours back.
-
-it is also possible to turn the menu off, which is especially useful if you are executing menu commands externally (see section for more info):
-```sh
-E:Option ==> menu hide
-```
-To turn off menu permanently, it could be executed directly from shell: 
-```sh
-wg_manager menu hide
-```
-To get the manu back, in the same way, issue **menu show**.
-
-
 ## IPv6
 In order to have ipv6 over wireguard you will need atleast to have firmware 386.4 (ipv6 nat was not available in previous firmware) and wgm 4.14bC or later.
 
@@ -367,62 +346,6 @@ see rules section for how to add rules for ipv6
 see IPSET section for manage ipv6 IPSET's
 
 see Yazfi section for setting up YazFi for ipv6
-
-## IPv6 Over Wireguard without IPv6 WAN
-If you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
-
-Since you dont have an ipv6 lan ip, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
-```sh
-E:Option ==> ipv6 ula
-
-        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6)
-```
-
-Note that Wgm suggest to use aa as the fist 2 letters instead of fd. The reason for this is 2 fold:
-1) Asus router seems to refuse to route ULA to WAN (see WG-server section)
-2) Devices that gets addresses starting with fd are reluctant to use IPv6 since this is a local address. This wil cause your devices to use IPv4 until the last resort, then only use IPv6. 
-
-To get around both these issues we propose to use aa instead, which is probably a violation to the internet standards. but as long as it is only used internally it should be ok. The aa prefix is a global prefix but it is not proscribed yet, so it is not in use. This could however change in the future. look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to see how addresses are assigned at the moment.
-
-Mine became "fdff:a37f:fa75::/48" (altough wgm says /64). The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "aaff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "aaff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
-
-I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with stateful.
-
-in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
-
-Now that your LAN has some sort of IPv6 enabled you should follow the guide above to import your dual stack config file, but if you choose to have it in policy (P) mode, you also need to put in the rules (see sections), and add a default route (see below)
-
-As you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. 
-
-This is NOT needed if you have ipv6 WAN or the peer is in auto/default mode.
-```sh
-nano /jffs/addons/wireguard/Scripts/wg11-up.sh
-```
-populate this with:
-```sh
-#!/bin/sh
-ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
-```
-save and exit.  
-you will also need to make a script to delete the rule as the peer is stopped:
-```sh
-nano /jffs/addons/wireguard/Scripts/wg11-down.sh
-```
-populate with:
-```sh
-#!/bin/sh
-ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
-```
-save and exit
-
-make both files executable:
-```sh
-chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
-chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
-```
-from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RFCs). 
-
-one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
 
 ## check connection
 Checking connection is usually needed to find out why something is not working properly.
@@ -499,6 +422,465 @@ if you dont get a responce, you are having problems resolving names but still ha
 try changing the peer DNS in wgm. it should be noted though that some VPN supplier prohibit the use of other DNS than their own. if you look in the .conf file there are sometimes 2 DNS but wgm only imports the 1st. use the commands above to change the DNS to the other one to see if that works better.
 
 also try to change it to a commersial DNS like 8.8.8.8 or 9.9.9.9. you could also try to point it back to the router itself (192.168.1.1) then it will end up at the routers ordinary DNS handling and from that point you could try to change the DNS in the router GUI (WAN tab).
+
+## Default or Policy routing?
+Default routing is the most common way and basically what you will get if using stock ASUS firmware. this means everything will be routed out your client peer. Even the router itself will access internet via a wg client set in default mode and this could really be the key point. if you are using Transmission, or any other programs on the router itself in Default mode ALL local functions on the router will naturally access the internet via your vpn client. the drawback with this mode is that it is very troublesome to run multiple clients and/or even to run a wg server (basically because the server will also connect via vpn where you cant open ports). it is however possible to exclude some clients by using reverse policy routing (see section) but you will end up managing everything via scripting. so if you just want your entire network to access internet via VPN then this might be your solution. also if you really need router local programs to access internet via VPN then this might also be worth looking into.
+
+To set the peer to autostart in default mode:
+```sh
+E:Option ==> peer wg11 auto=Y
+```  
+  
+  
+In Policy mode the default routing is still done over WAN. then you need to setup rules for which IP, IPRange or IPSETs that should be routed out this specific VPN. you can ofcource put your entire network on a single rule, but the router itself will access internet via WAN. some programs, like Unbound and Transmission can be bound to a specific source adress thus making it possible to have them to obey the policy rules and access internet via VPN (see section) but this is only on case-by-case basis and not all programs can be bound like this.
+Because of the natural routing (for ip's not matching any rules) is via WAN it is really easy to add several VPN clients and have some IPs to use one and some use the other. also to combine VPN clients with VPN servers. This is by far the most flexible mode. The main drawback is that local router program access internet via WAN and this is difficult to work around. 
+To set the peer to autostart in policy mode:
+```sh
+E:Option ==> peer wg11 auto=P
+```
+However, this will not work until you have put in atleast one rule for the peer (see section)
+
+## Create rules in WGM
+if you have decided that policy (P) mode is what you want, we need to setup rules.  
+you will get some terminology help inside wgm:
+```sh
+E:Option ==> peer help
+
+        peer help                                                               - This text
+        peer                                                                    - Show ALL Peers in database
+        peer peer_name                                                          - Show Peer in database or for details e.g peer wg21 config
+        peer peer_name {cmd {options} }                                         - Action the command against the Peer
+        peer peer_name del                                                      - Delete the Peer from the database and all of its files *.conf, *.key
+        peer peer_name ip=xxx.xxx.xxx.xxx                                       - Change the Peer VPN Pool IP
+        peer category                                                           - Show Peer categories in database
+        peer peer_name category [category_name {del | add peer_name[...]} ]     - Create a new category with 3 Peers e.g. peer category GroupA add wg17 wg99 wg11
+        peer new [peer_name [options]]                                          - Create new server Peer e.g. peer new wg27 ip=10.50.99.1/24 port=12345
+        peer peer_name [del|add] ipset {ipset_name[...]}                        - Selectively Route IPSets e.g. peer wg13 add ipset NetFlix Hulu
+        peer peer_name {rule [del {id_num} |add [wan] rule_def]}                - Manage Policy rules e.g. peer wg13 rule add 172.16.1.0/24 comment All LAN
+                                                                                                           peer wg13 rule add wan 52.97.133.162 comment smtp.office365.com
+                                                                                                           peer wg13 rule add wan 172.16.1.100 9.9.9.9 comment Quad9 DNS
+```
+as stated before, we need to create rules for everything that needs to go out VPN. any IPs not matching any rule will go out WAN. so why would we ever need to create WAN rules you might ask? because sometimes we create a rule for VPN but needs exceptions. for this purpose WAN rules is always set to a higher priority than VPN rules, regardless of the order in wgm.
+
+so to create a rule that will send a specific ip, say 192.168.1.38 to wg11:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.1.38 comment My Computer To VPN
+```
+and the result will be:
+```sh
+E:Option ==> peer wg11
+<snip>
+        Selective Routing RPDB rules
+ID  Peer  Interface  Source          Destination     Description
+1   wg11  VPN        192.168.1.38    Any             My Computer To VPN
+```
+if we want to remove the rule, we use the ID:
+```sh
+E:Option ==> peer wg11 rule del 1
+```
+and the rule will be removed.
+
+in my system I create one rule for my entire Guest network 4:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.5.1/24 comment Guest To VPN
+```
+but since the policy routing table is not as complete as the main routing table I need to make exceptions. like if the router needs to contact this subnet it wont find any route to it in this table, so we need to make an exception:
+```sh
+E:Option ==> peer wg11 rule add wan 0.0.0.0/0 192.168.5.1/24 comment To Guest Use Main
+```
+this works brilliantly since the WAN rules have higher priority so any packets going TO this network will be using the main routing table and this is very ok, since the reason for redirect the subnet is for packages going out internet and these packages are not. Packages to internet will not have these adresses as destination so they will be sent to vpn.
+
+wgm uses smart categorizing when only one ip adress is given. if this ip belongs to a local ip adress (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) then it will be considered a source adress. if it does not it will be considered a destination adress.  
+i.e.
+```sh
+E:Option ==> peer wg11 rule add vpn 10.23.50.189 comment LocalIP
+E:Option ==> peer wg11 rule add wan 8.8.8.8 comment RemoteIP
+```
+and the result is:
+```sh
+E:Option ==> peer wg11
+<snip>
+        Selective Routing RPDB rules
+ID  Peer  Interface  Source          Destination     Description
+1   wg11  VPN        10.23.50.189    Any             LocalIP
+1   wg11  WAN        Any             8.8.8.8         RemoteIP
+```
+to avoid this the author recommends using src= and dst= to work around this, which should look like:
+```sh
+E:Option ==> peer wg11 rule add vpn src=any dst=10.23.50.189 comment LocalIP
+```
+  
+a typical use case could be that we want the entire network to go out VPN except a single computer:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.1.1/24 comment All LAN to VPN
+E:Option ==> peer wg11 rule add wan 192.168.1.38 comment Except This Computer
+```
+this works just fine, with one exception. sadly this computer will still use wg DNS (because vpn rules gets a dns redirection rule but wan rules does not). So in this case it could be better to devide your network in 2 parts, like restrict the DHCP to only give out ip adresses 192.168.1.32 - 192.168.1.255 and manually assign the numbers below 32 and create rules for these ranges separately:
+192.168.1.0/27 #0 - 31 (no rule needed for this)
+192.168.1.32/27 #32-63 (wgm VPN rule)
+192.168.1.64/26 #64-127 (wgm VPN rule)
+192.168.1.128/25 #128-255 (wgm VPN rule)
+
+so in wgm:
+```sh
+E:Option ==> peer wg11 rule add vpn 192.168.1.128/25 comment 128-255
+E:Option ==> peer wg11 rule add vpn 192.168.1.64/26 comment 64-127
+E:Option ==> peer wg11 rule add vpn 192.168.1.32/27 comment 32-63
+```
+no rules are needed for the 0-31 range since the above rules dont cover them so it will naturally go out WAN.
+now, every computer you manually assign an ip in the range 192.168.1.2 - 192.168.1.31 will go out WAN and the rest will go out VPN.
+
+for ipv6 the rules are added in the same way as ipv4, but with an ipv6 adress/prefix instead.
+for example, I have added:
+```sh
+E:Option ==> peer wg11 rule add vpn src=aaff:a37f:fa75:1::/64 dst=any comment LAN to VPN
+E:Option ==> peer wg11 rule add wan src=any dst=aaff:a37f:fa75:1::/48 comment To ipv6Lan
+```
+and the result is:
+```sh
+        Selective Routing RPDB rules
+ID  Peer  Interface  Source                 Destination          Description
+6   wg11  WAN        Any                    aaff:a37f:fa75::/48  To ipv6Lan
+2   wg11  WAN        Any                    192.168.1.1/16       local WAN
+5   wg11  VPN        aaff:a37f:fa75:1::/64  Any                  LAN to VPN
+3   wg11  VPN        192.168.1.1/24         Any                  LAN to VPN
+```
+This basically routes my entire LAN subnet out VPN (both IPv6 and IPv4). It should be noted that the policy routing table for IPv6 may not contain a route even to your own subnet, which means it is very important to redirect TO the same destination to your WAN. this could prefferably be a very generic rule covering your entire network. this would be my rule 2 and 6 above.
+
+Whenever you are satisfied with your rules, you can put the peer in policy mode:
+```sh
+E:Option ==> peer wg11 auto=P
+```
+
+Please note, ipv6 could be difficult to setup rules for, especially if the devices uses SLAAC with privacy extension and/or you have a dynamic prefix. In this case a better alternative could be to use an ipset with the devices Mac addresses instead, see [Create and setup IPSETs](#create-and-setup-ipsets) section.
+  
+## Change DNS/mtu/name/endpoint
+**Dns:**
+```sh
+E:Option ==> peer wg11 dns=8.8.8.8
+```
+Or for dual-stack:
+```sh
+E:Option ==> peer wg11 dns=8.8.8.8,2001:4860:4860::8888
+```
+
+**Mtu:**
+```sh
+E:Option ==> peer wg11 mtu=1412
+```
+or to let Wireguard determine mtu:
+```sh
+E:Option ==> peer wg11 mtu=auto
+```
+
+**Tag name/Annotate:**
+```sh
+E:Option ==> peer wg11 comment My 1st VPN Client
+```
+
+**Endpoint**
+```sh
+E:Option ==> peer wg11 endpoint=146.70.51.98:1443
+```
+
+**Allowed Ips**
+```sh
+E:Option ==> peer wg21 allowedips=​192.168.1.1/24,10.50.1.1/32,0.0.0.0/0
+```
+
+**Wg-interface ip**
+```sh
+E:Option ==> peer wg21 ip=​192.168.100.1
+```
+
+**Port**
+```sh
+E:Option ==> peer wg21 port=38654
+```
+
+**Subnet**
+```sh
+E:Option ==> peer wg21 subnet=​192.168.2.1/24
+```
+
+## Geo-location
+This tool is handly to i.e. change the location of a specific client. This only works for peers in policy (P) mode and it only works on static assigned ips (gui: LAN-->DHCP-Server).  
+if you have multiple vpn connections wich outputs in different countries, say something like this:
+```sh
+E:Option ==> peer
+
+        Peers (Auto=P - Policy, Auto=X - External i.e. Cell/Mobile)
+
+Client  Auto  IP              Endpoint                      DNS          MTU   Annotate
+wg11    P     10.0.69.214/24  <ip:port>                     8.8.8.8      1412  # Output Italy
+wg12    P     10.0.93.103/24  <ip:port                      9.9.9.9      1412  # Output USA
+```
+we could use the jump | geo | livin to change where a source ip gets routed "on-the-fly" IOW without restarting any peers (which also means any config will get reset on the next reboot)
+
+basic terminology is:
+```sh
+jump|geo|livin { @home | * | {[*tag* | wg1x]} {LAN device}
+```
+so if I have a client ip on the local network, 192.168.1.38, I could change this computer geo-location instantly by:
+```sh
+E:Option ==> livin wg11 192.168.1.38
+```
+or, with same result:
+```sh
+E:Option ==> livin Italy 192.168.1.38
+```
+Note: tag must be a single word matching anywere in the tag, **Los Angeles** wont work but **Los-Angeles** will. fix your tags to work with this.
+
+What is happening is that a high-priority rule is created for this ip to be routed out the matching wg1x interface, and also an entry to shift the DNS to the target wg DNS.
+
+For this to be reliable we should make sure the ip-address we are routing have a fixed ip, so you should really consider assigning a static ip to this device in the GUI. After doing so, you could simply use the device name:
+```sh
+E:Option ==> livin Italy Samsung-Phone
+```
+
+further we could change the same IP to:
+```sh
+E:Option ==> livin USA Samsung-Phone
+```
+and 192.168.1.38 will be re-assigned to wg12 and finally:
+```sh
+E:Option ==> livin @home Samsung-Phone
+```
+will delete the rule so this ip will return to be routed to whatever the policy routing rules tell it.
+
+This is really handy if you want to change the location of a specific computer rapidly, but it requires you to continously work with wgm over SSH. 
+
+Note: if you already have rules explicit for this IP setup in policy rules, there is a risk that this rule might be temporarily removed when issuing @home. this command should only be issued against IPs which does not have any explicit rules (Thanks to SNB Forum member @chongnt for finding this).
+
+This command needs to be issued in wgm meny, but if you want you could use it in Apples Shortcuts or Androids SSH Button. See [Execute menu commands externally](#execute-menu-commands-externally) section.
+
+## Manage/Setup IPSETs for policy based routing
+wgm creates the ability to manage your IPSETs. It does not however, by any means, help you in the creation of IPSETs. depending on what you want to do, there are other tools for that. if you for example wish that NETFLIX and similar streaming sites should bypass VPN since these sites block connection from VPN then "x3mrouting" is just what you need. altough x3mrouting is not really compatible with routing wireguard it does a good job of creating/managing the IPSETs for you.
+
+ofcource there is nothing stopping you from plainly create these yourself, for any purpose. an IPSET is just a list with IPAdresses, ports, mac addresses or combination there of, which you can add or delete adresses/ports as you wish. you can read about it here:  
+[ipset man page](https://linux.die.net/man/8/ipset)  
+
+And/or look at the [Create and setup IPSETs](#create-and-setup-ipsets) section of this guide.
+
+one methode, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. This ofcource requires you to actually use dnsmasq (see section about Diversion).
+
+wgm offers capabilities to do routing based on these IPSETs. A couple of things need to happen for IPSET based routing to work:
+1. a rule in the firewall is setup to mark packages with a destination or source adress/port matching an IP/port in IPSET. The mark is set based on where you wish to route matching IPs.
+2. a routing rule is setup to direct packages with a specific mark to a specific routing table.
+3. rp_filter needs to be disabled (or set to loose) for interfaces where IPSETs are routed out.
+
+wgm will handle number 1 completally, so you dont have to worry about that. it will partally handle 2 and 3 but not for all use cases.
+
+we can take a look at which mark is used to route where:
+```sh
+E:Option ==> ipset
+
+        Table:ipset Summary
+
+FWMark  Interface
+0x1000  wg11
+0x2000  wg12
+0x4000  wg13
+0x7000  wg14
+0x3000  wg15
+0x8000  wan
+```
+
+these are the preffered marks. I do not recommend changing them altough it is possible. The point is that marking a package with 0x3000 would mean that we want this package to be routed out wg15.  
+an IPSET could be added to any peer. it does not however mean that it has to be routed out THAT peer it just mean that the rules gets added and deleted as the peer is started stopped. It will also create routing rule and disable rp_filter for that peer.
+
+so, lets say we have an IPSET named NETFLIX_DNS that we want to add to wg12 for matching destination IPs to be routed out WAN:
+```sh
+E:Option ==> peer wg12 add ipset NETFLIX_DNS
+        [✔] Ipset 'NETFLIX_DNS' Selective Routing added wg12
+<snip>
+IPSet        Enable  Peer  FWMark  DST/SRC
+NETFLIX_DNS  Y       wg12  0x2000  dst
+```
+What is happening now is that wgm will create a firewall rule to mark packages with destination matching any ip in our ipset with mark 0x2000. It will also create a rule to route packages marked with 0x2000 out wg12. Since wg12 now contain ipsets then wgm also disables wg12 rp_filter.  
+this was really not what we entended, clearly we wanted destinations to go out WAN instead, so we could just change the MARK accordingly: 
+```sh
+E:Option ==> peer wg12 upd ipset NETFLIX_DNS fwmark 0x8000
+        [✔] Updated IPSet Selective Routing FWMARK for wg12
+```
+and we can check to see that it all looks good:
+```sh
+E:Option ==> peer wg12
+<snip>
+IPSet        Enable  Peer  FWMark  DST/SRC
+NETFLIX_DNS  Y       wg12  0x8000  dst
+```
+The firewall rule is now Updated to mark matching packages with 0x8000 instead.
+if this IPSET was infact a set of source adresses which we wanted to route out WAN instead, we need to change "dst" to be "src" instead:
+```sh
+E:Option ==> peer wg12 upd ipset NETFLIX_DNS dstsrc src
+
+        [✔] Updated IPSet DST/SRC for wg12
+
+E:Option ==> peer wg12
+<snip>
+IPSet        Enable  Peer  FWMark  DST/SRC
+NETFLIX_DNS  Y       wg12  0x8000  src
+```
+
+and if we want to delete it:
+```sh
+E:Option ==> peer wg12 del ipset NETFLIX_DNS
+        [✔] Ipset 'NETFLIX_DNS' Selective Routing deleted wg12
+```
+Since IPSETs are typically IPv4 OR IPv6 (except mac- ipset's). wgm will autodetect which is added and put it in the correct firewall, but you will need to add an IPSET for each, like:
+```sh
+IPSet         Enable  Peer  FWMark  DST/SRC
+NETFLIX-DNS   Y       wg11  0x8000  dst
+MYIP          Y       wg11  0x8000  dst
+NETFLIX-DNS6  Y       wg11  0x8000  dst
+MYIP6         Y       wg11  0x8000  dst
+```
+in this case [MYIP] and [NETFLIX-DNS] are IPv4 IPSETs so they will be enabled for IPv4 firewall and routing rules. [MYIP6] and [NETFLIX-DNS6] are IPv6 IPSETs so they will be enabled in IPv6 firewall and routing rules. this selection is handled automatically by wgm. you add IPv6 IPSETs exactly the same way as for IPv4.
+
+If you add an IPSET containing mac- addresses it is only needed once, since wgm automatically adds this to both ipv4 and ipv6 firewall.
+
+the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packages to different route we will need to disable this.  
+"reverse path filter" is a very simple protection that many now days consider obsolete. whenever a packages comes in on i.e. WAN it will change place on Destination and Source and run it trough the routing table to see if a reply to this package would be routed out the same way. it understands most rules but it will not understand that some packages will recieve a mark and be routed differently. so in this case we need to disable the rp_filter on WAN, otherwise answers from WAN will not be accepted. there are 3 values for rp_filter. 0 means "Disabled", 1 means "Enabled, strict", 2 means "Enabled loose". loose means that it does not check routing explicitly, but will accept if there are any routing ways back this interface. 2 is sufficient for us.
+
+specifically for WAN this could be handled in wgm by:
+```sh
+E:Option ==> rp_filter disable
+         [✔] Reverse Path Filtering DISABLED (2)
+```
+however, Im pretty sure that this wont survive a reboot. Se we better put a 
+```sh
+echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
+```
+(assuming eth0 is your WAN interface) in wg12-up.sh for example (see further down).
+
+ok, so this is how we setup IPSETs in wgm.
+
+wgm will setup rules for marks going out wg1x interfaces but not for the WAN interface (as it is not linked to any peer). so here we need to make a custom script:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg12-up.sh
+```
+populate this with your mark rule and disable the rp_filter:
+```sh
+#!/bin/sh
+ip rule add from all fwmark 0x8000/0x8000 table main prio 9900
+#ip -6 rule add from all fwmark 0x8000/0x8000 table main prio 9900 # For IPv6 IPSETs only
+echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
+```
+save and exit.  
+you will also need to make a script to delete the rule as the peer is stopped:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg12-down.sh
+```
+populate with:
+```sh
+#!/bin/sh
+ip rule del prio 9900
+#ip -6 rule del prio 9900 # For IPv6 IPSETs only
+```
+save and exit
+
+make both files executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg12-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg12-down.sh
+```
+
+now you can go into wgm and restart the peer and our rules should kick in!
+```sh
+E:Option ==> restart wg12
+```
+if we were to use the original fwmark to route out matches wg12, then we wouldnt need to create anything in wg12-up.sh. both routing rule and rp_filter is taken care of by wgm.  
+in my case I have 2 country outputs, and one of the purpose is to be able to watch streaming content from a different continent, which means I want to limit the fwmark to only apply to certain subnets, in my case the rule is:
+```sh
+ip rule add from 192.168.1.1/24 fwmark 0x8000/0x8000 table main prio 9900
+ip -6 rule add from aaff:a37f:fa75:1::/64 fwmark 0x8000/0x8000 table main prio 9900
+```
+so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any 0x8000 fwmark set.
+
+if your ipset is 2-dimensional, like hash:ip,port (see [Create and setup IPSETs](#create-and-setup-ipsets) section) you will need to setup 2 dstsrc, for example to match source ip with destination port:
+```sh
+E:Option ==> peer wg12 add ipset TEST
+E:Option ==> peer wg12 upd ipset TEST dstsrc src,dst
+```
+or to match source ip with source port:
+```sh
+E:Option ==> peer wg12 add ipset TEST
+E:Option ==> peer wg12 upd ipset TEST dstsrc src,src
+```
+
+And finally, if your ipsets are mac addresses then wgm will force it to "source" since this is the only setting that makes sense. It will also always add this ip ipv4 and ipv6 (if ipv6 is enabled on your system)
+
+there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
+
+
+# Setup Wireguard Private Server
+
+# Setup Wireguard Site 2 Site
+
+# Various Tips & Tricks
+
+
+
+
+
+
+## IPv6 Over Wireguard without IPv6 WAN
+If you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
+
+Since you dont have an ipv6 lan ip, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
+```sh
+E:Option ==> ipv6 ula
+
+        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6)
+```
+
+Note that Wgm suggest to use aa as the fist 2 letters instead of fd. The reason for this is 2 fold:
+1) Asus router seems to refuse to route ULA to WAN (see WG-server section)
+2) Devices that gets addresses starting with fd are reluctant to use IPv6 since this is a local address. This wil cause your devices to use IPv4 until the last resort, then only use IPv6. 
+
+To get around both these issues we propose to use aa instead, which is probably a violation to the internet standards. but as long as it is only used internally it should be ok. The aa prefix is a global prefix but it is not proscribed yet, so it is not in use. This could however change in the future. look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to see how addresses are assigned at the moment.
+
+Mine became "fdff:a37f:fa75::/48" (altough wgm says /64). The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "aaff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "aaff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
+
+I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with stateful.
+
+in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
+
+Now that your LAN has some sort of IPv6 enabled you should follow the guide above to import your dual stack config file, but if you choose to have it in policy (P) mode, you also need to put in the rules (see sections), and add a default route (see below)
+
+As you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. 
+
+This is NOT needed if you have ipv6 WAN or the peer is in auto/default mode.
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+populate this with:
+```sh
+#!/bin/sh
+ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
+```
+save and exit.  
+you will also need to make a script to delete the rule as the peer is stopped:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+populate with:
+```sh
+#!/bin/sh
+ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
+```
+save and exit
+
+make both files executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RFCs). 
+
+one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
+
 
 
 ## Site-2-site
@@ -783,385 +1165,11 @@ If you are using another system then Asus HND routers and Wireguard Manager and 
 
 Good luck!
 
-## Default or Policy routing?
-Default routing is the most common way and basically what you will get if using stock ASUS firmware. this means everything will be routed out your client peer. Even the router itself will access internet via a wg client set in default mode and this could really be the key point. if you are using Transmission, or any other programs on the router itself in Default mode ALL local functions on the router will naturally access the internet via your vpn client. the drawback with this mode is that it is very troublesome to run multiple clients and/or even to run a wg server (basically because the server will also connect via vpn where you cant open ports). it is however possible to exclude some clients by using reverse policy routing (see section) but you will end up managing everything via scripting. so if you just want your entire network to access internet via VPN then this might be your solution. also if you really need router local programs to access internet via VPN then this might also be worth looking into.
-
-To set the peer to autostart in default mode:
-```sh
-E:Option ==> peer wg11 auto=Y
-```  
-  
-  
-In Policy mode the default routing is still done over WAN. then you need to setup rules for which IP, IPRange or IPSETs that should be routed out this specific VPN. you can ofcource put your entire network on a single rule, but the router itself will access internet via WAN. some programs, like Unbound and Transmission can be bound to a specific source adress thus making it possible to have them to obey the policy rules and access internet via VPN (see section) but this is only on case-by-case basis and not all programs can be bound like this.
-Because of the natural routing (for ip's not matching any rules) is via WAN it is really easy to add several VPN clients and have some IPs to use one and some use the other. also to combine VPN clients with VPN servers. This is by far the most flexible mode. The main drawback is that local router program access internet via WAN and this is difficult to work around. 
-To set the peer to autostart in policy mode:
-```sh
-E:Option ==> peer wg11 auto=P
-```
-However, this will not work until you have put in atleast one rule for the peer (see section)
 
 
-## Create rules in WGM
-if you have decided that policy (P) mode is what you want, we need to setup rules.  
-you will get some terminology help inside wgm:
-```sh
-E:Option ==> peer help
-
-        peer help                                                               - This text
-        peer                                                                    - Show ALL Peers in database
-        peer peer_name                                                          - Show Peer in database or for details e.g peer wg21 config
-        peer peer_name {cmd {options} }                                         - Action the command against the Peer
-        peer peer_name del                                                      - Delete the Peer from the database and all of its files *.conf, *.key
-        peer peer_name ip=xxx.xxx.xxx.xxx                                       - Change the Peer VPN Pool IP
-        peer category                                                           - Show Peer categories in database
-        peer peer_name category [category_name {del | add peer_name[...]} ]     - Create a new category with 3 Peers e.g. peer category GroupA add wg17 wg99 wg11
-        peer new [peer_name [options]]                                          - Create new server Peer e.g. peer new wg27 ip=10.50.99.1/24 port=12345
-        peer peer_name [del|add] ipset {ipset_name[...]}                        - Selectively Route IPSets e.g. peer wg13 add ipset NetFlix Hulu
-        peer peer_name {rule [del {id_num} |add [wan] rule_def]}                - Manage Policy rules e.g. peer wg13 rule add 172.16.1.0/24 comment All LAN
-                                                                                                           peer wg13 rule add wan 52.97.133.162 comment smtp.office365.com
-                                                                                                           peer wg13 rule add wan 172.16.1.100 9.9.9.9 comment Quad9 DNS
-```
-as stated before, we need to create rules for everything that needs to go out VPN. any IPs not matching any rule will go out WAN. so why would we ever need to create WAN rules you might ask? because sometimes we create a rule for VPN but needs exceptions. for this purpose WAN rules is always set to a higher priority than VPN rules, regardless of the order in wgm.
-
-so to create a rule that will send a specific ip, say 192.168.1.38 to wg11:
-```sh
-E:Option ==> peer wg11 rule add vpn 192.168.1.38 comment My Computer To VPN
-```
-and the result will be:
-```sh
-E:Option ==> peer wg11
-<snip>
-        Selective Routing RPDB rules
-ID  Peer  Interface  Source          Destination     Description
-1   wg11  VPN        192.168.1.38    Any             My Computer To VPN
-```
-if we want to remove the rule, we use the ID:
-```sh
-E:Option ==> peer wg11 rule del 1
-```
-and the rule will be removed.
-
-in my system I create one rule for my entire Guest network 4:
-```sh
-E:Option ==> peer wg11 rule add vpn 192.168.5.1/24 comment Guest To VPN
-```
-but since the policy routing table is not as complete as the main routing table I need to make exceptions. like if the router needs to contact this subnet it wont find any route to it in this table, so we need to make an exception:
-```sh
-E:Option ==> peer wg11 rule add wan 0.0.0.0/0 192.168.5.1/24 comment To Guest Use Main
-```
-this works brilliantly since the WAN rules have higher priority so any packets going TO this network will be using the main routing table and this is very ok, since the reason for redirect the subnet is for packages going out internet and these packages are not. Packages to internet will not have these adresses as destination so they will be sent to vpn.
-
-wgm uses smart categorizing when only one ip adress is given. if this ip belongs to a local ip adress (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) then it will be considered a source adress. if it does not it will be considered a destination adress.  
-i.e.
-```sh
-E:Option ==> peer wg11 rule add vpn 10.23.50.189 comment LocalIP
-E:Option ==> peer wg11 rule add wan 8.8.8.8 comment RemoteIP
-```
-and the result is:
-```sh
-E:Option ==> peer wg11
-<snip>
-        Selective Routing RPDB rules
-ID  Peer  Interface  Source          Destination     Description
-1   wg11  VPN        10.23.50.189    Any             LocalIP
-1   wg11  WAN        Any             8.8.8.8         RemoteIP
-```
-to avoid this the author recommends using src= and dst= to work around this, which should look like:
-```sh
-E:Option ==> peer wg11 rule add vpn src=any dst=10.23.50.189 comment LocalIP
-```
-  
-a typical use case could be that we want the entire network to go out VPN except a single computer:
-```sh
-E:Option ==> peer wg11 rule add vpn 192.168.1.1/24 comment All LAN to VPN
-E:Option ==> peer wg11 rule add wan 192.168.1.38 comment Except This Computer
-```
-this works just fine, with one exception. sadly this computer will still use wg DNS (because vpn rules gets a dns redirection rule but wan rules does not). So in this case it could be better to devide your network in 2 parts, like restrict the DHCP to only give out ip adresses 192.168.1.32 - 192.168.1.255 and manually assign the numbers below 32 and create rules for these ranges separately:
-192.168.1.0/27 #0 - 31 (no rule needed for this)
-192.168.1.32/27 #32-63 (wgm VPN rule)
-192.168.1.64/26 #64-127 (wgm VPN rule)
-192.168.1.128/25 #128-255 (wgm VPN rule)
-
-so in wgm:
-```sh
-E:Option ==> peer wg11 rule add vpn 192.168.1.128/25 comment 128-255
-E:Option ==> peer wg11 rule add vpn 192.168.1.64/26 comment 64-127
-E:Option ==> peer wg11 rule add vpn 192.168.1.32/27 comment 32-63
-```
-no rules are needed for the 0-31 range since the above rules dont cover them so it will naturally go out WAN.
-now, every computer you manually assign an ip in the range 192.168.1.2 - 192.168.1.31 will go out WAN and the rest will go out VPN.
-
-for ipv6 the rules are added in the same way as ipv4, but with an ipv6 adress/prefix instead.
-for example, I have added:
-```sh
-E:Option ==> peer wg11 rule add vpn src=aaff:a37f:fa75:1::/64 dst=any comment LAN to VPN
-E:Option ==> peer wg11 rule add wan src=any dst=aaff:a37f:fa75:1::/48 comment To ipv6Lan
-```
-and the result is:
-```sh
-        Selective Routing RPDB rules
-ID  Peer  Interface  Source                 Destination          Description
-6   wg11  WAN        Any                    aaff:a37f:fa75::/48  To ipv6Lan
-2   wg11  WAN        Any                    192.168.1.1/16       local WAN
-5   wg11  VPN        aaff:a37f:fa75:1::/64  Any                  LAN to VPN
-3   wg11  VPN        192.168.1.1/24         Any                  LAN to VPN
-```
-This basically routes my entire LAN subnet out VPN (both IPv6 and IPv4). It should be noted that the policy routing table for IPv6 may not contain a route even to your own subnet, which means it is very important to redirect TO the same destination to your WAN. this could prefferably be a very generic rule covering your entire network. this would be my rule 2 and 6 above.
-
-Whenever you are satisfied with your rules, you can put the peer in policy mode:
-```sh
-E:Option ==> peer wg11 auto=P
-```
-
-Please note, ipv6 could be difficult to setup rules for, especially if the devices uses SLAAC with privacy extension and/or you have a dynamic prefix. In this case a better alternative could be to use an ipset with the devices Mac addresses instead, see [Create and setup IPSETs](#create-and-setup-ipsets) section.
-  
-## Create categories
-Categories is a way of grouping clients and servers under a category name and allows you to start or stop entire categories.
-
-you can create a category by adding peers to it directly (in this case adding wg11 and wg12 to a category named My1stCategory:
-```sh
-E:Option ==> peer category My1stCategory add wg11 wg12
 
 
-        'Peer category 'My1stCategory' created
 
-```
-you can now check so it got created properly:
-```sh
-E:Option ==> peer category
-
-        Peer categories
-
-My1stCategory=wg11 wg12
-```
-
-now you can issue start and stop commands to this category:
-```sh
-E:Option ==> start My1stCategory
-```
-or even directly from the shell:
-```sh
-wgm start My1stCategory
-```
-
-at present day you cannot add or delete a single peer to the category, instead you delete it and create a new.
-
-if you wish to remove a category:
-```sh
-E:Option ==> peer category My1stCategory del
-
-        'Peer category 'My1stCategory' Deleted
-```
-
-## Geo-location
-This tool is handly to i.e. change the location of a specific client. This only works for peers in policy (P) mode and it only works on static assigned ips (gui: LAN-->DHCP-Server).  
-if you have multiple vpn connections wich outputs in different countries, say something like this:
-```sh
-E:Option ==> peer
-
-        Peers (Auto=P - Policy, Auto=X - External i.e. Cell/Mobile)
-
-Client  Auto  IP              Endpoint                      DNS          MTU   Annotate
-wg11    P     10.0.69.214/24  <ip:port>                     8.8.8.8      1412  # Output Italy
-wg12    P     10.0.93.103/24  <ip:port                      9.9.9.9      1412  # Output USA
-```
-we could use the jump | geo | livin to change where a source ip gets routed "on-the-fly" IOW without restarting any peers (which also means any config will get reset on the next reboot)
-
-basic terminology is:
-```sh
-jump|geo|livin { @home | * | {[*tag* | wg1x]} {LAN device}
-```
-so if I have a client ip on the local network, 192.168.1.38, I could change this computer geo-location instantly by:
-```sh
-E:Option ==> livin wg11 192.168.1.38
-```
-or, with same result:
-```sh
-E:Option ==> livin Italy 192.168.1.38
-```
-Note: tag must be a single word matching anywere in the tag, **Los Angeles** wont work but **Los-Angeles** will. fix your tags to work with this.
-
-What is happening is that a high-priority rule is created for this ip to be routed out the matching wg1x interface, and also an entry to shift the DNS to the target wg DNS.
-
-For this to be reliable we should make sure the ip-address we are routing have a fixed ip, so you should really consider assigning a static ip to this device in the GUI. After doing so, you could simply use the device name:
-```sh
-E:Option ==> livin Italy Samsung-Phone
-```
-
-further we could change the same IP to:
-```sh
-E:Option ==> livin USA Samsung-Phone
-```
-and 192.168.1.38 will be re-assigned to wg12 and finally:
-```sh
-E:Option ==> livin @home Samsung-Phone
-```
-will delete the rule so this ip will return to be routed to whatever the policy routing rules tell it.
-
-This is really handy if you want to change the location of a specific computer rapidly, but it requires you to continously work with wgm over SSH. 
-
-Note: if you already have rules explicit for this IP setup in policy rules, there is a risk that this rule might be temporarily removed when issuing @home. this command should only be issued against IPs which does not have any explicit rules (Thanks to SNB Forum member @chongnt for finding this).
-
-This command needs to be issued in wgm meny, but if you want you could use it in Apples Shortcuts or Androids SSH Button. See [Execute menu commands externally](#execute-menu-commands-externally) section.
-
-## Manage/Setup IPSETs for policy based routing
-wgm creates the ability to manage your IPSETs. It does not however, by any means, help you in the creation of IPSETs. depending on what you want to do, there are other tools for that. if you for example wish that NETFLIX and similar streaming sites should bypass VPN since these sites block connection from VPN then "x3mrouting" is just what you need. altough x3mrouting is not really compatible with routing wireguard it does a good job of creating/managing the IPSETs for you.
-
-ofcource there is nothing stopping you from plainly create these yourself, for any purpose. an IPSET is just a list with IPAdresses, ports, mac addresses or combination there of, which you can add or delete adresses/ports as you wish. you can read about it here:  
-[ipset man page](https://linux.die.net/man/8/ipset)  
-
-And/or look at the [Create and setup IPSETs](#create-and-setup-ipsets) section of this guide.
-
-one methode, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. This ofcource requires you to actually use dnsmasq (see section about Diversion).
-
-wgm offers capabilities to do routing based on these IPSETs. A couple of things need to happen for IPSET based routing to work:
-1. a rule in the firewall is setup to mark packages with a destination or source adress/port matching an IP/port in IPSET. The mark is set based on where you wish to route matching IPs.
-2. a routing rule is setup to direct packages with a specific mark to a specific routing table.
-3. rp_filter needs to be disabled (or set to loose) for interfaces where IPSETs are routed out.
-
-wgm will handle number 1 completally, so you dont have to worry about that. it will partally handle 2 and 3 but not for all use cases.
-
-we can take a look at which mark is used to route where:
-```sh
-E:Option ==> ipset
-
-        Table:ipset Summary
-
-FWMark  Interface
-0x1000  wg11
-0x2000  wg12
-0x4000  wg13
-0x7000  wg14
-0x3000  wg15
-0x8000  wan
-```
-
-these are the preffered marks. I do not recommend changing them altough it is possible. The point is that marking a package with 0x3000 would mean that we want this package to be routed out wg15.  
-an IPSET could be added to any peer. it does not however mean that it has to be routed out THAT peer it just mean that the rules gets added and deleted as the peer is started stopped. It will also create routing rule and disable rp_filter for that peer.
-
-so, lets say we have an IPSET named NETFLIX_DNS that we want to add to wg12 for matching destination IPs to be routed out WAN:
-```sh
-E:Option ==> peer wg12 add ipset NETFLIX_DNS
-        [✔] Ipset 'NETFLIX_DNS' Selective Routing added wg12
-<snip>
-IPSet        Enable  Peer  FWMark  DST/SRC
-NETFLIX_DNS  Y       wg12  0x2000  dst
-```
-What is happening now is that wgm will create a firewall rule to mark packages with destination matching any ip in our ipset with mark 0x2000. It will also create a rule to route packages marked with 0x2000 out wg12. Since wg12 now contain ipsets then wgm also disables wg12 rp_filter.  
-this was really not what we entended, clearly we wanted destinations to go out WAN instead, so we could just change the MARK accordingly: 
-```sh
-E:Option ==> peer wg12 upd ipset NETFLIX_DNS fwmark 0x8000
-        [✔] Updated IPSet Selective Routing FWMARK for wg12
-```
-and we can check to see that it all looks good:
-```sh
-E:Option ==> peer wg12
-<snip>
-IPSet        Enable  Peer  FWMark  DST/SRC
-NETFLIX_DNS  Y       wg12  0x8000  dst
-```
-The firewall rule is now Updated to mark matching packages with 0x8000 instead.
-if this IPSET was infact a set of source adresses which we wanted to route out WAN instead, we need to change "dst" to be "src" instead:
-```sh
-E:Option ==> peer wg12 upd ipset NETFLIX_DNS dstsrc src
-
-        [✔] Updated IPSet DST/SRC for wg12
-
-E:Option ==> peer wg12
-<snip>
-IPSet        Enable  Peer  FWMark  DST/SRC
-NETFLIX_DNS  Y       wg12  0x8000  src
-```
-
-and if we want to delete it:
-```sh
-E:Option ==> peer wg12 del ipset NETFLIX_DNS
-        [✔] Ipset 'NETFLIX_DNS' Selective Routing deleted wg12
-```
-Since IPSETs are typically IPv4 OR IPv6 (except mac- ipset's). wgm will autodetect which is added and put it in the correct firewall, but you will need to add an IPSET for each, like:
-```sh
-IPSet         Enable  Peer  FWMark  DST/SRC
-NETFLIX-DNS   Y       wg11  0x8000  dst
-MYIP          Y       wg11  0x8000  dst
-NETFLIX-DNS6  Y       wg11  0x8000  dst
-MYIP6         Y       wg11  0x8000  dst
-```
-in this case [MYIP] and [NETFLIX-DNS] are IPv4 IPSETs so they will be enabled for IPv4 firewall and routing rules. [MYIP6] and [NETFLIX-DNS6] are IPv6 IPSETs so they will be enabled in IPv6 firewall and routing rules. this selection is handled automatically by wgm. you add IPv6 IPSETs exactly the same way as for IPv4.
-
-If you add an IPSET containing mac- addresses it is only needed once, since wgm automatically adds this to both ipv4 and ipv6 firewall.
-
-the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packages to different route we will need to disable this.  
-"reverse path filter" is a very simple protection that many now days consider obsolete. whenever a packages comes in on i.e. WAN it will change place on Destination and Source and run it trough the routing table to see if a reply to this package would be routed out the same way. it understands most rules but it will not understand that some packages will recieve a mark and be routed differently. so in this case we need to disable the rp_filter on WAN, otherwise answers from WAN will not be accepted. there are 3 values for rp_filter. 0 means "Disabled", 1 means "Enabled, strict", 2 means "Enabled loose". loose means that it does not check routing explicitly, but will accept if there are any routing ways back this interface. 2 is sufficient for us.
-
-specifically for WAN this could be handled in wgm by:
-```sh
-E:Option ==> rp_filter disable
-         [✔] Reverse Path Filtering DISABLED (2)
-```
-however, Im pretty sure that this wont survive a reboot. Se we better put a 
-```sh
-echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
-```
-(assuming eth0 is your WAN interface) in wg12-up.sh for example (see further down).
-
-ok, so this is how we setup IPSETs in wgm.
-
-wgm will setup rules for marks going out wg1x interfaces but not for the WAN interface (as it is not linked to any peer). so here we need to make a custom script:
-```sh
-nano /jffs/addons/wireguard/Scripts/wg12-up.sh
-```
-populate this with your mark rule and disable the rp_filter:
-```sh
-#!/bin/sh
-ip rule add from all fwmark 0x8000/0x8000 table main prio 9900
-#ip -6 rule add from all fwmark 0x8000/0x8000 table main prio 9900 # For IPv6 IPSETs only
-echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter
-```
-save and exit.  
-you will also need to make a script to delete the rule as the peer is stopped:
-```sh
-nano /jffs/addons/wireguard/Scripts/wg12-down.sh
-```
-populate with:
-```sh
-#!/bin/sh
-ip rule del prio 9900
-#ip -6 rule del prio 9900 # For IPv6 IPSETs only
-```
-save and exit
-
-make both files executable:
-```sh
-chmod +x /jffs/addons/wireguard/Scripts/wg12-up.sh
-chmod +x /jffs/addons/wireguard/Scripts/wg12-down.sh
-```
-
-now you can go into wgm and restart the peer and our rules should kick in!
-```sh
-E:Option ==> restart wg12
-```
-if we were to use the original fwmark to route out matches wg12, then we wouldnt need to create anything in wg12-up.sh. both routing rule and rp_filter is taken care of by wgm.  
-in my case I have 2 country outputs, and one of the purpose is to be able to watch streaming content from a different continent, which means I want to limit the fwmark to only apply to certain subnets, in my case the rule is:
-```sh
-ip rule add from 192.168.1.1/24 fwmark 0x8000/0x8000 table main prio 9900
-ip -6 rule add from aaff:a37f:fa75:1::/64 fwmark 0x8000/0x8000 table main prio 9900
-```
-so only 192.168.1.x will be covered by this rule. all else will be routed out VPN according to policy rules regardless of any 0x8000 fwmark set.
-
-if your ipset is 2-dimensional, like hash:ip,port (see [Create and setup IPSETs](#create-and-setup-ipsets) section) you will need to setup 2 dstsrc, for example to match source ip with destination port:
-```sh
-E:Option ==> peer wg12 add ipset TEST
-E:Option ==> peer wg12 upd ipset TEST dstsrc src,dst
-```
-or to match source ip with source port:
-```sh
-E:Option ==> peer wg12 add ipset TEST
-E:Option ==> peer wg12 upd ipset TEST dstsrc src,src
-```
-
-And finally, if your ipsets are mac addresses then wgm will force it to "source" since this is the only setting that makes sense. It will also always add this ip ipv4 and ipv6 (if ipv6 is enabled on your system)
-
-there are endless variations to this and the up/down scripts could be used to delete rules created by wgm and replace them with your own. I cannot cover everything in here so please read up on what everything does and adjust to your needs.
 
 ## Setup WG Server
 Wireguard Manager sets up a server peer (wg21) when it is installed. If your only purpose is to access your IPv4 LAN then this might be enough for you, so to setup a Road-Warrior device, simply execute:
