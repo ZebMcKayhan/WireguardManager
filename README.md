@@ -14,6 +14,11 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [Preface](#preface)  
   
 [Setup wgm](#setup-wgm)  
+[Setup Wireguard Internet Client](#setup-wireguard-internet-client)  
+[Setup Wireguard Private Server](#setup-wireguard-private-server)  
+[Setup Wireguard Site 2 Site](#setup-wireguard-site-2-site) 
+[Various Tips & Tricks](#various-tips-&-tricks)  
+
   -[Import Client](#import-client)  
   -[Add persistentKeepalive](#add-persistentkeepalive)  
   -[Manage Killswitch](#manage-killswitch)  
@@ -52,6 +57,14 @@ Following all parts of this guide as-is may cause conflicts in your system as ma
 With that said, Congratulations on your choice of setting up Wireguard and Wireguard Session Manager. I hope this guide will serve you well and provide a hazzle free setup of Wireguard on your ASUS router.
 
 # Setup wgm
+
+# Setup Wireguard Internet Client
+
+# Setup Wireguard Private Server
+
+# Setup Wireguard Site 2 Site
+
+# Various Tips & Tricks
 
 ## Import Client
 First make sure to obtain a client file from your favorite wireguard vpn provided. Once you have obtained your .conf file, it is a really good idea to test it on an android client (using wireguard app for Android) or windows or similar. it appears a common problem that config files have a short life and sometimes no life at all. it could spare you alot of trouble by making sure that this config file is working before proceeding with importing it into wgm.
