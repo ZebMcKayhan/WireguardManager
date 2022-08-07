@@ -15,7 +15,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   
 [**Setup wgm**](#setup-wgm)  
   -[Terminal Options](#terminal-options)  
-  -[Manage Killswitch](#manage-killswitch) 
+  -[Manage Killswitch](#manage-killswitch)  
   -[Create categories](#create-categories)  
   
 [**Setup Wireguard Internet Client**](#setup-wireguard-internet-client)  
