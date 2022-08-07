@@ -16,7 +16,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [Setup wgm](#setup-wgm)  
 [Setup Wireguard Internet Client](#setup-wireguard-internet-client)  
 [Setup Wireguard Private Server](#setup-wireguard-private-server)  
-[Setup Wireguard Site 2 Site](#setup-wireguard-site-2-site) 
+[Setup Wireguard Site 2 Site](#setup-wireguard-site-2-site)  
 [Various Tips & Tricks](#various-tips-&-tricks)  
 
   -[Import Client](#import-client)  
