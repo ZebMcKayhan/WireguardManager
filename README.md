@@ -1548,7 +1548,7 @@ so at the end it looks something like:
 ```sh
 ========== SiteA configuration ==========   ========== SiteB configuration ==========   ========== SiteC configuration ==========   ========== SiteD configuration ==========   ========== SiteE configuration ==========
 
-# SiteA - 192.168.55.0/24                   # SiteB - 172.16.2.0/24                     # SiteC - 172.16.3.0/24                     # SiteC - 192.168.1.0/24                    # SiteC - 192.168.2.0/24
+# SiteA - 192.168.55.0/24                   # SiteB - 172.16.2.0/24                     # SiteC - 172.16.3.0/24                     # SiteD - 192.168.1.0/24                    # SiteE - 192.168.2.0/24
 [Interface]                                 [Interface]                                 [Interface]                                 [Interface]                                 [Interface]
 PrivateKey = <hidden>                       PrivateKey = <hidden>                       PrivateKey = <hidden>                       PrivateKey = <hidden>                       PrivateKey = <hidden>
 Address = 10.9.8.1/32                       Address = 10.9.8.2/32                       Address = 10.9.8.3/32                       Address = 10.9.8.4/32                       Address = 10.9.8.5/32
