@@ -1425,7 +1425,7 @@ ListenPort = 61820                          ListenPort = 61821                  
 [Peer]                                      [Peer]                                      [Peer]
 PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>
 AllowedIPs = 10.9.8.2/32, 172.16.2.0/24     AllowedIPs = 10.9.8.1/32, 192.168.55.0/24   AllowedIPs = 10.9.8.1/32, 192.168.55.0/24
-Endpoint = SiteB.ddns.com:61821             Endpoint = SiteA.ddns.com:                  Endpoint = SiteA.ddns.com:61820                  
+Endpoint = SiteB.ddns.com:61821             Endpoint = SiteA.ddns.com:61820             Endpoint = SiteA.ddns.com:61820                  
 #PresharedKey =                             #PresharedKey =                             #PresharedKey = 
 PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25
 
@@ -1508,7 +1508,7 @@ ListenPort = 61820                          ListenPort = 61821                  
 [Peer]                                      [Peer]                                      [Peer]
 PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>
 AllowedIPs = 10.9.8.2/32, 172.16.2.0/24     AllowedIPs = 10.9.8.1/32, 192.168.55.0/24   AllowedIPs = 10.9.8.1/32, 192.168.55.0/24
-Endpoint = SiteB.ddns.com:61821             Endpoint = SiteA.ddns.com:                  Endpoint = SiteA.ddns.com:61820                  
+Endpoint = SiteB.ddns.com:61821             Endpoint = SiteA.ddns.com:61820             Endpoint = SiteA.ddns.com:61820                  
 #PresharedKey =                             #PresharedKey =                             #PresharedKey = 
 PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25
 
