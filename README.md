@@ -1537,7 +1537,7 @@ E:Option ==> import SiteB.conf type=device
 
 If you are using another system then Asus HND routers and Wireguard Manager and wishes to use i.e. wg-quick, then on SiteB simply start SiteB.conf and on siteC simply start SiteC.conf. You might need to make custom changes to the .conf files depending on which system to run it on. 
 
-**Combination of star and mesh topologies**
+**Combination of star and mesh topologies**  
 Assume we would like to connect 2 more peers to our mesh network. But these sites are both behind CGNAT so they cannot connect to each other, but they could connect to all other nodes but they need a dedicated peer to route packats between them. In This case I selected SiteA as the site to route packages between our CGNAT peers/sites. The main difference now is that if SiteA is down there will not be any routes between our CGNAT peers/sites (SiteD and SiteE) but all other sites could still communicate to both of them, they just cant talk amongst each other.
 It could seem like a good idea to have SiteD to route packages via SiteA and SiteE to route packages via SiteB but we are then only creating additional dependencies that both SiteA AND siteB needs to be up for the sites to be able to communicate
  
