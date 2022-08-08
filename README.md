@@ -17,6 +17,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Terminal Options](#terminal-options)  
   -[Manage Killswitch](#manage-killswitch)  
   -[Create categories](#create-categories)  
+  -[Execute menu commands externally](#execute-menu-commands-externally)  
   
 [**Setup Wireguard Internet Client**](#setup-wireguard-internet-client)  
   -[Import Client](#import-client)  
@@ -38,13 +39,14 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Site 2 Multisite / Mesh](#site-2-multisite--mesh)  
   -[Route Site 2 Site internet access](#route-site-2-site-internet-access)  
   
-[**Various Tips & Tricks**](#various-tips--tricks)  
-  -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
-  -[Execute menu commands externally](#execute-menu-commands-externally)  
-  -[Create and setup IPSETs](#create-and-setup-ipsets)  
-  -[Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
+[**YazFi Wireguard integration**](#yazfi-wireguard-integration)  
   -[Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
   -[Setup Yazfi for IPv6 subnet to route out wg vpn](#setup-yazfi-for-ipv6-subnet-to-route-out-wg-vpn)  
+  
+[**Various Tips & Tricks**](#various-tips--tricks)  
+  -[IPv6 Over Wireguard without IPv6 WAN](#ipv6-over-wireguard-without-ipv6-wan)  
+  -[Create and setup IPSETs](#create-and-setup-ipsets)  
+  -[Why is Diversion not working for WG Clients](#why-is-diversion-not-working-for-wg-clients)  
   -[Setup a reverse policy based routing](#setup-a-reverse-policy-based-routing)  
   -[Setup Transmission and/or Unbound to use WG Client](#setup-transmission-andor-unbound-to-use-wg-client)  
   -[Setup Transmission and/or Unbound to use WG Client (alternative way)](#setup-transmission-andor-unbound-to-use-wg-client-alternate-way)  
@@ -177,6 +179,80 @@ E:Option ==> peer category My1stCategory del
 
         'Peer category 'My1stCategory' Deleted
 ```
+
+# Execute menu commands externally
+Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
+
+The basic command:
+```sh
+echo -e "livin wg11 192.168.1.94\ne" | wg_manager
+```
+**livin wg11 192.168.1.94** - is the command executed, change to your needs.  
+**\n** - this is the ***ENTER*** key to execute the command that has been printed.  
+**e** - a second command which exists wgm so we dont leave it running.  
+
+Depending on what you want to do, this might function very nice in i.e. Andiod app **SSH Button** since it does not provide any output feedback more than **OK**. But in **Apple Siri Shortcuts** you might want to have the appropriate feedback from your command. The above command will splash you the menu which will clutter the output so its really hard to see the output from your command.
+
+If we are really interested in all command output, to be able to catch unexpected output (which maybee the most important output), we will have to use a slightly more messy command. I have put this in a wrapper shell script so you dont have to see it (altough just look in the file if you are interested). 
+
+Latest wgm installs the wrapper script by default, but if it don't, you could install it in wgm:
+```sh
+E:Option ==> addon wgmExpo.sh
+```
+Or, with the same result, execute from shell:
+```sh
+curl --retry 3 "https://raw.githubusercontent.com/ZebMcKayhan/WireguardManager/main/wgmExpo.sh" -o "/jffs/addons/wireguard/wgmExpo.sh" && chmod 755 "/jffs/addons/wireguard/wgmExpo.sh" && /jffs/addons/wireguard/wgmExpo.sh -install
+```
+Display help
+```sh
+admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo --help
+   wgmExpo Version 0.4 by ZebMcKayhan
+
+   Execute menu command in Wireguard Session Manager
+
+   Usage:
+      wgmExpo <Option> "command 1" "command 2" "command n"
+
+   Options:
+      -h       - Help
+      -v       - Version
+      -s       - Silent mode, no output
+      -c       - Monocrome output (no ASCII escape characters)
+      -t       - Display Wireguard ACTIVE Peer Status: each command
+      -e       - Expose all display output (no filtering)
+      -remove  - Remove wgmExpo
+
+   Example:
+      wgmExpo "peer wg11 comment Italy"
+      wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"
+      wgmExpo -ct "livin wg11 192.168.10.53"
+```
+wgmExpo.sh will install at **/jffs/addons/wireguard/** and make symlink wgmExpo in **/opt/bin/** which is in the router path, so you can access it from 
+
+The script will pad the nessissary **\n** between each command and add **exit** at the end, so you dont have to add this to the command list.
+
+The **-s** (silent mode) will prohibit all output when running the command, it could be useful when you are running wgm commands from your own scripts, but you will need to make sure, by other means, that the command actually pulled through. Currently it wont even output program errors, but that might change in the future.
+
+With wgmExpo we dont need to use the **menu hide** since it wont be displayed anyway, but it could be useful to use the **-c** (colour off) if you are outputting to a display that dont use colours. You will get a lot of escape characters if you dont turn off colours. The script silently adds the "colour off" command to the list of commands to be able to do this.
+
+The **-t** (display status) will display the **WireGuard ACTIVE Peer Status: Clients 1, Servers 0** after each executed commands. It could be useful sometimes.
+
+The **-e** (Expose all) will display everything that is happening, useful for debugging.
+
+The only options that could be used together is the **-c** together with **-t** or **-e** since these are the only ones that makes sense. Please note that **-ce** will show the initial menu with colours until the first **colour off** command is executed.
+
+If you run some bad command so the script and/or wgm doesnt return to the prompt, it could usually be exit with **CTRL+C**.
+
+If you ever wish to remove the wrapper script, simply execute:
+```sh
+E:Option ==> addon wgmExpo.sh del
+```
+Or execute at the shell prompt:
+```sh
+wgmExpo -remove
+```
+
+Enjoy!
 
 # Setup Wireguard Internet Client
 ## Import Client
@@ -1573,338 +1649,7 @@ Ofcource you dont have to use remote peer dnsmasq, you could replace that ip wit
 
 The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
    
-
-# Various Tips & Tricks
-## IPv6 Over Wireguard without IPv6 WAN
-If you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
-
-Since you dont have an ipv6 lan ip, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
-```sh
-E:Option ==> ipv6 ula
-
-        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6)
-```
-
-Note that Wgm suggest to use aa as the fist 2 letters instead of fd. The reason for this is 2 fold:
-1) Asus router seems to refuse to route ULA to WAN (see WG-server section)
-2) Devices that gets addresses starting with fd are reluctant to use IPv6 since this is a local address. This wil cause your devices to use IPv4 until the last resort, then only use IPv6. 
-
-To get around both these issues we propose to use aa instead, which is probably a violation to the internet standards. but as long as it is only used internally it should be ok. The aa prefix is a global prefix but it is not proscribed yet, so it is not in use. This could however change in the future. look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to see how addresses are assigned at the moment.
-
-Mine became "fdff:a37f:fa75::/48" (altough wgm says /64). The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "aaff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "aaff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
-
-I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with stateful.
-
-in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
-
-Now that your LAN has some sort of IPv6 enabled you should follow the guide above to import your dual stack config file, but if you choose to have it in policy (P) mode, you also need to put in the rules (see sections), and add a default route (see below)
-
-As you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. 
-
-This is NOT needed if you have ipv6 WAN or the peer is in auto/default mode.
-```sh
-nano /jffs/addons/wireguard/Scripts/wg11-up.sh
-```
-populate this with:
-```sh
-#!/bin/sh
-ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
-```
-save and exit.  
-you will also need to make a script to delete the rule as the peer is stopped:
-```sh
-nano /jffs/addons/wireguard/Scripts/wg11-down.sh
-```
-populate with:
-```sh
-#!/bin/sh
-ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
-```
-save and exit
-
-make both files executable:
-```sh
-chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
-chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
-```
-from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RFCs). 
-
-one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
-
-# Execute menu commands externally
-Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
-
-The basic command:
-```sh
-echo -e "livin wg11 192.168.1.94\ne" | wg_manager
-```
-**livin wg11 192.168.1.94** - is the command executed, change to your needs.  
-**\n** - this is the ***ENTER*** key to execute the command that has been printed.  
-**e** - a second command which exists wgm so we dont leave it running.  
-
-Depending on what you want to do, this might function very nice in i.e. Andiod app **SSH Button** since it does not provide any output feedback more than **OK**. But in **Apple Siri Shortcuts** you might want to have the appropriate feedback from your command. The above command will splash you the menu which will clutter the output so its really hard to see the output from your command.
-
-If we are really interested in all command output, to be able to catch unexpected output (which maybee the most important output), we will have to use a slightly more messy command. I have put this in a wrapper shell script so you dont have to see it (altough just look in the file if you are interested). 
-
-Latest wgm installs the wrapper script by default, but if it don't, you could install it in wgm:
-```sh
-E:Option ==> addon wgmExpo.sh
-```
-Or, with the same result, execute from shell:
-```sh
-curl --retry 3 "https://raw.githubusercontent.com/ZebMcKayhan/WireguardManager/main/wgmExpo.sh" -o "/jffs/addons/wireguard/wgmExpo.sh" && chmod 755 "/jffs/addons/wireguard/wgmExpo.sh" && /jffs/addons/wireguard/wgmExpo.sh -install
-```
-Display help
-```sh
-admin@RT-AC86U-D7D8:/tmp/home/root# wgmExpo --help
-   wgmExpo Version 0.4 by ZebMcKayhan
-
-   Execute menu command in Wireguard Session Manager
-
-   Usage:
-      wgmExpo <Option> "command 1" "command 2" "command n"
-
-   Options:
-      -h       - Help
-      -v       - Version
-      -s       - Silent mode, no output
-      -c       - Monocrome output (no ASCII escape characters)
-      -t       - Display Wireguard ACTIVE Peer Status: each command
-      -e       - Expose all display output (no filtering)
-      -remove  - Remove wgmExpo
-
-   Example:
-      wgmExpo "peer wg11 comment Italy"
-      wgmExpo -c "peer wg11 dns=9.9.9.9" "restart wg11"
-      wgmExpo -ct "livin wg11 192.168.10.53"
-```
-wgmExpo.sh will install at **/jffs/addons/wireguard/** and make symlink wgmExpo in **/opt/bin/** which is in the router path, so you can access it from 
-
-The script will pad the nessissary **\n** between each command and add **exit** at the end, so you dont have to add this to the command list.
-
-The **-s** (silent mode) will prohibit all output when running the command, it could be useful when you are running wgm commands from your own scripts, but you will need to make sure, by other means, that the command actually pulled through. Currently it wont even output program errors, but that might change in the future.
-
-With wgmExpo we dont need to use the **menu hide** since it wont be displayed anyway, but it could be useful to use the **-c** (colour off) if you are outputting to a display that dont use colours. You will get a lot of escape characters if you dont turn off colours. The script silently adds the "colour off" command to the list of commands to be able to do this.
-
-The **-t** (display status) will display the **WireGuard ACTIVE Peer Status: Clients 1, Servers 0** after each executed commands. It could be useful sometimes.
-
-The **-e** (Expose all) will display everything that is happening, useful for debugging.
-
-The only options that could be used together is the **-c** together with **-t** or **-e** since these are the only ones that makes sense. Please note that **-ce** will show the initial menu with colours until the first **colour off** command is executed.
-
-If you run some bad command so the script and/or wgm doesnt return to the prompt, it could usually be exit with **CTRL+C**.
-
-If you ever wish to remove the wrapper script, simply execute:
-```sh
-E:Option ==> addon wgmExpo.sh del
-```
-Or execute at the shell prompt:
-```sh
-wgmExpo -remove
-```
-
-Enjoy!
-
-# Create and setup IPSETs
-Ipsets are really handy for various reasons. It is basically just a set of ipv4, ipv6, Mac addresses, ip addresses and port combinations. Maybee one of the more useful parts is that we can have dnsmasq to autopopulate the set with ip-addresses as it is requested to lookup certain domains. Ipsets could be added in wgm and matching ips, ports or whatever the ipset contain could be routed out wg- client or wan if the normal route is wg- client. Ipsets adds more flexibility than ordinary policy (source ip) routing. For example an ipset could be source ip and destination port only routed out I.e. wg11. Or ip-range and specific port or even mac-address (source only). Once setup and familiar it is just as easy to handle as ordinary policy rules.
-
-To create an ipset we could issue one of the following:
-```sh
-ipset create NETFLIX-DNS hash:net family inet # ipv4 addresses
-ipset create NETFLIX-DNS6 hash:net family inet6 # ipv6 addresses
-ipset create wg11-mac hash:mac # mac-addresses
-```
-
-To add an entry manually to the ipsets we just created, ie:
-```sh
-ipset add NETFLIX-DNS 54.155.178.5
-ipset add NETFLIX-DNS6 2a05:d018:76c:b683:e1fe:9fbf:c403:57f1
-ipset add wg11-mac a1:b2:c3:d4:e5:f6
-ipset add NETFLIX-DNS 54.155.179.0/24
-ipset add NETFLIX-DNS6 2a05:d018:76c:b684::/64
-```
-
-To save the ipset to a file:
-```sh
-ipset save NETFLIX-DNS > /opt/tmp/NETFLIX-DNS
-ipset save NETFLIX-DNS6 > /opt/tmp/NETFLIX-DNS6
-ipset save wg11-mac > /opt/tmp/wg11-mac
-```
-And to restore them:
-```sh
-ipset restore -! < /opt/tmp/NETFLIX-DNS
-ipset restore -! < /opt/tmp/NETFLIX-DNS6
-ipset restore -! < /opt/tmp/wg11-mac
-```
-
-To automate the process of periodically saving the ipsets and to restore them at boot, first create your ipset and manually save it according to above. Then put in nat-start:
-```sh
-nano /jffs/scripts/nat-start
-```
-And populate with:
-```sh
-#!/bin/sh
-sleep 10 # Needed as nat-start is executed many times during boot
-
-IPSET_LIST="NETFLIX-DNS NETFLIX-DNS6 wg11-mac"
-
-for IPSET_NAME in $IPSET_LIST; do 
-   if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if ipset does not already exist 
-      if [ -s "/opt/tmp/$IPSET_NAME" ]; then #if a backup file exists 
-         ipset restore -! <"/opt/tmp/$IPSET_NAME" #restore ipset 
-         cru a "$IPSET_NAME" "0 2 * * * ipset save $IPSET_NAME > /opt/tmp/$IPSET_NAME" >/dev/null 2>&1 # create cron job for autosave
-      fi 
-   fi
-done
-```
-The autosave mostly makes sense if dnsmasq autopopulates the ipset. If you wish to manually add entries then you could comment that line, just don't forget to save your set if you make changes.
-Save and exit. If you just created the file, make it executable:
-```sh
-chmod +x /jffs/scripts/nat-start
-```
-
-If we want our ipset's to be autopopulated by dnsmasq:
-```sh
-nano /jffs/configs/dnsmasq.conf.add
-```
-And add 
-```sh
-ipset=/netflix.com/netflix.net/nflxext.com/nflximg.com/nflximg.net/nflxso.net/nflxvideo.net/amazonaws.com/NETFLIX-DNS,NETFLIX-DNS6
-```
-Here you need to change to your needs. It is simply a list of top-domains separated by / and ends with the ipsets. If you only use ipv4 or ipv6 just remove the ipset name you don't use.
-
-Save and exit
-
-To make our changes kick-in:
-```sh
-service restart_dnsmasq
-```
-Before doing anything else, check syslog so that there were no error messages from dnsmasq, if there are, check your syntax and try to restart again. If you disconnect at this point you might not get a new ip so continue until dnsmasq starts.
-
-Now any lookup of netflix.com, netflix.net a.s.o from dnsmasq would result in the ips looked up being added to the ipsets. 
-
-Now these ipsets could be added to wgm (see section).
-
-We could also have the firewall populate the nessisary information into our ipset (Thanks to SNB forum member @dave14305 for this great idea!), I.e:
-```sh
-IPSET_NAME_mac=Test_Mac 
-IPv4Rule=192.168.1.16/30 
-
-ipset create ${IPSET_NAME_mac} hash:mac 
-ipset flush ${IPSET_NAME_mac} 
-iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
-```
-Here I've used -s to match source ip/range and conntrack to only match new connection package (to limit amount of matches) and when there is a match on a package it will populate the information the ipset contains (mac-addresses) based on source information. 
-This way we could create ipv4 rules in -s and have the firewall populate the rule-matched clients mac addresses into an ipset. This ipset could then be plugged into wgm and it will route clients (ipv4+ipv6) to wherever you want. This could be a way to automatically handle ipv6 devices which changes ipv6 dynamically and randomizes mac addresses in a non-persistant way.
-The rule matches ipv4 packages which means if the client changes mac address a new ipv4 connection somewere is needed to get the new mac into the set.
-
-An example to create the ipset "wg11_mac" for a part of your lan could be:
-
-Edit nat-start:
-```sh
-nano /jffs/scripts/nat-start
-```
-
-Populate with:
-```sh
-#!/bin/sh
-sleep 10 # Needed as nat-start is executed many times during boot
-
-IPSET_NAME_mac=wg11_mac
-IPv4Rule=192.168.1.12/30 #192.168.1.12 - 192.168.1.15
-
-ipset create ${IPSET_NAME_mac} hash:mac 
-ipset flush ${IPSET_NAME_mac} 
-iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
-```
-Save and exit. If you just created the file, make it executable:
-```sh
-chmod +x /jffs/scripts/nat-start
-```
-Ofcource the script could be updated with for-statement to loop through more rules into same or different sets.
-
-The firewall could populate any information you need into a set as long as you could formulate a rule that matches packages you want.
-
-Anyhow,to manually delete an entry in the sets:
-```sh
-ipset del NETFLIX-DNS 54.155.178.5
-ipset del NETFLIX-DNS6 2a05:d018:76c:b683:e1fe:9fbf:c403:57f1
-ipset del wg11-mac a1:b2:c3:d4:e5:f6
-```
-To wipe all entries but keep the sets:
-```sh
-ipset flush NETFLIX-DNS
-ipset flush NETFLIX-DNS6 
-ipset flush wg11-mac
-```
-And when the ipset is empty, it could be removed:
-```sh
-ipset destroy NETFLIX-DNS
-ipset destroy NETFLIX-DNS6 
-ipset destroy wg11-mac
-```
-If you want to look at your ipset:
-```sh
-ipset list NETFLIX-DNS
-ipset list NETFLIX-DNS6 
-ipset list wg11-mac
-```
-Or if above just gives screen after screen with ips:
-```sh
-ipset list NETFLIX-DNS -t
-ipset list NETFLIX-DNS6 -t
-ipset list wg11-mac -t
-```
-
-Or if you just want to check the names of your ipsets:
-```sh
-ipset list -n
-ipset list wg11-mac -n
-```
-
-You could test the set for an entry:
-```sh
-ipset test NETFLIX-DNS 192.168.2.0
-   192.168.2.0 is NOT in set NETFLIX-DNS.
-ipset test NETFLIX-DNS 52.217.164.72
-   Warning: 52.217.164.72 is in set NETFLIX-DNS.
-```
-
-Other useful set- types:
-```sh
-ipset create TEST hash:net,port family inet # Ip+port (could also be inet6 for ipv6)
-ipset add TEST 192.168.1.105,25 # 192.168.1.105:25
-ipset add TEST 192.168.2.0/24,80 # 192.168.2.0/24:80
-
-ipset create TEST2 hash:net,iface family inet # Ip+Iface (could also be inet6 for ipv6)
-ipset add TEST2 192.168.1.102,br0 #192.168.1.102 br0
-
-ipset create NETFLIX list:set # set of ipsets
-ipset add NETFLIX NETFLIX-DNS  # add IPv4 ipset to the set
-ipset add NETFLIX NETFLIX-DNS6 # add IPv6 ipset to the set
-```
-
-There are more types, but I believe these to be the most common. Please see ipset manual for more info.
-
-
-# Why is Diversion not working for WG Clients
-Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
-in order to make this work we will need to reset the WG DNS back to the router. 
-
-There are some precautions though. This will mean that wg clients are using the same DNS as the rest of your system (as specified in the router GUI) and it is not all VPN providers that allow access to other DNS than their specified. also putting wg DNS in the router GUI might not work since dnsmasq is not accessing internet via VPN and these DNS are typically not accessable from outside VPN. however, not all VPN suppliers are this strict.  
-A popular combination is to use Unbound together with WG. since Unbound setup dnsmasq to forward requests to Unbound we will still benefit from Diversion and IPSET autopopulation. 
-
-to change the wg DNS to use dnsmasq, simply issue:
-```sh
-E:Option ==> peer wg11 dns=192.168.1.1
-```
-
-if you are using IPv6 DNS you will need to change that too, i.e.:
-```sh
-E:Option ==> peer wg11 dns=192.168.1.1,aaff:a37f:fa75:1::1
-```
-replace all local addresses with the one you have.
-
+# YazFi Wireguard integration
 # Using Yazfi and WGM to route different SSIDs to different VPNs
 script source: https://github.com/jackyaz/YazFi
 
@@ -2172,6 +1917,264 @@ E:Options ==> restart wg12
 
 and now it should work!
 
+# Various Tips & Tricks
+## IPv6 Over Wireguard without IPv6 WAN
+If you have a dual-stack wireguard .conf then you actually have the possibility to get your wireguard connected clients (wheiter it is your entire network or just a single computer) to have dual-stack internet connection. but if you dont have ipv6 WAN connection you will atleast need to get a local ipv6 network on your LAN.
+
+Since you dont have an ipv6 lan ip, get yourself a ULA prefix (kind of like 192.168.x.y). Use WGM built in command to generate one for you:
+```sh
+E:Option ==> ipv6 ula
+
+        On Tue 22 Mar 2022 07:50:54 PM CET, Your IPv6 ULA is 'fdff:a37f:fa75::/64' (Use 'aaff:a37f:fa75::1/64' for Dual-stack IPv4+IPv6)
+```
+
+Note that Wgm suggest to use aa as the fist 2 letters instead of fd. The reason for this is 2 fold:
+1) Asus router seems to refuse to route ULA to WAN (see WG-server section)
+2) Devices that gets addresses starting with fd are reluctant to use IPv6 since this is a local address. This wil cause your devices to use IPv4 until the last resort, then only use IPv6. 
+
+To get around both these issues we propose to use aa instead, which is probably a violation to the internet standards. but as long as it is only used internally it should be ok. The aa prefix is a global prefix but it is not proscribed yet, so it is not in use. This could however change in the future. look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to see how addresses are assigned at the moment.
+
+Mine became "fdff:a37f:fa75::/48" (altough wgm says /64). The smallest possible subnet is /64 which means I have the next 4 numbers to assign unique subnets on, on my local network. I decided to let my main LAN be at "aaff:a37f:fa75:0001::/64 (initial zeroes could be omitted so it will just be 1). in your asus router, click on IPv6 and enable IPv6. Set DHCP-PD = Disable. this means that we disable prefix deligation from WAN (as there is no one there to tell us). then you get to enter the LAN router ip address, which I entered "aaff:a37f:fa75:1::1" and the prefix is 64 (each number/letter in ipv6 address represent 4 bits and there are always 4 digits between each :, pad with 0). the prefix means basically the same as the CIDR notation in ipv4, that the first 64 bits (16 letters/numbers) are assigned to the network and not allowed to be changed by devices on the network. this way the right 64 bits will be selected by each device and the left 64 bits is fixed in the network.
+
+I recommend that state-less assignement is selected which basically means that devices will generate their own adress. the main reason for this that Android devices is not compatible with stateful.
+
+in the DNS field you could fill in any DNS you like, google ipv6 address, Quad9 ipv6 or you could even choose the ipv6 DNS from your .conf file (since you dont have any ipv6 WAN connection).
+
+Now that your LAN has some sort of IPv6 enabled you should follow the guide above to import your dual stack config file, but if you choose to have it in policy (P) mode, you also need to put in the rules (see sections), and add a default route (see below)
+
+As you dont have an IPv6 WAN connection, you will need to add a default route in the system (unless you use Default routing, then it is not needed). This is because everything that does not match any rule (like most router local processes) will still need somehow to communicate with IPv6 internet. 
+
+This is NOT needed if you have ipv6 WAN or the peer is in auto/default mode.
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-up.sh
+```
+populate this with:
+```sh
+#!/bin/sh
+ip -6 route add ::/0 dev wg11 # if no ipv6 WAN exist
+```
+save and exit.  
+you will also need to make a script to delete the rule as the peer is stopped:
+```sh
+nano /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+populate with:
+```sh
+#!/bin/sh
+ip -6 route del ::/0 dev wg11 # if no ipv6 WAN exist
+```
+save and exit
+
+make both files executable:
+```sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-up.sh
+chmod +x /jffs/addons/wireguard/Scripts/wg11-down.sh
+```
+from here on your network should be on both ipv4/ipv6 regardless wheither you have ipv6 WAN or not. But using ipv6 over VPN will come with some drawbacks. because of privacy reasons you will not achieve full ipv6 complience. mostly because you are behind ipv6 NAT so there is no possibility to create new connection back to you (which is required by RFCs). 
+
+one way to quickly test is to just enter "ipv6.google.com" in your browser. if it loads the google page, it works (ipv6.google.com only has an ipv6 address). another way to test is to go into "https://ipv6-test.com/". look that you have an ipv6 ip address and that the 3 IPvX+DNSx are green then it works.
+
+
+# Create and setup IPSETs
+Ipsets are really handy for various reasons. It is basically just a set of ipv4, ipv6, Mac addresses, ip addresses and port combinations. Maybee one of the more useful parts is that we can have dnsmasq to autopopulate the set with ip-addresses as it is requested to lookup certain domains. Ipsets could be added in wgm and matching ips, ports or whatever the ipset contain could be routed out wg- client or wan if the normal route is wg- client. Ipsets adds more flexibility than ordinary policy (source ip) routing. For example an ipset could be source ip and destination port only routed out I.e. wg11. Or ip-range and specific port or even mac-address (source only). Once setup and familiar it is just as easy to handle as ordinary policy rules.
+
+To create an ipset we could issue one of the following:
+```sh
+ipset create NETFLIX-DNS hash:net family inet # ipv4 addresses
+ipset create NETFLIX-DNS6 hash:net family inet6 # ipv6 addresses
+ipset create wg11-mac hash:mac # mac-addresses
+```
+
+To add an entry manually to the ipsets we just created, ie:
+```sh
+ipset add NETFLIX-DNS 54.155.178.5
+ipset add NETFLIX-DNS6 2a05:d018:76c:b683:e1fe:9fbf:c403:57f1
+ipset add wg11-mac a1:b2:c3:d4:e5:f6
+ipset add NETFLIX-DNS 54.155.179.0/24
+ipset add NETFLIX-DNS6 2a05:d018:76c:b684::/64
+```
+
+To save the ipset to a file:
+```sh
+ipset save NETFLIX-DNS > /opt/tmp/NETFLIX-DNS
+ipset save NETFLIX-DNS6 > /opt/tmp/NETFLIX-DNS6
+ipset save wg11-mac > /opt/tmp/wg11-mac
+```
+And to restore them:
+```sh
+ipset restore -! < /opt/tmp/NETFLIX-DNS
+ipset restore -! < /opt/tmp/NETFLIX-DNS6
+ipset restore -! < /opt/tmp/wg11-mac
+```
+
+To automate the process of periodically saving the ipsets and to restore them at boot, first create your ipset and manually save it according to above. Then put in nat-start:
+```sh
+nano /jffs/scripts/nat-start
+```
+And populate with:
+```sh
+#!/bin/sh
+sleep 10 # Needed as nat-start is executed many times during boot
+
+IPSET_LIST="NETFLIX-DNS NETFLIX-DNS6 wg11-mac"
+
+for IPSET_NAME in $IPSET_LIST; do 
+   if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if ipset does not already exist 
+      if [ -s "/opt/tmp/$IPSET_NAME" ]; then #if a backup file exists 
+         ipset restore -! <"/opt/tmp/$IPSET_NAME" #restore ipset 
+         cru a "$IPSET_NAME" "0 2 * * * ipset save $IPSET_NAME > /opt/tmp/$IPSET_NAME" >/dev/null 2>&1 # create cron job for autosave
+      fi 
+   fi
+done
+```
+The autosave mostly makes sense if dnsmasq autopopulates the ipset. If you wish to manually add entries then you could comment that line, just don't forget to save your set if you make changes.
+Save and exit. If you just created the file, make it executable:
+```sh
+chmod +x /jffs/scripts/nat-start
+```
+
+If we want our ipset's to be autopopulated by dnsmasq:
+```sh
+nano /jffs/configs/dnsmasq.conf.add
+```
+And add 
+```sh
+ipset=/netflix.com/netflix.net/nflxext.com/nflximg.com/nflximg.net/nflxso.net/nflxvideo.net/amazonaws.com/NETFLIX-DNS,NETFLIX-DNS6
+```
+Here you need to change to your needs. It is simply a list of top-domains separated by / and ends with the ipsets. If you only use ipv4 or ipv6 just remove the ipset name you don't use.
+
+Save and exit
+
+To make our changes kick-in:
+```sh
+service restart_dnsmasq
+```
+Before doing anything else, check syslog so that there were no error messages from dnsmasq, if there are, check your syntax and try to restart again. If you disconnect at this point you might not get a new ip so continue until dnsmasq starts.
+
+Now any lookup of netflix.com, netflix.net a.s.o from dnsmasq would result in the ips looked up being added to the ipsets. 
+
+Now these ipsets could be added to wgm (see section).
+
+We could also have the firewall populate the nessisary information into our ipset (Thanks to SNB forum member @dave14305 for this great idea!), I.e:
+```sh
+IPSET_NAME_mac=Test_Mac 
+IPv4Rule=192.168.1.16/30 
+
+ipset create ${IPSET_NAME_mac} hash:mac 
+ipset flush ${IPSET_NAME_mac} 
+iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
+```
+Here I've used -s to match source ip/range and conntrack to only match new connection package (to limit amount of matches) and when there is a match on a package it will populate the information the ipset contains (mac-addresses) based on source information. 
+This way we could create ipv4 rules in -s and have the firewall populate the rule-matched clients mac addresses into an ipset. This ipset could then be plugged into wgm and it will route clients (ipv4+ipv6) to wherever you want. This could be a way to automatically handle ipv6 devices which changes ipv6 dynamically and randomizes mac addresses in a non-persistant way.
+The rule matches ipv4 packages which means if the client changes mac address a new ipv4 connection somewere is needed to get the new mac into the set.
+
+An example to create the ipset "wg11_mac" for a part of your lan could be:
+
+Edit nat-start:
+```sh
+nano /jffs/scripts/nat-start
+```
+
+Populate with:
+```sh
+#!/bin/sh
+sleep 10 # Needed as nat-start is executed many times during boot
+
+IPSET_NAME_mac=wg11_mac
+IPv4Rule=192.168.1.12/30 #192.168.1.12 - 192.168.1.15
+
+ipset create ${IPSET_NAME_mac} hash:mac 
+ipset flush ${IPSET_NAME_mac} 
+iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
+```
+Save and exit. If you just created the file, make it executable:
+```sh
+chmod +x /jffs/scripts/nat-start
+```
+Ofcource the script could be updated with for-statement to loop through more rules into same or different sets.
+
+The firewall could populate any information you need into a set as long as you could formulate a rule that matches packages you want.
+
+Anyhow,to manually delete an entry in the sets:
+```sh
+ipset del NETFLIX-DNS 54.155.178.5
+ipset del NETFLIX-DNS6 2a05:d018:76c:b683:e1fe:9fbf:c403:57f1
+ipset del wg11-mac a1:b2:c3:d4:e5:f6
+```
+To wipe all entries but keep the sets:
+```sh
+ipset flush NETFLIX-DNS
+ipset flush NETFLIX-DNS6 
+ipset flush wg11-mac
+```
+And when the ipset is empty, it could be removed:
+```sh
+ipset destroy NETFLIX-DNS
+ipset destroy NETFLIX-DNS6 
+ipset destroy wg11-mac
+```
+If you want to look at your ipset:
+```sh
+ipset list NETFLIX-DNS
+ipset list NETFLIX-DNS6 
+ipset list wg11-mac
+```
+Or if above just gives screen after screen with ips:
+```sh
+ipset list NETFLIX-DNS -t
+ipset list NETFLIX-DNS6 -t
+ipset list wg11-mac -t
+```
+
+Or if you just want to check the names of your ipsets:
+```sh
+ipset list -n
+ipset list wg11-mac -n
+```
+
+You could test the set for an entry:
+```sh
+ipset test NETFLIX-DNS 192.168.2.0
+   192.168.2.0 is NOT in set NETFLIX-DNS.
+ipset test NETFLIX-DNS 52.217.164.72
+   Warning: 52.217.164.72 is in set NETFLIX-DNS.
+```
+
+Other useful set- types:
+```sh
+ipset create TEST hash:net,port family inet # Ip+port (could also be inet6 for ipv6)
+ipset add TEST 192.168.1.105,25 # 192.168.1.105:25
+ipset add TEST 192.168.2.0/24,80 # 192.168.2.0/24:80
+
+ipset create TEST2 hash:net,iface family inet # Ip+Iface (could also be inet6 for ipv6)
+ipset add TEST2 192.168.1.102,br0 #192.168.1.102 br0
+
+ipset create NETFLIX list:set # set of ipsets
+ipset add NETFLIX NETFLIX-DNS  # add IPv4 ipset to the set
+ipset add NETFLIX NETFLIX-DNS6 # add IPv6 ipset to the set
+```
+
+There are more types, but I believe these to be the most common. Please see ipset manual for more info.
+
+
+# Why is Diversion not working for WG Clients
+Diversion is using the routers build in DNS program dnsmasq to filter content. The same goes for autopopulating IPSETs used by i.e. x3mrouting and Unbound is setup to work together with dnsmasq. When wgm diverts DNS to the wireguard DNS, these functions will not work anymore.  
+in order to make this work we will need to reset the WG DNS back to the router. 
+
+There are some precautions though. This will mean that wg clients are using the same DNS as the rest of your system (as specified in the router GUI) and it is not all VPN providers that allow access to other DNS than their specified. also putting wg DNS in the router GUI might not work since dnsmasq is not accessing internet via VPN and these DNS are typically not accessable from outside VPN. however, not all VPN suppliers are this strict.  
+A popular combination is to use Unbound together with WG. since Unbound setup dnsmasq to forward requests to Unbound we will still benefit from Diversion and IPSET autopopulation. 
+
+to change the wg DNS to use dnsmasq, simply issue:
+```sh
+E:Option ==> peer wg11 dns=192.168.1.1
+```
+
+if you are using IPv6 DNS you will need to change that too, i.e.:
+```sh
+E:Option ==> peer wg11 dns=192.168.1.1,aaff:a37f:fa75:1::1
+```
+replace all local addresses with the one you have.
+  
 # Setup a reverse policy based routing
 why would anyone ever need to do this?
 
