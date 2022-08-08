@@ -1537,6 +1537,56 @@ E:Option ==> import SiteB.conf type=device
 
 If you are using another system then Asus HND routers and Wireguard Manager and wishes to use i.e. wg-quick, then on SiteB simply start SiteB.conf and on siteC simply start SiteC.conf. You might need to make custom changes to the .conf files depending on which system to run it on. 
 
+**Combination of star and mesh topologies**
+Assume we would like to connect 2 more peers to our mesh network. But these sites are both behind CGNAT so they cannot connect to each other, but they could connect to all other nodes but they need a dedicated peer to route packats between them. In This case I selected SiteA as the site to route packages between our CGNAT peers/sites. The main difference now is that if SiteA is down there will not be any routes between our CGNAT peers/sites (SiteD and SiteE) but all other sites could still communicate to both of them, they just cant talk amongst each other.
+It could seem like a good idea to have SiteD to route packages via SiteA and SiteE to route packages via SiteB but we are then only creating additional dependencies that both SiteA AND siteB needs to be up for the sites to be able to communicate
+ 
+Start by creating our siteD and siteE on i.e. SiteA. Then pupulate SiteD and SiteE [Peer] info in SiteB.conf and SiteC.conf so they will be part of the mesh network. Then add all peers with public ip / ddns [Peer] info (SiteB & SiteC) in SiteD.conf and SiteE.conf. Then on SiteD.conf we add SiteE local ips under siteA [Peer] AllowedIPs (so packages to SiteE is sent to SiteA) and on SiteE.conf we add SiteD local ips under the same site.
+
+so at the end it looks something like: 
+
+```sh
+========== SiteA configuration ==========   ========== SiteB configuration ==========   ========== SiteC configuration ==========   ========== SiteD configuration ==========   ========== SiteE configuration ==========
+
+# SiteA - 192.168.55.0/24                  # SiteB - 172.16.2.0/24                     # SiteC - 172.16.3.0/24                     # SiteC - 192.168.1.0/24                    # SiteC - 192.168.2.0/24
+[Interface]                                 [Interface]                                 [Interface]                                 [Interface]                                 [Interface]
+PrivateKey = <hidden>                       PrivateKey = <hidden>                       PrivateKey = <hidden>                       PrivateKey = <hidden>                       PrivateKey = <hidden>
+Address = 10.9.8.1/32                       Address = 10.9.8.2/32                       Address = 10.9.8.3/32                       Address = 10.9.8.4/32                       Address = 10.9.8.5/32
+ListenPort = 61820                          ListenPort = 61821                          ListenPort = 61823                          
+
+# SiteB LAN                                 # SiteA LAN                                 # SiteA LAN                                 # SiteA peer A+E LAN                        # SiteA peer A+D LAN
+[Peer]                                      [Peer]                                      [Peer]                                      [Peer]                                      [Peer]
+PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>
+AllowedIPs = 10.9.8.2/32, 172.16.2.0/24     AllowedIPs = 10.9.8.1/32, 192.168.55.0/24   AllowedIPs = 10.9.8.1/32, 192.168.55.0/24,  AllowedIPs = 10.9.8.1/32, 192.168.55.0/24,  AllowedIPs = 10.9.8.1/32, 192.168.55.0/24,
+Endpoint = SiteB.ddns.com:61821             Endpoint = SiteA.ddns.com:61820             Endpoint = SiteA.ddns.com:61820             10.9.8.5/32, 192.168.2.0/24                 10.9.8.4/32, 192.168.1.0/24
+#PresharedKey =                             #PresharedKey =                             #PresharedKey =                             Endpoint = SiteA.ddns.com:61820             Endpoint = SiteA.ddns.com:61820
+PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25                    #PresharedKey =                             #PresharedKey =              
+                                                                                                                                    PersistentKeepalive = 25                    PersistentKeepalive = 25              
+# SiteC LAN                                 # SiteC LAN                                 # SiteB LAN                                                       
+[Peer]                                      [Peer]                                      [Peer]                                      # SiteB LAN                                 # SiteB LAN 
+PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>                        [Peer]                                      [Peer]
+AllowedIPs = 10.9.8.3/32, 172.16.3.0/24     AllowedIPs = 10.9.8.3/32, 172.16.3.0/24     AllowedIPs = 10.9.8.2/32, 172.16.2.0/24     PublicKey = <hidden>                        PublicKey = <hidden>
+Endpoint = SiteC.ddns.com:61822             Endpoint = SiteC.ddns.com:61822             Endpoint = SiteB.ddns.com:61821             AllowedIPs = 10.9.8.2/32, 172.16.2.0/24     AllowedIPs = 10.9.8.2/32, 172.16.2.0/24
+#PresharedKey =                             #PresharedKey =                             #PresharedKey =                             Endpoint = SiteB.ddns.com:61821             Endpoint = SiteB.ddns.com:61821
+PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25                    #PresharedKey =                             #PresharedKey = 
+                                                                                                                                    PersistentKeepalive = 25                    PersistentKeepalive = 25
+# SiteD LAN                                 # SiteD LAN                                 # SiteD LAN                                 
+[Peer]                                      [Peer]                                      [Peer]                                      # SiteC LAN                                 # SiteC LAN 
+PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>                        [Peer]                                      [Peer]
+AllowedIPs = 10.9.8.4/32, 192.168.1.0/24    AllowedIPs = 10.9.8.4/32, 192.168.1.0/24    AllowedIPs = 10.9.8.4/32, 192.168.1.0/24    PublicKey = <hidden>                        PublicKey = <hidden>
+#PresharedKey =                             #PresharedKey =                             #PresharedKey =                             AllowedIPs = 10.9.8.3/32, 172.16.3.0/24     AllowedIPs = 10.9.8.3/32, 172.16.3.0/24
+PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25                    Endpoint = SiteC.ddns.com:61822             Endpoint = SiteC.ddns.com:61822 
+                                                                                                                                    #PresharedKey =                             #PresharedKey =  
+# SiteE LAN                                 # SiteE LAN                                 # SiteE LAN                                 PersistentKeepalive = 25                    PersistentKeepalive = 25 
+[Peer]                                      [Peer]                                      [Peer] 
+PublicKey = <hidden>                        PublicKey = <hidden>                        PublicKey = <hidden>
+AllowedIPs = 10.9.8.5/32, 192.168.2.0/24    AllowedIPs = 10.9.8.5/32, 192.168.2.0/24    AllowedIPs = 10.9.8.5/32, 192.168.2.0/24
+#PresharedKey =                             #PresharedKey =                             #PresharedKey = 
+PersistentKeepalive = 25                    PersistentKeepalive = 25                    PersistentKeepalive = 25
+```
+
+Now all sites have direct access to all other sites, except CGNAT sites (SiteD & SiteE) which is routed via SiteA, but it is only the communication between the CGNAT peers that are routed this way.
+  
 Good luck!
 
  # Route Site 2 Site internet access
