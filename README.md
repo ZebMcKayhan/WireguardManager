@@ -196,13 +196,34 @@ As a Workaround mainly for nat udp hairpin/nat loopback was implemented by ASUS/
 
 It has also shown that some setups (like site-2-site) does not require hw nat acceleration to be turned off, presumably on any router. The reason for this could be that in this setup typically only LAN to LAN packages that are not subjected to NAT are going over Wireguard.
 
-if you experience any of the stated symptoms only when Wireguard tunnels are up, and no problems when the tunnels are turned off. you could test turning off nat hw- acceleration temporarely. Enter this command in the shell (not in WGM):
-```sh
-fc disable
-```
-and start your Wireguard tunnel(s) again.
+On earlier releases wgm automatically disabled nat hw-accelleration (FlowCache) on RT-AX86U and RT-AX58U, but since some configuration didnt need it to be disabled from wgm version 4.18b3 wgm does not permanently disabled this at all. It leaves the choice up to each user to disable if needed.
 
-   
+if you experience any of the stated symptoms only when Wireguard tunnels are up, and no problems when the tunnels are turned off. You could test turning off nat hw- acceleration temporarely. Enter this command in WGM:
+```sh
+E:Option ==> fc disable
+```
+and start your Wireguard tunnel(s) again. If the problems are gone and you wish to keep this setting across reboots, edit the Wireguard Manager Config file:
+```sh
+E:Option ==> vx
+```
+and change 
+```sh
+# Disable Flow Cache Permanently. (Checked each time wireguard_manager is INITialised or command 'wgm start' is issued)
+#     Use command 'vx' to edit this setting or command 'fc {disable | enable}'
+#DISABLE_FLOW_CACHE
+```
+to
+```sh
+# Disable Flow Cache Permanently. (Checked each time wireguard_manager is INITialised or command 'wgm start' is issued)
+#     Use command 'vx' to edit this setting or command 'fc {disable | enable}'
+DISABLE_FLOW_CACHE
+```
+
+**Note:** If turning off FlowCache did not solve your issue and you would like to turn it on again, simply:
+```sh
+E:Option ==> fc enable
+```
+And you will need to search elsewere for a solution to your issue.   
 
 # Execute menu commands externally
 Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
