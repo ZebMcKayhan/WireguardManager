@@ -16,6 +16,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
 [**Setup wgm**](#setup-wgm)  
   -[Terminal Options](#terminal-options)  
   -[Manage Killswitch](#manage-killswitch)  
+  -[Disable FlowCache](#disable-flowcache)  
   -[Create categories](#create-categories)  
   -[Execute menu commands externally](#execute-menu-commands-externally)  
   
@@ -179,6 +180,29 @@ E:Option ==> peer category My1stCategory del
 
         'Peer category 'My1stCategory' Deleted
 ```
+
+# Disable FlowCache
+Wireguard is currently incompatible with Broadcom's implementation of hardware NAT accelleration. What this does is that it assists the router in changing address, usually primarily source address change so LAN packets appears to come from a single WAN ipaddress assigned by your ISP. This process requires rewrite of the package header and also recalculation of package checksum. in order to achieve Gb WAN speeds, our router requires specialized hardware to load off the processor for this specific task.
+The symptoms of this incompability is usually:  
+   - Slow speeds over WireGuard, usually 1-5Mb/s regardless how fast internet connection you have.  
+   - Syslog fills up with Kernel messages, usually blog mcast related.  
+   - Some users have reported stability issues, like routers crashing after some hours, or completally loosing internet connection.
+   
+Since the inner workings of Broadcom NAT hardware accelleration is closed-source code and some problem could even be hardware related the full extent of this problem is not known to the community.
+
+Similar incompability exists with some implementation of QoS and by enabling this in your router may already turn off nat accelleration. On HND routers the modules related to this is "FlowCache" and either "Packet runner" or "archer" (depending on model/architecture).
+
+As a Workaround mainly for nat udp hairpin/nat loopback was implemented by ASUS/Broadcom many years ago by marking packages with a special mark (0x1/0x7) made these marked packages not processed by nat hw-acceleration. So Wireguard packages could be marked but all other packages could still benefit from nat hw- acceleration. Currently these markes only seem to work well on RT-AC86U and RT-AX88U router models. Appearantly there is a conflict between package marks and QoS / AI- protection that appears to be using same marks. This could be one reason for why this methode was abbandoned by ASUS/Broadcom. 
+
+It has also shown that some setups (like site-2-site) does not require hw nat acceleration to be turned off, presumably on any router. The reason for this could be that in this setup typically only LAN to LAN packages that are not subjected to NAT are going over Wireguard.
+
+if you experience any of the stated symptoms only when Wireguard tunnels are up, and no problems when the tunnels are turned off. you could test turning off nat hw- acceleration temporarely. Enter this command in the shell (not in WGM):
+```sh
+fc disable
+```
+and start your Wireguard tunnel(s) again.
+
+   
 
 # Execute menu commands externally
 Various ways could be used if you need to execute menu commands from i.e another shell script, a cron job, or from any ssh app. 
