@@ -375,6 +375,9 @@ Or a device peer:
 E:Option ==> peer import RoadWarrior.conf type=device
 ```
 
+If you successfully imported your client, unless you are using router RT-AC86U or RT-AX88U you are most likely to need to [Disable FlowCache](#disable-flowcache) to get the router to behave.
+
+
 ## Add persistentKeepalive
 It is usually recommended to add some kind of pinging to keep the sockets from closing and keep conntrack happy and nat tunnels open. There are no support for this in wgm so:
 ```sh
