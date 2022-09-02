@@ -2315,7 +2315,8 @@ done
 ip rule add from 192.168.50.150 table 117 prio 9990 #Send single ip through WAN
 #ip rule add iif wl1.1 table 117 prio 9991 #Send guest wifi 4 through WAN (interface way)
 #ip rule add 192.168.5.1/24 table 117 prio 9992 #Send guest wifi 4 through WAN (ip way)
-#ip rule add fwmark 0x8000/0x8000 table 117 prio 9993
+#ip rule add fwmark 0x8000/0x8000 table 117 prio 9993 #ipsets or some other mark needs routing
+#echo 2 > /proc/sys/net/ipv4/conf/eth0/rp_filter #only if fwmarks are used
 # More rules for ip's or ipset marks or interfaces could be added here if needed....
 #################################
 
