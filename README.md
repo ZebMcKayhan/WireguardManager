@@ -789,6 +789,8 @@ And/or look at the [Create and setup IPSETs](#create-and-setup-ipsets) section o
 
 one methode, used by x3mrouting is to have these IPSETs autopopulated with IPAdresses by dnsmasq as certain terms, like netflix is found in the adress, then the ip adress looked up is then added to the IPSET list. This way you dont suffer from changing ipadresses and you dont need to lookup ipadresses, it is all handled by dnsmasq. This ofcource requires you to actually use dnsmasq (see section about Diversion).
 
+**Note** For wgm to be able to do routing based on ipsets the peer(s) must be in policy mode. If you want to keep your peer in auto=y (all) mode then below is not going to work, instead look at reverse policy based routing, there are examples for ipset rules there.
+
 wgm offers capabilities to do routing based on these IPSETs. A couple of things need to happen for IPSET based routing to work:
 1. a rule in the firewall is setup to mark packages with a destination or source adress/port matching an IP/port in IPSET. The mark is set based on where you wish to route matching IPs.
 2. a routing rule is setup to direct packages with a specific mark to a specific routing table.
