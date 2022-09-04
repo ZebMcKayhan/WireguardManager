@@ -2154,6 +2154,17 @@ Before doing anything else, check syslog so that there were no error messages fr
 
 Now any lookup of netflix.com, netflix.net a.s.o from dnsmasq would result in the ips looked up being added to the ipsets. 
 
+If you are using AdGuardHome instead adding the ipset to dnsmasq according to above will not do you any good since AdGuardHome bypasses dnsmasq. But similar to dnsmasq the ipset could be put in AdGuardHome config (thanks to snb forum member @chongnt for providing this):
+```sh
+nano /opt/etc/AdGuardHome/AdGuardHome.yaml
+```
+Scroll down until you find "ipset:" where you could add:
+```sh
+ipset:
+ - netflix.com,netflix.net,nflxext.com,nflximg.com,nflximg.net,nflxso.net,nflxvideo.net,amazonaws.com/NETFLIX-DNS,NETFLIX-DNS6
+```
+Again, change the top-domains to the ones you intend and change the ipset name to your names. Remove the ipv6 name if you dont use it. After you done, save & exit then restart AdGuardHome. Check the logs so AdGuardHome started ok.
+
 Now these ipsets could be added to wgm (see section).
 
 We could also have the firewall populate the nessisary information into our ipset (Thanks to SNB forum member @dave14305 for this great idea!), I.e:
