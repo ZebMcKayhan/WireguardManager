@@ -1853,7 +1853,7 @@ I have choosen to use option 2 because it is easier, since it does not require s
 
 so in wgm we issue (one by one):
 ```sh
-E:Option ==> peer wg12 rule add wan dst=192.168.5.1/24 comment ToGuest4UseMain
+E:Option ==> peer wg12 rule add wan src=any dst=192.168.5.1/24 comment ToGuest4UseMain
 E:Option ==> peer wg12 rule add vpn 192.168.5.1/24 comment Guest2VPN
 E:Option ==> peer wg12 auto=p
 E:Option ==> restart wg12
@@ -1862,11 +1862,11 @@ This works because WAN rules have higher priority than VPN routes in wgm. The "a
 
 If you need the guest network to access other subnets than your main network you might need to broaden the range of the "ToGuest4UseMain" rule. For example I used:
 ```sh
-E:Option ==> peer wg12 rule add wan dst=192.168.1.1/16 comment ToLocalUseMain
+E:Option ==> peer wg12 rule add wan src=any dst=192.168.1.1/16 comment ToLocalUseMain
 ```
 If you have a wireguard server which shall be able to communicate with the guest network, replies from the guest network will need to find its way back. So then something like this may be needed:
 ```sh
-E:Option ==> peer wg12 rule add wan dst=10.50.1.1/24 comment ToWg21UseMain
+E:Option ==> peer wg12 rule add wan src=any dst=10.50.1.1/24 comment ToWg21UseMain
 ```
 Ofcourse these rules will not provide any access to other subnets since we have not allowed anything in the firewall more than Guest 4 to wg12, but it will allow the packages to be routed but might still be BLOCKED by firewall.  
 Add more rules if you have more subnets.
@@ -2108,31 +2108,60 @@ ipset restore -! < /opt/tmp/NETFLIX-DNS6
 ipset restore -! < /opt/tmp/wg11-mac
 ```
 
-To automate the process of periodically saving the ipsets and to restore them at boot, first create your ipset and manually save it according to above. Then put in nat-start:
+To automate the process of periodically saving the ipsets and to restore them at boot, first create your ipset and manually save it according to above. Then create a script that restores the ipsets, i.e.:
 ```sh
-nano /jffs/scripts/nat-start
+nano /jffs/scripts/restore_ipsets.sh
 ```
 And populate with:
 ```sh
-#!/bin/sh
-sleep 10 # Needed as nat-start is executed many times during boot
+#!/bin/sh 
 
-IPSET_LIST="NETFLIX-DNS NETFLIX-DNS6 wg11-mac"
+IPSET_LIST="NETFLIX-DNS NETFLIX-DNS6 wg11-mac" #List of ipsets to restore
+DIR="/opt/tmp" #directory for store ipset
 
-for IPSET_NAME in $IPSET_LIST; do 
-   if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if ipset does not already exist 
-      if [ -s "/opt/tmp/$IPSET_NAME" ]; then #if a backup file exists 
-         ipset restore -! <"/opt/tmp/$IPSET_NAME" #restore ipset 
-         cru a "$IPSET_NAME" "0 2 * * * ipset save $IPSET_NAME > /opt/tmp/$IPSET_NAME" >/dev/null 2>&1 # create cron job for autosave
-      fi 
-   fi
-done
+## Normally nothing need to be changed below ##
+if [ -d "$DIR" ]; then # our target ready?
+    for IPSET_NAME in $IPSET_LIST; do # Each ipset in list
+        if [ "$(ipset list -n "$IPSET_NAME" 2>/dev/null)" != "$IPSET_NAME" ]; then #if ipset does not already exist 
+            if [ -s "$DIR/$IPSET_NAME" ]; then #if a backup file exists 
+                sleep 1
+                ipset restore -! <"$DIR/$IPSET_NAME" #restore ipset 
+                cru a "$IPSET_NAME" "0 3 * * * ipset save $IPSET_NAME > $DIR/$IPSET_NAME" >/dev/null 2>&1 # create cron job for autosave 
+                logger -t $(basename $0) "IPSET restored: $IPSET_NAME" 
+            else
+                logger -t $(basename $0) "Warning: Failed to find IPSET restore file: $DIR/$IPSET_NAME"
+            fi 
+        fi 
+    done 
+else 
+    logger -t $(basename $0) "Warning: Failed to detect $DIR in mounted USB-Drive! IPSET not restored!" 
+fi 
 ```
-The autosave mostly makes sense if dnsmasq autopopulates the ipset. If you wish to manually add entries then you could comment that line, just don't forget to save your set if you make changes.
-Save and exit. If you just created the file, make it executable:
+Change the names of the ipsets to match yours in the IPSET_LIST= list. Also change the directory where you stored it if needed but make sure the IPSETs are stored in the USB drive if you are using the auto-save feature so you dont risk wearing out your routers internal flash memory.
+The autosave(cru a ...) mostly makes sense if dnsmasq autopopulates the ipset. If you wish to manually add entries then you could comment that line, just don't forget to save your set if you make changes.
+Save and exit. Make it executable:
 ```sh
-chmod +x /jffs/scripts/nat-start
+chmod +x /jffs/scripts/restore_ipsets.sh
 ```
+Now that we have a script that restores our ipset, we put it to execute at boot when the USB drive has been mounted:
+```sh
+nano /jffs/scripts/post-mount
+```
+Now, there should already be lines here to start entware (at the top) and probably alot of other stuff. At the end of the file, you put in 
+```sh
+/jffs/scripts/restore_ipsets.sh
+```
+Save and exit. now your post-mount file could look something like this:
+```sh
+#!/bin/sh
+swapon /tmp/mnt/UsbDrv/myswap.swp # Added by amtm
+. /jffs/addons/diversion/mount-entware.div # Added by amtm
+/jffs/addons/wireguard/wg_manager.sh init "" & # WireGuard Manager
+/jffs/scripts/restore_ipsets.sh
+```
+But if you have more addons, there could be many more lines here.
+
+Now your ipsets should be restored at every boot and you should get a notice in the log that they have been restored or an error if they failed to restore. If you used that option the ipsets should be autosaved each night at 3am.
 
 If we want our ipset's to be autopopulated by dnsmasq:
 ```sh
