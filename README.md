@@ -218,7 +218,7 @@ to
 #     Use command 'vx' to edit this setting or command 'fc {disable | enable}'
 DISABLE_FLOW_CACHE
 ```
-When disabling FlowCache and hw- NAT accelleration you will effectively limit your bandwidth through your router to ~400-600M bit/s (even for traffic to WAN) and if you have >400Mb/s internet connection you might not care about this. But if you have faster internet subscription then your speeds may be limited by this. There is currently no other solutions to this problem other than reverting to OpenVPN (which implementation IS compatible with HW NAT accelleration).
+When disabling FlowCache and hw- NAT accelleration you will effectively limit your bandwidth through your router to ~400-600M bit/s (even for traffic to WAN) and if you have < 400Mb/s internet connection you might not care about this. But if you have faster internet subscription then your speeds may be limited by this. There is currently no other solutions to this problem other than reverting to OpenVPN (which implementation IS compatible with HW NAT accelleration).
 
 **Note:** If turning off FlowCache did not solve your issue and you would like to turn it on again, simply:
 ```sh
