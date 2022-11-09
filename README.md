@@ -182,7 +182,7 @@ E:Option ==> peer category My1stCategory del
 ```
 
 # Disable FlowCache
-Wireguard is currently incompatible with Broadcom's implementation of hardware NAT accelleration. What this does is that it assists the router in changing address, usually primarily source address change so LAN packets appears to come from a single WAN ipaddress assigned by your ISP. This process requires rewrite of the package header and also recalculation of package checksum. in order to achieve Gb WAN speeds, our router requires specialized hardware to load off the processor for this specific task.
+Wireguard is currently incompatible with Broadcom's implementation of hardware NAT accelleration. What this does is that it assists the router in changing address, usually primarily source address change so LAN packets appears to come from a single WAN ipaddress assigned by your ISP. This process requires rewrite of the packet header and also recalculation of packet checksum. in order to achieve Gb WAN speeds, our router requires specialized hardware to load off the processor for this specific task.
 The symptoms of this incompability is usually:  
    - Slow speeds over WireGuard, usually 1-5Mb/s regardless how fast internet connection you have.  
    - Syslog fills up with Kernel messages, usually blog mcast related.  
@@ -190,15 +190,15 @@ The symptoms of this incompability is usually:
    
 Since the inner workings of Broadcom NAT hardware accelleration is closed-source code and some problem could even be hardware related the full extent of this problem is not known to the community.
 
-Similar incompability exists with some implementation of QoS and by enabling this in your router may already turn off nat accelleration. On HND routers the modules related to this is "FlowCache" and either "Packet runner" or "archer" (depending on model/architecture).
+Similar incompability exists with some implementation of QoS and by enabling this in your router may already turn off nat accelleration. On HND routers the modules related to this is "FlowCache" and either "packet runner" or "archer" (depending on model/architecture).
 
-As a Workaround mainly for nat udp hairpin/nat loopback was implemented by ASUS/Broadcom many years ago by marking packages with a special mark (0x1/0x7) made these marked packages not processed by nat hw-acceleration. So Wireguard packages could be marked but all other packages could still benefit from nat hw- acceleration. Currently these markes only seem to work well on RT-AC86U and RT-AX88U router models. Appearantly there is a conflict between package marks and QoS / AI- protection that appears to be using same marks. This could be one reason for why this methode was abbandoned by ASUS/Broadcom. 
+As a Workaround mainly for nat udp hairpin/nat loopback was implemented by ASUS/Broadcom many years ago by marking packets with a special mark (0x1/0x7) made these marked packets not processed by nat hw-acceleration. So Wireguard packets could be marked but all other packets could still benefit from nat hw- acceleration. Currently these markes only seem to work well on RT-AC86U and RT-AX88U router models. Appearantly there is a conflict between packet marks and QoS / AI- protection that appears to be using same marks. This could be one reason for why this methode was abbandoned by ASUS/Broadcom. 
 
-It has also shown that some setups (like site-2-site) does not require hw nat acceleration to be turned off, presumably on any router. The reason for this could be that in this setup typically only LAN to LAN packages that are not subjected to NAT are going over Wireguard.
+It has also shown that some setups (like site-2-site) does not require hw nat acceleration to be turned off, presumably on any router. The reason for this could be that in this setup typically only LAN to LAN packets that are not subjected to NAT are going over Wireguard.
 
 On earlier releases wgm automatically disabled nat hw-accelleration (FlowCache) on RT-AX86U and RT-AX58U, but since some configuration didnt need it to be disabled from wgm version 4.18b3 wgm does not permanently disabled this at all. It leaves the choice up to each user to disable if needed.
 
-if you experience any of the stated symptoms only when Wireguard tunnels are up, and no problems when the tunnels are turned off. You could test turning off nat hw- acceleration temporarely. Enter this command in WGM:
+If you experience any of the stated symptoms only when Wireguard tunnels are up, and no problems when the tunnels are turned off. You could test turning off nat hw- acceleration temporarely. Enter this command in WGM:
 ```sh
 E:Option ==> fc disable
 ```
@@ -613,7 +613,7 @@ but since the policy routing table is not as complete as the main routing table 
 ```sh
 E:Option ==> peer wg11 rule add wan 0.0.0.0/0 192.168.5.1/24 comment To Guest Use Main
 ```
-this works brilliantly since the WAN rules have higher priority so any packets going TO this network will be using the main routing table and this is very ok, since the reason for redirect the subnet is for packages going out internet and these packages are not. Packages to internet will not have these adresses as destination so they will be sent to vpn.
+this works brilliantly since the WAN rules have higher priority so any packets going TO this network will be using the main routing table and this is very ok, since the reason for redirect the subnet is for packages going out internet and these packages are not. Packets to internet will not have these adresses as destination so they will be sent to vpn.
 
 wgm uses smart categorizing when only one ip adress is given. if this ip belongs to a local ip adress (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) then it will be considered a source adress. if it does not it will be considered a destination adress.  
 i.e.
