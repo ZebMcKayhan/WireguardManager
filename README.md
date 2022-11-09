@@ -448,7 +448,7 @@ If you did not get an ipv6 DNS with your import, you could add one to your exist
 ```sh
 E:Option ==> peer wg11 dns=9.9.9.9,2620:fe::fe
 ```
-While adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packages to your selected VPN DNS via DNAT. This is however not really supported by all softwares. You will need atleast Asuswrt-Merlin 386.7 or later which includes IPV6 DNAT function. If you dont have 386.7 or later and for some reason dont want to upgrade, then keep the dns in wgm to IPv4 only. This case you should not get the error message. Control your DNS from the GUI IPv6 tab.
+While adding an Ipv6 DNS wgm will attempt to redirect ipv6 DNS packets to your selected VPN DNS via DNAT. This is however not really supported by all softwares. You will need atleast Asuswrt-Merlin 386.7 or later which includes IPV6 DNAT function. If you dont have 386.7 or later and for some reason dont want to upgrade, then keep the dns in wgm to IPv4 only. This case you should not get the error message. Control your DNS from the GUI IPv6 tab.
 
 Wgm would not import IPv6 info if IPv6 is not enabled in the router. and even if you had it enabled when importing it and later diasabled it, it would not attempt to setup the IPv6 part if IPv6 is not enabled.
 
@@ -613,7 +613,7 @@ but since the policy routing table is not as complete as the main routing table 
 ```sh
 E:Option ==> peer wg11 rule add wan 0.0.0.0/0 192.168.5.1/24 comment To Guest Use Main
 ```
-this works brilliantly since the WAN rules have higher priority so any packets going TO this network will be using the main routing table and this is very ok, since the reason for redirect the subnet is for packages going out internet and these packages are not. Packets to internet will not have these adresses as destination so they will be sent to vpn.
+this works brilliantly since the WAN rules have higher priority so any packets going TO this network will be using the main routing table and this is very ok, since the reason for redirect the subnet is for packets going out internet and these packets are not. Packets to internet will not have these adresses as destination so they will be sent to vpn.
 
 wgm uses smart categorizing when only one ip adress is given. if this ip belongs to a local ip adress (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) then it will be considered a source adress. if it does not it will be considered a destination adress.  
 i.e.
@@ -792,8 +792,8 @@ one methode, used by x3mrouting is to have these IPSETs autopopulated with IPAdr
 **Note** For wgm to be able to do routing based on ipsets the peer(s) must be in policy mode. If you want to keep your peer in auto=y (all) mode then below is not going to work, instead look at reverse policy based routing, there are examples for ipset rules there.
 
 wgm offers capabilities to do routing based on these IPSETs. A couple of things need to happen for IPSET based routing to work:
-1. a rule in the firewall is setup to mark packages with a destination or source adress/port matching an IP/port in IPSET. The mark is set based on where you wish to route matching IPs.
-2. a routing rule is setup to direct packages with a specific mark to a specific routing table.
+1. a rule in the firewall is setup to mark packets with a destination or source adress/port matching an IP/port in IPSET. The mark is set based on where you wish to route matching IPs.
+2. a routing rule is setup to direct packets with a specific mark to a specific routing table.
 3. rp_filter needs to be disabled (or set to loose) for interfaces where IPSETs are routed out.
 
 wgm will handle number 1 completally, so you dont have to worry about that. it will partally handle 2 and 3 but not for all use cases.
@@ -813,7 +813,7 @@ FWMark  Interface
 0x8000  wan
 ```
 
-these are the preffered marks. I do not recommend changing them altough it is possible. The point is that marking a package with 0x3000 would mean that we want this package to be routed out wg15.  
+these are the preffered marks. I do not recommend changing them altough it is possible. The point is that marking a packet with 0x3000 would mean that we want this packet to be routed out wg15.  
 an IPSET could be added to any peer. it does not however mean that it has to be routed out THAT peer it just mean that the rules gets added and deleted as the peer is started stopped. It will also create routing rule and disable rp_filter for that peer.
 
 so, lets say we have an IPSET named NETFLIX_DNS that we want to add to wg12 for matching destination IPs to be routed out WAN:
@@ -824,7 +824,7 @@ E:Option ==> peer wg12 add ipset NETFLIX_DNS
 IPSet        Enable  Peer  FWMark  DST/SRC
 NETFLIX_DNS  Y       wg12  0x2000  dst
 ```
-What is happening now is that wgm will create a firewall rule to mark packages with destination matching any ip in our ipset with mark 0x2000. It will also create a rule to route packages marked with 0x2000 out wg12. Since wg12 now contain ipsets then wgm also disables wg12 rp_filter.  
+What is happening now is that wgm will create a firewall rule to mark packets with destination matching any ip in our ipset with mark 0x2000. It will also create a rule to route packets marked with 0x2000 out wg12. Since wg12 now contain ipsets then wgm also disables wg12 rp_filter.  
 this was really not what we entended, clearly we wanted destinations to go out WAN instead, so we could just change the MARK accordingly: 
 ```sh
 E:Option ==> peer wg12 upd ipset NETFLIX_DNS fwmark 0x8000
@@ -837,7 +837,7 @@ E:Option ==> peer wg12
 IPSet        Enable  Peer  FWMark  DST/SRC
 NETFLIX_DNS  Y       wg12  0x8000  dst
 ```
-The firewall rule is now Updated to mark matching packages with 0x8000 instead.
+The firewall rule is now Updated to mark matching packets with 0x8000 instead.
 if this IPSET was infact a set of source adresses which we wanted to route out WAN instead, we need to change "dst" to be "src" instead:
 ```sh
 E:Option ==> peer wg12 upd ipset NETFLIX_DNS dstsrc src
@@ -867,8 +867,8 @@ in this case [MYIP] and [NETFLIX-DNS] are IPv4 IPSETs so they will be enabled fo
 
 If you add an IPSET containing mac- addresses it is only needed once, since wgm automatically adds this to both ipv4 and ipv6 firewall.
 
-the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packages to different route we will need to disable this.  
-"reverse path filter" is a very simple protection that many now days consider obsolete. whenever a packages comes in on i.e. WAN it will change place on Destination and Source and run it trough the routing table to see if a reply to this package would be routed out the same way. it understands most rules but it will not understand that some packages will recieve a mark and be routed differently. so in this case we need to disable the rp_filter on WAN, otherwise answers from WAN will not be accepted. there are 3 values for rp_filter. 0 means "Disabled", 1 means "Enabled, strict", 2 means "Enabled loose". loose means that it does not check routing explicitly, but will accept if there are any routing ways back this interface. 2 is sufficient for us.
+the final thing we can do in wgm is to disable the rp_filter for the WAN interface. whenever we use IPSET to force packets to different route we will need to disable this.  
+"reverse path filter" is a very simple protection that many now days consider obsolete. whenever a packets comes in on i.e. WAN it will change place on Destination and Source and run it trough the routing table to see if a reply to this packet would be routed out the same way. it understands most rules but it will not understand that some packets will recieve a mark and be routed differently. so in this case we need to disable the rp_filter on WAN, otherwise answers from WAN will not be accepted. there are 3 values for rp_filter. 0 means "Disabled", 1 means "Enabled, strict", 2 means "Enabled loose". loose means that it does not check routing explicitly, but will accept if there are any routing ways back this interface. 2 is sufficient for us.
 
 specifically for WAN this could be handled in wgm by:
 ```sh
@@ -1040,13 +1040,13 @@ E:Option ==> peer wg21 auto=Y
 ```
 
 **IPv6 - setup with dynamic IPv6**  
-Note: Despite my best effort I cant seem to get ipv6 ULA packages from wg21 to be forwarded to wan port. The package reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the package disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
+Note: Despite my best effort I cant seem to get ipv6 ULA packets from wg21 to be forwarded to wan port. The packet reaches the firewall PREROUTING Chain but it never reaches the FORWARD chain so during routing the packet disapears (altough "ip -6 route get 2600:: from fc00:192:168:100::2 iif wg21" provides a perfectly good route). If anyone reading this figures out why, please post in snbforum (link on top of page) or pm me here on github.
 
 Special thanks to SNB-Forum member @archiel for testing this out.
 
 Wireguard dont work with dynamic ip. The peer address needs to be static, so if you have a dynamic WAN IPv6 we will have to revert to NAT6 and use a local IPv6 for the wg21 server peer and the devices. From been using this some time I have not really found any real penalty for this, but surely there are people in the IPv6 community that disapproves of this. On a comforting note, ASUS is doing the same in their setup already. This requires you to have a Firmware of atleast 386.4 or later.
 
-The proper way of doing this would be to generate yourself an ipv6 ULA address range. However, the current firmware in our ASUS routers wont route this to wan, packages wont even reach the place where we typically changes its source address. So we need to think of something else. It has also been found that most devices are reluctant of using ipv6 ULA addresses. They rather use ipv4 instead which also means we need to use something else. Since there are no other reserved addresses we will have to make it up.  
+The proper way of doing this would be to generate yourself an ipv6 ULA address range. However, the current firmware in our ASUS routers wont route this to wan, packets wont even reach the place where we typically changes its source address. So we need to think of something else. It has also been found that most devices are reluctant of using ipv6 ULA addresses. They rather use ipv4 instead which also means we need to use something else. Since there are no other reserved addresses we will have to make it up.  
 1) look at https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.xhtml and https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml to find an address space not assigned, but it cant start with fc, fd, fe or ff.  
 2) use your isp assignement, which means the address you have right now. We will use NAT6 anyway so it will still work when your address is changed.  
 3) generate an ULA (Enter wgm command "ipv6 ula" and it generates it for you) then change the 2 first letters to something not used, like aa (proposed).  
@@ -1108,7 +1108,7 @@ Special thanks to snb forum member @archiel for evaluating this.
 
 I have choosen to still reccommend the usage of NAT6 above, mainly for its ease of usage. A better technical solution is to use NPT6 (Network Prefix Translation Ipv6). This methode does not need to keep track of any connections and will simply perform better in every aspect than NAT6.
  
-Sadly, it has shown that NTP is not compatible with conntrack, which our router uses for its stateful firewall. We would not like to give that up! But there is another way to do the same thing called NETMAP. Whilst NPT6 is checksum neutral (by changing first 16 bits device id to accomplish that) NETMAP is not, so it will need recalculation of package checksum. But on the upside it leaves the device ip untouched.
+Sadly, it has shown that NTP is not compatible with conntrack, which our router uses for its stateful firewall. We would not like to give that up! But there is another way to do the same thing called NETMAP. Whilst NPT6 is checksum neutral (by changing first 16 bits device id to accomplish that) NETMAP is not, so it will need recalculation of packet checksum. But on the upside it leaves the device ip untouched.
 
 Disclamer: NETMAP is not really supported by all softwares. The kernel module/function/hooks are there but not implemented in userspace iptables. You have the option to install Entware iptables:
 ```sh
@@ -1268,7 +1268,7 @@ The same function as the passthru function could be accomplished by adding a pol
 ```sh
 E:Option ==> peer wg11 rule add vpn 10.50.1.2/32 comment ServerClientToWg11
 ``` 
-But a snag is that the server ips are not included in wg11 MASQUARADE rule (the firewall rule that translates the source addresses to match outgoing interface) and this is needed for the vpn supplier only accepts this source address otherwise the packages will be dropped. The passthru feature automatically adds added wg21 clients to the MASQUARADE rule but if you for example use the rules for DESTINATION routing (like you wish to only connect TO certains web addresses through VPN) you might find that your server clients have broken connection to these pages. This is because the DESTINATION rule is typically set src=Any, which also includes the WG server clients. So the choices are either remake the rule to only be used on your lan, so set src=192.168.1.1/24, but this will make your server client access these addresses via WAN. If you want your server clients to also access these pages via VPN, the server needs to be included in the MASQUARADE rule:
+But a snag is that the server ips are not included in wg11 MASQUARADE rule (the firewall rule that translates the source addresses to match outgoing interface) and this is needed for the vpn supplier only accepts this source address otherwise the packets will be dropped. The passthru feature automatically adds added wg21 clients to the MASQUARADE rule but if you for example use the rules for DESTINATION routing (like you wish to only connect TO certains web addresses through VPN) you might find that your server clients have broken connection to these pages. This is because the DESTINATION rule is typically set src=Any, which also includes the WG server clients. So the choices are either remake the rule to only be used on your lan, so set src=192.168.1.1/24, but this will make your server client access these addresses via WAN. If you want your server clients to also access these pages via VPN, the server needs to be included in the MASQUARADE rule:
 
 To include your WG server clients in WG11 MASQUARADE rule:
 ```sh
@@ -1282,7 +1282,7 @@ Populate with
 
 iptables -t nat -I POSTROUTING -s 10.50.1.1/24 -o wg11 -j MASQUERADE -m comment --comment "WireGuard 'client'"  
 ```
-Use your Wireguard server network ip range (change if needed) and change wg11 interface according to your needs. This will enable all Wireguard server clients to MASQUARADE, but will only be used if the rules are setup to route any package from WG server to WG client (meaning that the wgm rules will still determine how it shall be routed)
+Use your Wireguard server network ip range (change if needed) and change wg11 interface according to your needs. This will enable all Wireguard server clients to MASQUARADE, but will only be used if the rules are setup to route any packet from WG server to WG client (meaning that the wgm rules will still determine how it shall be routed)
 
 save & exit.
 
@@ -1589,10 +1589,10 @@ E:Option ==> import SiteB.conf type=device
 If you are using another system then Asus HND routers and Wireguard Manager and wishes to use i.e. wg-quick, then on SiteB simply start SiteB.conf and on siteC simply start SiteC.conf. You might need to make custom changes to the .conf files depending on which system to run it on. 
 
 **Combination of star and mesh topologies**  
-Assume we would like to connect 2 more peers to our mesh network. But these sites are both behind CGNAT so they cannot connect to each other, but they could connect to all other nodes but they need a dedicated peer to route packats between them. In This case I selected SiteA as the site to route packages between our CGNAT peers/sites. The main difference now is that if SiteA is down there will not be any routes between our CGNAT peers/sites (SiteD and SiteE) but all other sites could still communicate to both of them, they just cant talk amongst each other.
-It could seem like a good idea to have SiteD to route packages via SiteA and SiteE to route packages via SiteB but we are then only creating additional dependencies that both SiteA AND siteB needs to be up for the sites to be able to communicate
+Assume we would like to connect 2 more peers to our mesh network. But these sites are both behind CGNAT so they cannot connect to each other, but they could connect to all other nodes but they need a dedicated peer to route packats between them. In This case I selected SiteA as the site to route packets between our CGNAT peers/sites. The main difference now is that if SiteA is down there will not be any routes between our CGNAT peers/sites (SiteD and SiteE) but all other sites could still communicate to both of them, they just cant talk amongst each other.
+It could seem like a good idea to have SiteD to route packets via SiteA and SiteE to route packets via SiteB but we are then only creating additional dependencies that both SiteA AND siteB needs to be up for the sites to be able to communicate
  
-Start by creating our siteD and siteE on i.e. SiteA. Then pupulate SiteD and SiteE [Peer] info in SiteB.conf and SiteC.conf so they will be part of the mesh network. Then add all peers with public ip / ddns [Peer] info (SiteB & SiteC) in SiteD.conf and SiteE.conf. Then on SiteD.conf we add SiteE local ips under siteA [Peer] AllowedIPs (so packages to SiteE is sent to SiteA) and on SiteE.conf we add SiteD local ips under the same site.
+Start by creating our siteD and siteE on i.e. SiteA. Then pupulate SiteD and SiteE [Peer] info in SiteB.conf and SiteC.conf so they will be part of the mesh network. Then add all peers with public ip / ddns [Peer] info (SiteB & SiteC) in SiteD.conf and SiteE.conf. Then on SiteD.conf we add SiteE local ips under siteA [Peer] AllowedIPs (so packets to SiteE is sent to SiteA) and on SiteE.conf we add SiteD local ips under the same site.
 
 so at the end it looks something like: 
 
@@ -1767,7 +1767,7 @@ so in order to setup Guest Network 4 (192.168.5.x) to access internet via wg12, 
 nano /jffs/addons/YazFi.d/userscripts.d/wg-yazfi.sh
 ```
 
-Now we need to add firewall rules to allow this guest network to create new connections out to the internet on this interface and also only accept replies to our packages back, nothing else. 
+Now we need to add firewall rules to allow this guest network to create new connections out to the internet on this interface and also only accept replies to our packets back, nothing else. 
 
 populate the file with:
 ```sh
@@ -1845,9 +1845,9 @@ E:Option ==> firewallstart
 
 Inside wgm we will setup the routing rules so that the guest network will be routed out wg12. 
 
-however, there is a snag... the routing table used for wg12 (which we are about to redirect guest network packages to) does only contain routes to internet via wg12 and to our local/main network. this means that there are no information there back to our guest network for packages destined TO our guest networks. that leaves us with 2 options:
+however, there is a snag... the routing table used for wg12 (which we are about to redirect guest network packets to) does only contain routes to internet via wg12 and to our local/main network. This means that there are no information there back to our guest network for packets destined TO our guest networks. That leaves us with 2 options:
 * 1) Add routes for our guest network in that table
-* 2) redirect packages TO our guest network to main table.
+* 2) redirect packets TO our guest network to main table.
 
 I have choosen to use option 2 because it is easier, since it does not require scripting. 
 
@@ -1868,7 +1868,7 @@ If you have a wireguard server which shall be able to communicate with the guest
 ```sh
 E:Option ==> peer wg12 rule add wan src=any dst=10.50.1.1/24 comment ToWg21UseMain
 ```
-Ofcourse these rules will not provide any access to other subnets since we have not allowed anything in the firewall more than Guest 4 to wg12, but it will allow the packages to be routed but might still be BLOCKED by firewall.  
+Ofcourse these rules will not provide any access to other subnets since we have not allowed anything in the firewall more than Guest 4 to wg12, but it will allow the packets to be routed but might still be BLOCKED by firewall.  
 Add more rules if you have more subnets.
 
 checking the rules in wg12:
@@ -2205,9 +2205,9 @@ ipset create ${IPSET_NAME_mac} hash:mac
 ipset flush ${IPSET_NAME_mac} 
 iptables -t mangle -I PREROUTING -s ${IPv4Rule} -m conntrack --ctstate NEW -j SET --add-set ${IPSET_NAME_mac} src --exist
 ```
-Here I've used -s to match source ip/range and conntrack to only match new connection package (to limit amount of matches) and when there is a match on a package it will populate the information the ipset contains (mac-addresses) based on source information. 
+Here I've used -s to match source ip/range and conntrack to only match new connection packet (to limit amount of matches) and when there is a match on a packet it will populate the information the ipset contains (mac-addresses) based on source information. 
 This way we could create ipv4 rules in -s and have the firewall populate the rule-matched clients mac addresses into an ipset. This ipset could then be plugged into wgm and it will route clients (ipv4+ipv6) to wherever you want. This could be a way to automatically handle ipv6 devices which changes ipv6 dynamically and randomizes mac addresses in a non-persistant way.
-The rule matches ipv4 packages which means if the client changes mac address a new ipv4 connection somewere is needed to get the new mac into the set.
+The rule matches ipv4 packets which means if the client changes mac address a new ipv4 connection somewere is needed to get the new mac into the set.
 
 An example to create the ipset "wg11_mac" for a part of your lan could be:
 
@@ -2234,7 +2234,7 @@ chmod +x /jffs/scripts/nat-start
 ```
 Ofcource the script could be updated with for-statement to loop through more rules into same or different sets.
 
-The firewall could populate any information you need into a set as long as you could formulate a rule that matches packages you want.
+The firewall could populate any information you need into a set as long as you could formulate a rule that matches packets you want.
 
 Anyhow,to manually delete an entry in the sets:
 ```sh
@@ -2319,13 +2319,13 @@ replace all local addresses with the one you have.
 # Setup a reverse policy based routing
 why would anyone ever need to do this?
 
-well, for one thing, if you want/need ALL local processes on router to access internet via VPN. it could be that your specific program does not have the ability to bind to a specific socket/adress and does not use a specific port or anything else that could be used to identify and re-route the package and you really want/need this process to access internet via VPN, then using default routing is pretty much the only way. I would however recommend trying other solutions instead, since this is not very scalable.
+well, for one thing, if you want/need ALL local processes on router to access internet via VPN. it could be that your specific program does not have the ability to bind to a specific socket/adress and does not use a specific port or anything else that could be used to identify and re-route the packet and you really want/need this process to access internet via VPN, then using default routing is pretty much the only way. I would however recommend trying other solutions instead, since this is not very scalable.
 
 when should I not use this?
 
 since you need to handle everything manually, via scripting, it works best if you dont ever need to change it too much and there are not too many rules. prefferably only one interface or one ip adress that should go outside VPN.
 
-it has also been proven difficult to get a WG server working properly (since these packages want to go out VPN and not WAN as they should). I will however present a solution that should work, but has not been properly tested.
+it has also been proven difficult to get a WG server working properly (since these packets want to go out VPN and not WAN as they should). I will however present a solution that should work, but has not been properly tested.
 
 ok, here we go... assuming the use of wg11 (set in auto=y, default mode), we create a wgm custom script:
 ```sh
@@ -2425,7 +2425,7 @@ Lets Start with Transmission since this is easier. In order to select outgoing i
 
 Please note before doing this. You will not be able to open ports if Transmission is communicating via VPN. Only proceed if this is acceptable.
 
-What we are going to do is to make Transmission request a specific source adress on its packages. the source adress choosen should be an ip-adress that is a part of the router. typically the most straight forward ip would be to use the br0 bridge ip which usually is 192.168.1.1 (but could be different on your router). If you already have an interface (like guest network 4 for example) routed out vpn then use this local ip instead (192.168.5.1).
+What we are going to do is to make Transmission request a specific source adress on its packets. the source adress choosen should be an ip-adress that is a part of the router. typically the most straight forward ip would be to use the br0 bridge ip which usually is 192.168.1.1 (but could be different on your router). If you already have an interface (like guest network 4 for example) routed out vpn then use this local ip instead (192.168.5.1).
 
 Stop transmission:
 ```sh
@@ -2483,7 +2483,7 @@ Save and Exit.
 Ok, so what is more problematic with this then Transmission?
 Basically because Unbound does not only talk to internet to resolve name it also need to talk to all local clients to serve them with ips for their request.
 
-We will handle this by redirecting ToLocal packages to main routing table.
+We will handle this by redirecting ToLocal packets to main routing table.
 In wgm:
 ```sh
 E:Option ==> peer wg11 rule add wan dst=192.168.1.1/16 comment ToLocalUseMain
@@ -2492,7 +2492,7 @@ E:Option ==> peer wg11 auto=p
 E:Option ==> restart wg11
 ```
 If you are using IPv6 you will also need to add these in the same way (see Create Rules Section)  
-The first line redirect packages TO 192.168.x.x to the main routing table since there are no routes for them in the VPN table.
+The first line redirect packets TO 192.168.x.x to the main routing table since there are no routes for them in the VPN table.
 
 If you plan to serve dns replies to clients connected to your wireguard vpn server you might also need something like:
 ```sh
@@ -2549,7 +2549,7 @@ Ofcource we could change the br0 network mask to 255.255.0.0 and give our wg ser
 
 Note: Accessing internal (br0) resources from another network will not work if the network you are connected to at the time (i.e. school/library/neighbur/et.c. wifi) has the same subnet as br0. So it might be a good idea to change your br0 network to something not quite as common as 192.168.1.X, i.e. 192.168.16.X (16 = 0x10) and you can have your wg21 server on 192.168.17.X (17 = 0x11). This way they both networks will be included if br0 netmask is set to 255.255.254.0.
 
-It should be noted that we should never change wg21 netmask to include br0 as well, since it will create conflict. Routing is set up based on the netmaks and if br0 has 192.168.1.X/22 and wg21 has 192.168.2.X/22 then the networks are both including each other and equal in size so the routing will be based on metric (or something else) which means that wg21 will probably never recieve ANY package since they are sent to br0. Keeping wg21 the smaller network assures that packets to wg21 devices will be routed to wg21 and all other packets included in this network will be routed to br0.
+It should be noted that we should never change wg21 netmask to include br0 as well, since it will create conflict. Routing is set up based on the netmaks and if br0 has 192.168.1.X/22 and wg21 has 192.168.2.X/22 then the networks are both including each other and equal in size so the routing will be based on metric (or something else) which means that wg21 will probably never recieve ANY packet since they are sent to br0. Keeping wg21 the smaller network assures that packets to wg21 devices will be routed to wg21 and all other packets included in this network will be routed to br0.
 
 So, assuming you wish to keep br0 at 192.168.1.X and wg21 on 192.168.2.X:
 
@@ -2611,7 +2611,7 @@ Lets say my stubborn share is at 192.168.1.20 and router itself has 192.168.1.1 
 ```sh
 iptables -t nat -I POSTROUTING -s 10.50.1.0/24 -d 192.168.1.20 -j SNAT --to-source 192.168.1.1 -m comment --comment "WireGuard 'server'"
 ```
-The rule matches packets from 10.50.1.X (wg21 clients) to 192.168.1.20 (my NAS) and when packets are matched, the source adress of the packet is changed to 192.168.1.1 (and any reply is changed back). This way we have masquaraded our packages so the NAS think they come from the router itself which is on the same subnet so we are affectively bypassing whatever security measures that we never managed to get to the setting. 
+The rule matches packets from 10.50.1.X (wg21 clients) to 192.168.1.20 (my NAS) and when packets are matched, the source adress of the packet is changed to 192.168.1.1 (and any reply is changed back). This way we have masquaraded our packets so the NAS think they come from the router itself which is on the same subnet so we are affectively bypassing whatever security measures that we never managed to get to the setting. 
 This type of adress translation happens over the internet all the time without us even knowing about it. Try to use 8.8.8.8 as your dns for example and do a dnsleak test. You will not see any 8.8.8.8 there because your packets were re-directed to multiple other sources (DNAT - Destination Network Adress Translation). In this case we are basically using the same technique as your router is already doing to hide your LAN ip (192.168.1.x) from the internet, so it appears as your entire LAN has one single internet adress.
 
 if you found the rule not to be working, or you made some type, just enter the exact same rule again and just change the -I to -D to delete it:
@@ -2651,7 +2651,7 @@ there, your rule shall now be applied when wg21 starts (including at boot) and t
 # Why is my SMB share slow over vpn
 This is basically a problem with TCP and/or the way it is used by SMB. it has been miltigated over the years with SMD2 and SMB3 but SMB was never meant to be used on the internet.  
 The speed killer for SMD is infact latency, which is partly caused by physical distance (i.e. speed of light) and partly by more equipment handling each packet.  
-we cant do much about the speed of light, it is what it is. but we can do what we can to make sure out package does not need to be mangled more than bare minimum. Less handling of the package means lower latency. The typical mangling that happens is that packages which are too big for a certain interface gets cut into 2 packages and then re-assembled.  
-Once the package leaves your router on it's way over the internet there is nothing we can do about it. if your ISP has high latency out on the internet even for non-mangled packages, there is little we can do about it, and your speed will always be slow.
+we cant do much about the speed of light, it is what it is. but we can do what we can to make sure out packet does not need to be mangled more than bare minimum. Less handling of the packet means lower latency. The typical mangling that happens is that packet which are too big for a certain interface gets cut into 2 packets and then re-assembled.  
+Once the packet leaves your router on it's way over the internet there is nothing we can do about it. if your ISP has high latency out on the internet even for non-mangled packets, there is little we can do about it, and your speed will always be slow.
 
 It has been shown that proper setting will atleast give you read/write speeds in the 20-30MB/s range.  
