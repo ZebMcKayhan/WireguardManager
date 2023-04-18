@@ -39,6 +39,7 @@ Original thread: https://www.snbforums.com/threads/experimental-wireguard-for-rt
   -[Site 2 Site](#site-2-site)  
   -[Site 2 Multisite / Mesh](#site-2-multisite--mesh)  
   -[Route Site 2 Site internet access](#route-site-2-site-internet-access)  
+  -[Setup private server via cloud server](#setup-private-server-via-cloud-server)  
   
 [**YazFi Wireguard integration**](#yazfi-wireguard-integration)  
   -[Using Yazfi and WGM to route different SSIDs to different VPNs](#using-yazfi-and-wgm-to-route-different-ssids-to-different-vpns)  
@@ -1750,6 +1751,9 @@ Ofcource you dont have to use remote peer dnsmasq, you could replace that ip wit
 
 The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
    
+# Setup private server via cloud server
+ - Cooming soon
+  
 # YazFi Wireguard integration
 # Using Yazfi and WGM to route different SSIDs to different VPNs
 script source: https://github.com/jackyaz/YazFi
