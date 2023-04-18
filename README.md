@@ -1752,7 +1752,19 @@ Ofcource you dont have to use remote peer dnsmasq, you could replace that ip wit
 The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
    
 # Setup private server via cloud server
- - Cooming soon
+ - Under Construction!
+
+Currently my ISP decided to provide me with a private ip. This means I share the same public ip with others and a connection tracking software routes replies back to whoever asked for it. This means there are no way for me to make a new connection into my network from the internet. So I cannot setup a typical Wireguard server.  
+
+However, there are still options. I have a public ipv6 but everywere I have tested (cell data, friends wifi, public wifi et.c) is ipv4 only (yet) so it wont do me much good.
+But I managed to create an trial account at Oracle Cloud Services. The nice thing is that whenever this trial expires Im left with a "Free Tier" account and this is actually enough. It will give a free compute instance (typically an emulated arm core with limiting process power). A public ipv4 and virtually unlimited data traffic.
+  
+There are plenty of guides out there on how to create the account and setup the VPS (Virtual Private Server) so I will not cover that here. I choose Ubuntu distro since that is what Im used to.
+The plan is to setup a server peer using WGM to connect out to my cloud server and have clients connecting to the same cloud server and have the data routed back to my lan this way.
+
+Since I still have the option of using ipv6 I would like to have the option for direct connection as well. Since my lan is 192.168.1.0/24 Ill make my server peer 192.168.100.0/24. Since Wireguard uses static ip I could further devide this into 192.168.100.128/25 (128-255) for Cloud connected clients and 192.168.100.0/25 for ipv6 direct connections.
+
+
   
 # YazFi Wireguard integration
 # Using Yazfi and WGM to route different SSIDs to different VPNs
