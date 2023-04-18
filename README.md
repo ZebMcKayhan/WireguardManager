@@ -1826,6 +1826,116 @@ E:Option ==> start wg21
 
 Now wg21 will attempt to connect to the cloud server by itself but until we setup the peer there it will not be able to make the connection.
 
+We could now continue and add more peers for direct connection, like over ipv6 for me:
+```sh
+E:Option ==> create Phone1 wg21 ipv6 dns=local
+```
+Wgm will still ask for ddns and if you have one for your ipv6 then you could enter it. It does not work to enter the ipv6 here.
+Select y to bind to wg21 and restart wg21, but you cannot import the peer to your client just yet.
+
+Please note that the peer was given ip 192.168.100.2, this is because wgm does not recognize our vps peer because of the larger network. This is the reason we put this range 128-255 instead of 0-127.
+
+Now exit wgm and edit the client peer config:
+```sh
+nano /opt/etc/wireguard.d/Phone1.conf
+```
+Here you just need to update the endpoint = to point to your router ipv6. Please note that ipv6 as endpoint need to be added as:
+```sh
+Endpoint = [2001:aaaa:bbbb:cccc::1234]:61415
+```
+Now we could either copy this file to the client or have wgm display the qrcode and import to our client.
+
+Thats it for wgm, now we need to capture these files:
+```sh
+/opt/etc/wireguard.d/VPS.conf
+/opt/etc/wireguard.d/VPS_public.key
+```
+Because these files are needed to setup our cloud server and add more peers to it.
+
+**Setup Cloud server**  
+Assuming you created an ubuntu instance, setup a public ipv4 and opened a udp port into it according to some internet guide.
+
+Ssh into the cloud server using the key file from when you created it.
+
+Run the normal update
+```sh
+Sudo apt update
+```
+and
+```sh
+Sudo apt upgrade
+```
+This is to update all packages.
+
+Install net-tools so we could use ifconfig et.c:
+```sh
+Sudo apt install net-tools
+```
+
+And install wireguard:
+```sh
+Sudo apt install wireguard
+```
+
+Now we need to check our enviroment:
+```sh
+ubuntu@instance-20230329-1838:~$ ip route | grep default
+default via 10.0.0.1 dev ens3
+default via 10.0.0.1 dev ens3 proto dhcp src 10.0.0.8 metric 100
+```
+In my case it looks like my outgoing (wan) interface is ens3 and it has a private ip.
+
+So we create our wireguard config file:
+```sh
+sudo nano /etc/wireguard/VPS.conf
+```
+And paste in the content from the VPS.conf wgm generated. But before we save and exit, we make some changes:
+```sh
+[Interface]
+PrivateKey = hidden
+Address = 192.168.100.128/25,aaff:a37f:fa75:100::100/120
+ListenPort = 61415
+PostUp = iptables -I INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT;
+PostDown = iptables -D INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT;
+
+[Peer]
+PublicKey = hidden
+AllowedIPs = 192.168.100.0/24, aaff:a37f:fa75:100::/64
+PresharedKey = hidden
+```
+Add the ListenPort directive and put in the same port as you opened into your cloud server and the same port you put in wgm.
+Add the PostUp & PostDown iptables rules to internally open the port. Change --dport to be your wireguard port.
+Changed the AllowedIPs to only include the Wireguard network (for now)
+
+Save and exit.
+
+Now we are all set, we try to start the peer:
+```sh
+wg-quick up VPS
+```
+And we check so that its working:
+```sh
+ubuntu@instance-20230329-1838:~$ sudo wg show
+interface: VPS
+  public key: hidden
+  private key: (hidden)
+  listening port: 61415
+  fwmark: 0xca11
+
+Peer: hidden
+  preshared key: (hidden)
+  endpoint: <cgnat ip>:port
+  allowed ips: 192.168.100.0/24, aaff:a37f:fa75:100::/64
+  latest handshake: 46 seconds ago
+  transfer: 7.46 MiB received, 1.11 MiB sent
+```
+We can see the latest handshake timer reset.
+
+Now we are (should be) able to ping 192.168.100.1 from the cloud server and 192.168.100.128 from our router or lan.
+
+So, next step would be to create more peers on the cloud server.
+
+
 TBC-->
 
   
