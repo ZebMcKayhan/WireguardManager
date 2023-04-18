@@ -1764,6 +1764,69 @@ The plan is to setup a server peer using WGM to connect out to my cloud server a
 
 Since I still have the option of using ipv6 I would like to have the option for direct connection as well. Since my lan is 192.168.1.0/24 Ill make my server peer 192.168.100.0/24. Since Wireguard uses static ip I could further devide this into 192.168.100.128/25 (128-255) for Cloud connected clients and 192.168.100.0/25 for ipv6 direct connections.
 
+In order to create such server in wgm, we start by creating the main server peer, wg21:
+```sh
+E:Option ==> peer new ip=192.168.100.1/24 ipv6=aaff:a37f:fa75:100::1/64 port=61415
+```
+Since I have ipv6 Ive added this as well (modified ULA) but this would be optional.
+It is convenient to use same port on cloud server and wgm but not required.
+
+Now the server peer is created, we could create our peer to connect to our cloud server:
+```sh
+E:Option ==> create VPS wg21 ipv6 dns=local
+```
+Now, WGM may ask you for a ddns to put as endpoint for this peer. As we dont have any, just press enter to leave it blank.
+
+Next it will ask if it should bind this peer to wg21. Here you should answer: NO. 
+
+For restart of wg21 you could select no and no point in viewing qrcode.
+
+Next, we adjust the peer ip to include the entire range of peers:
+```sh
+E:Option ==> peer VPS ip=192.168.100.128/25,aaff:a37f:fa75:100::100/120
+```
+
+Now that this is updated we could bind the peer to wg21:
+```sh
+E:Option ==> peer wg21 bind VPS
+```
+
+Ok, so, now the cloud server peer has been created, we need to update wg21 vps peer to contain the cloud server ip:port so WGM connect to the cloud server end not the other way:
+```sh
+E:Option ==> stop wg21
+```
+Exit WGM and edit wg21 config file:
+```sh
+nano /opt/etc/wireguard.d/wg21.conf
+```
+Here we should add the endpoint directive under vps peer, as:
+```sh
+# RT-AC86U (IPv4/IPv6) Server 1
+[Interface]
+PrivateKey = hidden
+Address = 192.168.100.1/24,aaff:a37f:fa75:100::1/64
+ListenPort = 61415
+
+# VPS device bind on 2023-04-16
+[Peer]
+PublicKey = hidden
+AllowedIPs = 192.168.100.128/25,aaff:a37f:fa75:100::100/120
+PresharedKey = hidden
+Endpoint = <VPS Ipv4>:61415
+PersistentKeepalive = 25
+# VPS End
+```
+It is also a good idea to add the persistentkeepalive option to make sure the port and connection between wgm and the cloud server stays open.
+Save and exit.
+
+Now we start wgm and start wg21 again:
+```sh
+E:Option ==> start wg21
+```
+
+Now wg21 will attempt to connect to the cloud server by itself but until we setup the peer there it will not be able to make the connection.
+
+TBC-->
 
   
 # YazFi Wireguard integration
