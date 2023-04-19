@@ -1924,7 +1924,7 @@ interface: VPS
 
 Peer: hidden
   preshared key: (hidden)
-  endpoint: <cgnat ip>:port
+  endpoint: <isp home ip>:port
   allowed ips: 192.168.100.0/24, aaff:a37f:fa75:100::/64
   latest handshake: 46 seconds ago
   transfer: 7.46 MiB received, 1.11 MiB sent
@@ -1935,6 +1935,67 @@ Now we are (should be) able to ping 192.168.100.1 from the cloud server and 192.
 
 So, next step would be to create more peers on the cloud server.
 
+I dont know if there are any script out there to automate this process but I preffer to do it manually.
+
+In the cloud server ssh session, we create a directory and set its mask for permissions (one by one):
+```sh
+mkdir ./wireguard
+cd ./wireguard
+umask 077
+```
+
+Now we have a private directory to work in, we generate keys for a client device, say Phone1:
+```sh
+wg genpsk | tee Phone1_preshared.key
+wg genkey | tee Phone1_private.key | wg pubkey > Phone1_public.key
+```
+
+Now we have 3 files in this directory:
+```sh
+ubuntu@instance-20230329-1838:~/wireguard$ ls
+Phone1_preshared.key  Phone1_private.key  Phone1_public.key
+```
+
+Its a good idea to copy in wgm generated VPS_public.key here as well since we will need it.
+
+And we can easely view the keys:
+```sh
+ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1_preshared.key
+JUCJ8Bcqr6WX+EPoOYMXQwgdHH9BHc3pUCIkPNkXwuk=
+ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1_private.key
+KFmcB+D86yEVc315uVR+ux9kUGWfTPwwbdTTi9FoNng=
+ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1_public.key
+s5+apDAKm+mq7gVAWAO5WNSabf0Z9HJcgRqwp5bvT0M=
+```
+
+And we create the the Phone1.conf file for the client
+```sh
+nano Phone1.conf
+```
+
+We select the next ip in the series:192.168.100.129, remember it must be in the 128-255 range and 128 is used by our cloud server.
+I use wg21 ip for dns but it could really be any other dns you would like to use.
+
+So we populate the file with:
+```sh
+#========== Phone 1 configuration ==========
+# Phone - 192.168.100.129  aaff:a37f:fa75:100::101
+[Interface]
+PrivateKey = < paste in Phone1_private.key >
+Address = 192.168.100.129/24, aaff:a37f:fa75:100::101/64
+DNS = 192.168.100.1, aaff:a37f:fa75:100::1
+
+# VPS - 192.168.100.128
+[Peer]
+PublicKey = < paste in VPS_public.key >
+Endpoint = < cloud server public ipv4 >:port
+AllowedIPs = 0.0.0.0/0, ::/0
+PresharedKey = < paste in Phone1_preshared.key >
+PersistentKeepalive = 25
+```
+Save & Exit
+
+Now we need to add Phone1 peer info to cloud server.
 
 TBC-->
 
