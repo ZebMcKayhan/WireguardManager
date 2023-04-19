@@ -1997,6 +1997,44 @@ Save & Exit
 
 Now we need to add Phone1 peer info to cloud server.
 
+```sh
+wg-quick down VPS
+sudo nano /etc/wireguard/VPS
+```
+
+And we add the peer after wg21 server:
+```sh
+[Interface] 
+PrivateKey = hidden 
+Address = 192.168.100.128/25,aaff:a37f:fa75:100::100/120 
+ListenPort = 61415 
+PostUp = iptables -I INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostDown = iptables -D INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+
+# wg21 Router
+[Peer] 
+PublicKey = hidden 
+AllowedIPs = 192.168.100.0/24, aaff:a37f:fa75:100::/64 
+PresharedKey = hidden
+
+# Phone1
+[Peer]
+PublicKey = < paste in Phone1_public.key >
+AllowedIPs = 192.168.100.129/32, aaff:a37f:fa75:100::101/128
+PresharedKey = < paste in Phone1_preshared.key >
+```
+Save & exit.
+
+Start the server again:
+```sh
+wg-quick up VPS
+```
+
+Now you can import Phone.conf to your client and try to connect to the cloud server.
+
+At this point you will only be able to ping the cloud server wireguard ip 192.168.100.128 from your new client Phone1 and the cloud server could ping the Phone1 192.168.100.129 and wg21 192.168.100.1. But you cannot yet ping wg21 from Phone1 and vice versa, but we will fix that next...
+
+
 TBC-->
 
   
