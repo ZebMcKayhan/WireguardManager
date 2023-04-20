@@ -1944,33 +1944,33 @@ cd ./wireguard
 umask 077
 ```
 
-Now we have a private directory to work in, we generate keys for a client device, say Phone1:
+Now we have a private directory to work in, we generate keys for a client device, say Phone1ViaVPS:
 ```sh
-wg genpsk | tee Phone1_preshared.key
-wg genkey | tee Phone1_private.key | wg pubkey > Phone1_public.key
+wg genpsk | tee Phone1ViaVPS_preshared.key
+wg genkey | tee Phone1ViaVPS_private.key | wg pubkey > Phone1ViaVPS_public.key
 ```
 
 Now we have 3 files in this directory:
 ```sh
 ubuntu@instance-20230329-1838:~/wireguard$ ls
-Phone1_preshared.key  Phone1_private.key  Phone1_public.key
+Phone1ViaVPS_preshared.key  Phone1ViaVPS_private.key  Phone1ViaVPS_public.key
 ```
 
 Its a good idea to copy in wgm generated VPS_public.key here as well since we will need it.
 
 And we can easely view the keys:
 ```sh
-ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1_preshared.key
+ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1ViaVPS_preshared.key
 JUCJ8Bcqr6WX+EPoOYMXQwgdHH9BHc3pUCIkPNkXwuk=
-ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1_private.key
+ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1ViaVPS_private.key
 KFmcB+D86yEVc315uVR+ux9kUGWfTPwwbdTTi9FoNng=
-ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1_public.key
+ubuntu@instance-20230329-1838:~/wireguard$ cat Phone1ViaVPS_public.key
 s5+apDAKm+mq7gVAWAO5WNSabf0Z9HJcgRqwp5bvT0M=
 ```
 
-And we create the the Phone1.conf file for the client
+And we create the the Phone1ViaVPS.conf file for the client
 ```sh
-nano Phone1.conf
+nano Phone1ViaVPS.conf
 ```
 
 We select the next ip in the series:192.168.100.129, remember it must be in the 128-255 range and 128 is used by our cloud server.
@@ -1978,10 +1978,10 @@ I use wg21 ip for dns but it could really be any other dns you would like to use
 
 So we populate the file with:
 ```sh
-#========== Phone 1 configuration ==========
+#========== Phone 1 Via VPS configuration ==========
 # Phone - 192.168.100.129  aaff:a37f:fa75:100::101
 [Interface]
-PrivateKey = < paste in Phone1_private.key >
+PrivateKey = < paste in Phone1ViaVPS_private.key >
 Address = 192.168.100.129/24, aaff:a37f:fa75:100::101/64
 DNS = 192.168.100.1, aaff:a37f:fa75:100::1
 
@@ -1990,12 +1990,12 @@ DNS = 192.168.100.1, aaff:a37f:fa75:100::1
 PublicKey = < paste in VPS_public.key >
 Endpoint = < cloud server public ipv4 >:port
 AllowedIPs = 0.0.0.0/0, ::/0
-PresharedKey = < paste in Phone1_preshared.key >
+PresharedKey = < paste in Phone1ViaVPS_preshared.key >
 PersistentKeepalive = 25
 ```
 Save & Exit
 
-Now we need to add Phone1 peer info to cloud server.
+Now we need to add Phone1ViaVPS peer info to cloud server.
 
 ```sh
 wg-quick down VPS
@@ -2017,11 +2017,11 @@ PublicKey = hidden
 AllowedIPs = 192.168.100.0/24, aaff:a37f:fa75:100::/64 
 PresharedKey = hidden
 
-# Phone1
+# Phone1ViaVPS
 [Peer]
-PublicKey = < paste in Phone1_public.key >
+PublicKey = < paste in Phone1ViaVPS_public.key >
 AllowedIPs = 192.168.100.129/32, aaff:a37f:fa75:100::101/128
-PresharedKey = < paste in Phone1_preshared.key >
+PresharedKey = < paste in Phone1ViaVPS_preshared.key >
 ```
 Save & exit.
 
@@ -2030,9 +2030,9 @@ Start the server again:
 wg-quick up VPS
 ```
 
-Now you can import Phone.conf to your client and try to connect to the cloud server.
+Now you can import Phone1ViaVPS.conf to your client and try to connect to the cloud server.
 
-At this point you will only be able to ping the cloud server wireguard ip 192.168.100.128 from your new client Phone1 and the cloud server could ping the Phone1 192.168.100.129 and wg21 192.168.100.1. But you cannot yet ping wg21 from Phone1 and vice versa, but we will fix that next...
+At this point you will only be able to ping the cloud server wireguard ip 192.168.100.128 from your new client Phone1ViaVPS and the cloud server could ping the Phone1ViaVPS 192.168.100.129 and wg21 192.168.100.1. But you cannot yet ping wg21 from Phone1ViaVPS and vice versa, but we will fix that next...
 
 
 TBC-->
