@@ -207,7 +207,7 @@ and start your Wireguard tunnel(s) again. If the problems are gone and you wish 
 ```sh
 E:Option ==> vx
 ```
-and change 
+and change
 ```sh
 # Disable Flow Cache Permanently. (Checked each time wireguard_manager is INITialised or command 'wgm start' is issued)
 #     Use command 'vx' to edit this setting or command 'fc {disable | enable}'
@@ -1906,6 +1906,7 @@ PresharedKey = hidden
 Add the ListenPort directive and put in the same port as you opened into your cloud server and the same port you put in wgm.
 Add the PostUp & PostDown iptables rules to internally open the port. Change --dport to be your wireguard port.
 Changed the AllowedIPs to only include the Wireguard network (for now)
+Remove the peer Endpoint = :61415 as wg21 will contact the VPS, not the other way araund.
 
 Save and exit.
 
@@ -1999,7 +2000,7 @@ Now we need to add Phone1ViaVPS peer info to cloud server.
 
 ```sh
 wg-quick down VPS
-sudo nano /etc/wireguard/VPS
+sudo nano /etc/wireguard/VPS.conf
 ```
 
 And we add the peer after wg21 server:
@@ -2033,6 +2034,135 @@ wg-quick up VPS
 Now you can import Phone1ViaVPS.conf to your client and try to connect to the cloud server.
 
 At this point you will only be able to ping the cloud server wireguard ip 192.168.100.128 from your new client Phone1ViaVPS and the cloud server could ping the Phone1ViaVPS 192.168.100.129 and wg21 192.168.100.1. But you cannot yet ping wg21 from Phone1ViaVPS and vice versa, but we will fix that next...
+
+So, while in ssh on your cloud server we need to turn on ip forwarding for it to relay packets.
+
+We edit sysctl.conf:
+```sh
+sudo nano /etc/sysctl.conf
+```
+Here we need to find these lines and remove the # in front of them:
+```sh
+net.ipv4.ip_forward = 1
+net.ipv6.conf.all.forwarding=1
+```
+Save & exit.
+
+To update the system we could either reboot our instance, or we could execute:
+```sh
+sudo sysctl -p
+```
+This setting will now be persistent.
+
+Anyhow, we still cannot make data go between our peers. This is because the firewall is blocking us. Data between peers would have to make through the FORWARD chain, filter table and standard setting is blocking pretty much everything. So, a simple rule is needed:
+```sh
+iptables -I FORWARD -i VPS -o VPS -j ACCEPT
+ip6tables -I FORWARD -i VPS -o VPS -j ACCEPT
+```
+The ip6tables are only needed for ipv6 data, so this could be skipped if not used.
+
+So, we update our VPS config file:
+```sh
+wg-quick down VPS
+sudo nano /etc/wireguard/VPS.conf
+```
+
+And we add our firewall rules upon start and remove them on stop:
+```sh
+[Interface] 
+PrivateKey = hidden 
+Address = 192.168.100.128/25,aaff:a37f:fa75:100::100/120 
+ListenPort = 61415 
+PostUp = iptables -I INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostDown = iptables -D INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostUp = iptables -I FORWARD -i VPS -o VPS -j ACCEPT; ip6tables -I FORWARD -i VPS -o VPS -j ACCEPT
+PostDown = iptables -D FORWARD -i VPS -o VPS -j ACCEPT; ip6tables -D FORWARD -i VPS -o VPS -j ACCEPT
+
+# wg21 Router
+[Peer] 
+PublicKey = hidden 
+AllowedIPs = 192.168.100.0/24, aaff:a37f:fa75:100::/64 
+PresharedKey = hidden
+
+# Phone1ViaVPS
+[Peer]
+PublicKey = hidden
+AllowedIPs = 192.168.100.129/32, aaff:a37f:fa75:100::101/128
+PresharedKey = hidden
+```
+
+Start the server again:
+```sh
+wg-quick up VPS
+```
+
+Now wg21 will automatically connect and if you connect from your client you should be able to ping your router (wg21) from Phone1ViaVPS Client. But at this time no internet data will be available.
+
+There are now a choice we have to make.
+1. I want internet data to exit my VPS internet connection.
+Or
+2. I want ALL data to go to my router and out my router wan port (or bypassed to vpn et.c)
+
+** 1. Internet out my VPS **
+This step should not be followed for the 2nd option.
+
+We need to complement VPS.conf wg21 peer with our LAN ips, and all other ips we would like to go to the router. 
+We also need to setup access between VPS wg interface and VPS wan interface and only let replies back.
+Lastly we need to setup masquarade for internet data going out VPS wan.
+
+These rules will cover it:
+```sh
+# always let replies back in:
+iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+# accept data from VPS wg interface to anywere:
+iptables -I FORWARD -i VPS -j ACCEPT
+# masquarade forwarded packets:
+iptables -t nat -I POSTROUTING -s 192.168.100.0/24 -o ens3 -j MASQUERADE
+```
+Ive only presented ipv4 here since I never enabled ipv6 on my VPS. But procedure should be the same but use ip6tables instead and change -s to ipv6 address.
+
+Now, we add them to our config with our lan ips:
+
+```sh
+wg-quick down VPS
+sudo nano /etc/wireguard/VPS.conf
+```
+Im using 192.168.1.0/24 as my router lan so I add that together with the firewall rules:
+```sh
+[Interface] 
+PrivateKey = hidden 
+Address = 192.168.100.128/25,aaff:a37f:fa75:100::100/120 
+ListenPort = 61415 
+PostUp = iptables -I INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostDown = iptables -D INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostUp = iptables -I FORWARD -i VPS -o VPS -j ACCEPT; ip6tables -I FORWARD -i VPS -o VPS -j ACCEPT
+PostDown = iptables -D FORWARD -i VPS -o VPS -j ACCEPT; ip6tables -D FORWARD -i VPS -o VPS -j ACCEPT
+PostUp = iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT; iptables -I FORWARD -i VPS -j ACCEPT; iptables -t nat -I POSTROUTING -s 192.168.100.0/24 -o ens3 -j MASQUERADE
+PostDown = iptables -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT; iptables -D FORWARD -i VPS -j ACCEPT; iptables -t nat -D POSTROUTING -s 192.168.100.0/24 -o ens3 -j MASQUERADE
+
+# wg21 Router
+[Peer] 
+PublicKey = hidden 
+AllowedIPs = 192.168.1.0/24, 192.168.100.0/24, aaff:a37f:fa75:100::/64, aaff:a37f:fa75:1::/64
+PresharedKey = hidden
+
+# Phone1ViaVPS
+[Peer]
+PublicKey = hidden
+AllowedIPs = 192.168.100.129/32, aaff:a37f:fa75:100::101/128
+PresharedKey = hidden
+```
+
+Start the server again:
+```sh
+wg-quick up VPS
+```
+
+Now, if everything went ok, you should have lan access from your Phone1ViaVPS and your internet ip should be your VPS ip.
+
+
+** 1. Internet out my router **
+This step should not be followed if you choose the 1st option
 
 
 TBC-->
