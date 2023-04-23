@@ -2099,11 +2099,11 @@ wg-quick up VPS
 Now wg21 will automatically connect and if you connect from your client you should be able to ping your router (wg21) from Phone1ViaVPS Client. But at this time no internet data will be available.
 
 There are now a choice we have to make.
-1. I want internet data to exit my VPS internet connection.
+1. I want internet data to exit my VPS internet connection.  
 Or
-2. I want ALL data to go to my router and out my router wan port (or bypassed to vpn et.c)
+2. I want ALL data to go to my router and out my router wan port (or bypassed to vpn et.c)  
 
-** 1. Internet out my VPS **
+**Internet out my VPS**  
 This step should not be followed for the 2nd option.
 
 We need to complement VPS.conf wg21 peer with our LAN ips, and all other ips we would like to go to the router. 
@@ -2161,7 +2161,7 @@ wg-quick up VPS
 Now, if everything went ok, you should have lan access from your Phone1ViaVPS and your internet ip should be your VPS ip.
 
 
-** 1. Internet out my router **
+**Internet out my router**  
 This step should not be followed if you choose the 1st option
 
 
