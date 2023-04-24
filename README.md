@@ -1752,8 +1752,6 @@ Ofcource you dont have to use remote peer dnsmasq, you could replace that ip wit
 The making of table 117 and the superseeding routes should always be in wg2x-up.sh but the rules and DNS redirect could be put in separate files if you wish to control their outputs by executing this file (via Ios Shortcuts, or Android SSH Button?) but make sure to take the nessicary actions to prevent duplicate rules.
    
 # Setup private server via cloud server
- - Under Construction!
-
 Currently my ISP decided to provide me with a private ip. This means I share the same public ip with others and a connection tracking software routes replies back to whoever asked for it. This means there are no way for me to make a new connection into my network from the internet. So I cannot setup a typical Wireguard server.  
 
 However, there are still options. I have a public ipv6 but everywere I have tested (cell data, friends wifi, public wifi et.c) is ipv4 only (yet) so it wont do me much good.
@@ -2164,8 +2162,139 @@ Now, if everything went ok, you should have lan access from your Phone1ViaVPS an
 **Internet out my router**  
 This step should not be followed if you choose the 1st option
 
+In order to have ALL data being forwarded to our router instead we basically only need to set router peer in VPS.conf to AllowedIPs = 0.0.0.0/0 and all data will be sent here, but there is a snag: 
+The VPS local instance will then also send all internet data this way. This means ssh will only be possible over the vpn tunnel. 
 
-TBC-->
+I initially thought that to be a cool security feture, that ensures that nobody could talk to my instance without using wireguard. But its became more of an hassle when working over ssh and always had to switch connections.
+
+If we look what happens to our VPS routing rules when 0.0.0.0/0 is added:
+```sh
+ubuntu@instance-20230329-1838:~$ ip rule
+0:      from all lookup local
+32764:  from all lookup main suppress_prefixlength 0
+32765:  not from all fwmark 0xca11 lookup 51820
+32766:  from all lookup main
+32767:  from all lookup default
+```
+
+At rule prio 32764 the main routing table is consulted but not for unknown internet routes (default route, prefix length 0)  
+At rule prio 32765 all data is sent to Wireguard policy routing table, except for marked for the udp tunnel packets.
+
+By adding a routing rule with a higher priority (lower prio number) we could send local data to main routing table:
+```sh
+ip rule add dev lo table main prio 30000
+ip -6 rule add dev lo table main prio 30000
+```
+
+But still theoretically if someone gained access to our VPS somehow there could be a point to prevent the VPS to use the vpn tunnel for its own data:
+```sh
+iptables -I OUTPUT -o VPS -j DROP
+ip6tables -I OUTPUT -o VPS -j DROP
+```
+We could also prevent any packets to ever be forwarded from the VPS to our VPN tunnel:
+```sh
+iptables -I FORWARD ! -i VPS -o VPS -j DROP
+ip6tables -I FORWARD ! -i VPS -o VPS -j DROP
+```
+
+But if you feel that you would want to access VPS only over VPN you could skip these rules and just replace the AllowedIPs, but prepare for your ssh session to break every time vpn is started or stopped.
+
+So we add this to our VPS.conf file:
+```sh
+wg-quick down VPS
+sudo nano /etc/wireguard/VPS.conf
+```
+
+And we add our firewall rules upon start and remove them on stop.
+
+We also update the AllowedIPs on our router peer with 0.0.0.0/0 which means ALL traffic so no other ips are needed here.
+```sh
+[Interface] 
+PrivateKey = hidden 
+Address = 192.168.100.128/25,aaff:a37f:fa75:100::100/120 
+ListenPort = 61415 
+PostUp = iptables -I INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostDown = iptables -D INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostUp = iptables -I FORWARD -i VPS -o VPS -j ACCEPT; ip6tables -I FORWARD -i VPS -o VPS -j ACCEPT
+PostDown = iptables -D FORWARD -i VPS -o VPS -j ACCEPT; ip6tables -D FORWARD -i VPS -o VPS -j ACCEPT
+PostUp = ip rule add dev lo table main prio 30000; iptables -I OUTPUT -o VPS -j DROP; iptables -I FORWARD ! -i VPS -o VPS -j DROP
+PostUp = ip -6 rule add dev lo table main prio 30000; ip6tables -I OUTPUT -o VPS -j DROP; ip6tables -I FORWARD ! -i VPS -o VPS -j DROP; 
+PostDown = ip rule del prio 30000; iptables -D OUTPUT -o VPS -j DROP; iptables -D FORWARD ! -i VPS -o VPS -j DROP
+PostDown = ip -6 rule del prio 30000; ip6tables -D OUTPUT -o VPS -j DROP; ip6tables -D FORWARD ! -i VPS -o VPS -j DROP; 
+
+# wg21 Router
+[Peer] 
+PublicKey = hidden 
+AllowedIPs = 0.0.0.0/0
+PresharedKey = hidden
+
+# Phone1ViaVPS
+[Peer]
+PublicKey = hidden
+AllowedIPs = 192.168.100.129/32, aaff:a37f:fa75:100::101/128
+PresharedKey = hidden
+```
+
+Start the server again:
+```sh
+wg-quick up VPS
+```
+
+And we are all set! By connect to your client Phone1ViaVPS you should be accessing internet and everything via your router and if you want you could setup bypass rules in wgm to have the internet data to go out another vpn client (see section)
+
+**Closing remarks**  
+When we have got everything at the VPS to work as we want we could have the system autostart wireguard at instance boot:
+
+Note: there is a good reason Im cooming to this last. If something is wrong with your config file you may not be able to access the VPS ssh. Up until now you have always been able to reboot the instance via the web page. As we make it autostart that solution is gone and you may have to destroy your instance. So make sure everything is working before proceeding.
+```sh
+wg-quick down VPS
+sudo systemctl enable --now wg-quick@VPS
+```
+Thats it, now if you reboot the instance, Wireguard will automatically start up so wgm could connect to it again.
+
+The only issue ive encountered was that sometimes I end up on a wifi 192.168.1.0/24 so data to my i.e. NAS wont take the path over vpn but instead tries to contact this ip locally.
+
+This is just the way routing works, but could be depending on which Wireguard software you are running on your Phone1ViaVPS. We could fix this by adding a more specific route to our Phone1ViaVPS.conf:
+```sh
+#========== Phone 1 Via VPS configuration ==========
+# Phone - 192.168.100.129  aaff:a37f:fa75:100::101
+[Interface]
+PrivateKey = hidden
+Address = 192.168.100.129/24, aaff:a37f:fa75:100::101/64
+DNS = 192.168.100.1, aaff:a37f:fa75:100::1
+
+# VPS - 192.168.100.128
+[Peer]
+PublicKey = hidden
+Endpoint = < cloud server public ipv4 >:port
+AllowedIPs = 192.168.1.23, 192.168.1.24, 0.0.0.0/0, ::/0
+PresharedKey = hidden
+PersistentKeepalive = 25
+```
+So Ive added 2 extra ip addresses: 192.168.1.23, 192.168.1.24 to the list and these are 2 devices I always want to guarantee I can connect to over vpn regardless if Im an a public wifi that happens to conflict with my lan ip range.
+
+As a last detail, perhaps we never want internet data to go over vpn, but only vpn and lan data, we just replace 0.0.0.0/0 with our Wireguard and lan networks (but its still a good idea to explicitly state ips to you nas et.c that is important to be able to connect to):
+```sh
+#========== Phone 1 Via VPS configuration ==========
+# Phone - 192.168.100.129  aaff:a37f:fa75:100::101
+[Interface]
+PrivateKey = hidden
+Address = 192.168.100.129/24, aaff:a37f:fa75:100::101/64
+DNS = 192.168.100.1, aaff:a37f:fa75:100::1
+
+# VPS - 192.168.100.128
+[Peer]
+PublicKey = hidden
+Endpoint = < cloud server public ipv4 >:port
+AllowedIPs = 192.168.1.23, 192.168.1.24, 192.168.1.0/24, 192.168.100.0/24, aaff:a37f:fa75:1::/64, aaff:a37f:fa75:100::/64
+PresharedKey = hidden
+PersistentKeepalive = 25
+```
+Note: with this configuration you could choose to skip the DNS = directive if its not of importance. Then Phone1 ordinary dns will be used.
+
+Infact, you could have both configs imported in the same phone and you could use the most appropriate one each time you use it. If you are on paid data traffic it may be more appropriate to use the later, while at a friends house you could use the first one to i.e show off your nice ad-blocking router features.
+
+Good luck!
 
   
 # YazFi Wireguard integration
