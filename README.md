@@ -1775,7 +1775,7 @@ E:Option ==> create VPS wg21 ipv6 dns=local
 ```
 Now, WGM may ask you for a ddns to put as endpoint for this peer. As we dont have any, just press enter to leave it blank.
 
-Next it will ask if it should bind this peer to wg21. Here you should answer: NO. 
+Next it will ask if it should bind this peer to wg21. Here you should answer: NO (or more correctly, press enter to skip). 
 
 For restart of wg21 you could select no and no point in viewing qrcode.
 
@@ -1824,7 +1824,7 @@ E:Option ==> start wg21
 
 Now wg21 will attempt to connect to the cloud server by itself but until we setup the peer there it will not be able to make the connection.
 
-We could now continue and add more peers for direct connection, like over ipv6 for me:
+We could now continue and add more peers for direct connection, like over ipv6 for me (not needed if you dont have ipv6 or any other means of direct connection):
 ```sh
 E:Option ==> create Phone1 wg21 ipv6 dns=local
 ```
@@ -1843,6 +1843,7 @@ Endpoint = [2001:aaaa:bbbb:cccc::1234]:61415
 ```
 Now we could either copy this file to the client or have wgm display the qrcode and import to our client.
 
+**Setup Cloud server**  
 Thats it for wgm, now we need to capture these files:
 ```sh
 /opt/etc/wireguard.d/VPS.conf
@@ -1850,7 +1851,6 @@ Thats it for wgm, now we need to capture these files:
 ```
 Because these files are needed to setup our cloud server and add more peers to it.
 
-**Setup Cloud server**  
 Assuming you created an ubuntu instance, setup a public ipv4 and opened a udp port into it according to some internet guide.
 
 Ssh into the cloud server using the key file from when you created it.
