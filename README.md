@@ -2197,7 +2197,8 @@ iptables -I FORWARD ! -i VPS -o VPS -j DROP
 ip6tables -I FORWARD ! -i VPS -o VPS -j DROP
 ```
 
-But if you feel that you would want to access VPS only over VPN you could skip these rules and just replace the AllowedIPs, but prepare for your ssh session to break every time vpn is started or stopped.
+But if you feel that you would want to access VPS only over VPN you could (and should!) skip these rules and just replace the AllowedIPs, but prepare for your ssh session to break every time vpn is started or stopped.
+Note: The OUTPUT rule prevents the vps locally to talk to wireguard so if you keep that rule without the routing rule you will not be able to ssh to your vps at all anymore when wireguard is up.
 
 So we add this to our VPS.conf file:
 ```sh
@@ -2241,6 +2242,34 @@ wg-quick up VPS
 ```
 
 And we are all set! By connect to your client Phone1ViaVPS you should be accessing internet and everything via your router and if you want you could setup bypass rules in wgm to have the internet data to go out another vpn client (see section)
+
+Ok, admittedly I changed my mind (yea, Im allowed to) so I actually ended up with having only vpn access to my vps when wireguard is enabled. The reason is the increased security and once all is setup I actually have no need to ssh into the vps. So, this is were I ended up:
+
+```sh
+[Interface] 
+PrivateKey = hidden 
+Address = 192.168.100.128/25,aaff:a37f:fa75:100::100/120 
+ListenPort = 61415 
+PostUp = iptables -I INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostDown = iptables -D INPUT -p udp --dport 61415 -m state --state NEW -j ACCEPT
+PostUp = iptables -I FORWARD -i VPS -o VPS -j ACCEPT; ip6tables -I FORWARD -i VPS -o VPS -j ACCEPT
+PostDown = iptables -D FORWARD -i VPS -o VPS -j ACCEPT; ip6tables -D FORWARD -i VPS -o VPS -j ACCEPT
+PostUp = iptables -I FORWARD ! -i VPS -o VPS -j DROP; ip6tables -I FORWARD ! -i VPS -o VPS -j DROP; 
+PostDown = iptables -D FORWARD ! -i VPS -o VPS -j DROP; ip6tables -D FORWARD ! -i VPS -o VPS -j DROP; 
+
+# wg21 Router
+[Peer] 
+PublicKey = hidden 
+AllowedIPs = 0.0.0.0/0
+PresharedKey = hidden
+
+# Phone1ViaVPS
+[Peer]
+PublicKey = hidden
+AllowedIPs = 192.168.100.129/32, aaff:a37f:fa75:100::101/128
+PresharedKey = hidden
+```
+Cheers!
 
 **Closing remarks**  
 When we have got everything at the VPS to work as we want we could have the system autostart wireguard at instance boot:
