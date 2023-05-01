@@ -3062,7 +3062,7 @@ Basically because Unbound does not only talk to internet to resolve name it also
 We will handle this by redirecting ToLocal packets to main routing table.
 In wgm:
 ```sh
-E:Option ==> peer wg11 rule add wan dst=192.168.1.1/16 comment ToLocalUseMain
+E:Option ==> peer wg11 rule add wan src=any dst=192.168.1.1/16 comment ToLocalUseMain
 E:Option ==> peer wg11 rule add vpn 192.168.1.1 comment Unbound2VPN
 E:Option ==> peer wg11 auto=p
 E:Option ==> restart wg11
@@ -3072,7 +3072,7 @@ The first line redirect packets TO 192.168.x.x to the main routing table since t
 
 If you plan to serve dns replies to clients connected to your wireguard vpn server you might also need something like:
 ```sh
-E:Option ==> peer wg11 rule add wan dst=10.50.1.1/24 comment ToWg21UseMain
+E:Option ==> peer wg11 rule add wan src=any dst=10.50.1.1/24 comment ToWg21UseMain
 ```
 You might need to further adjust this for your system.
 
