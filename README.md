@@ -3,13 +3,13 @@
 please note that below instructions were written late 2022 - early 2023. A time when Wireguard was not a part of Asus router firmware. since 388 Fw, The Wireguard Manager addon is no longer required on AX-class routers and newer.
 The main reason for still using the Wireguard Manager addon is:
 
-'- If you want Wireguard on router model RT-AC86U - the only Wireguard compatible AC-class router.
+- If you want Wireguard on router model RT-AC86U - the only Wireguard compatible AC-class router.
 
-'- For advanced site-2-site or mesh setup where more control is needed.
+- For advanced site-2-site or mesh setup where more control is needed.
 
-'- for IPv6 functionality. Asuswrt-merlin firmware does not setup ipv6 over the tunnel.
+- for IPv6 functionality. Asuswrt-merlin firmware does not setup ipv6 over the tunnel.
 
-'- You require a specific function the Wireguard Manager provides, such as geo-location et.c.
+- You require a specific function the Wireguard Manager provides, such as geo-location et.c.
 
 If these reasons don't apply to you, you should probably don't use Wireguard Manager addon and instead update your firmware to 388 or later and setup Wireguard in the router GUI.
 
